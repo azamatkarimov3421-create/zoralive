@@ -29,6 +29,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   speaking = false,
   className = '',
 }) => {
+  const [imgError, setImgError] = React.useState(false);
   const frameClass = frame ? frame : 'ring-1 ring-slate-200';
   const initial = (name || 'Z').trim().charAt(0).toUpperCase();
 
@@ -39,12 +40,13 @@ export const Avatar: React.FC<AvatarProps> = ({
           speaking ? 'speaking-ring' : ''
         } transition-all duration-300`}
       >
-        {src ? (
+        {src && !imgError ? (
           <img
             src={src}
             alt={name}
             className="w-full h-full object-cover object-top"
             loading="lazy"
+            onError={() => setImgError(true)}
           />
         ) : (
           <span className="font-bold text-slate-600 text-sm select-none">{initial}</span>

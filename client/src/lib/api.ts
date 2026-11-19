@@ -38,6 +38,14 @@ let mockMoments = [...MOCK_MOMENTS];
 let mockFamilies = [...MOCK_FAMILIES];
 
 export async function api<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+  const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+  // If deployed remotely (Vercel) without external backend, immediately serve fast mock
+  if (!API_BASE && !isLocal) {
+    return handleMockRequest<T>(cleanPath, options);
+  }
+
   const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -47,41 +55,27 @@ export async function api<T = any>(path: string, options: RequestInit = {}): Pro
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const targetUrl = API_BASE ? `${API_BASE}/api${cleanPath}` : `/api${cleanPath}`;
 
-  // If a real backend server URL is configured, try it first
-  if (API_BASE) {
-    try {
-      const res = await fetch(`${API_BASE}/api${cleanPath}`, {
-        ...options,
-        headers,
-      });
-      if (res.ok) {
-        return (await res.json()) as T;
-      }
-    } catch {
-      // Fall through to mock on network failure
-    }
-  }
-
-  // If on Vercel without external backend or if server gave 404/405/failed:
   try {
-    if (!API_BASE) {
-      const res = await fetch(`/api${cleanPath}`, { ...options, headers });
-      if (res.ok) {
-        const text = await res.text();
-        try {
-          return JSON.parse(text) as T;
-        } catch {
-          // not json, fallback
-        }
-      }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    const res = await fetch(targetUrl, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return data as T;
     }
   } catch {
-    // proceed to mock
+    // Network error, 404/405/500, or timeout - proceed to mock
   }
 
-  // Graceful Mock Fallback (Guarantees zero 405 errors and full interactive functionality)
+  // Graceful Mock Fallback (Guarantees zero crashes and 100% interactive functionality)
   return handleMockRequest<T>(cleanPath, options);
 }
 
