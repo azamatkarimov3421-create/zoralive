@@ -1,11 +1,45 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coins, Users, Shield, RefreshCw, Swords, Search, X } from 'lucide-react';
+import { Coins, Users, Shield, RefreshCw, Swords, Search, X, ChevronRight, Crown } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { RoomSummary } from '../types';
-import { LiveWaveBars, getStageWallpaper } from '../components/LuxuryBadges';
-import { getAnimatedFrameUrl } from '../lib/mythicCatalog';
+import { LiveWaveBars, VipCrest, getStageWallpaper } from '../components/LuxuryBadges';
+import { Avatar } from '../components/Avatar';
+import { MYTHIC_DRAGONS } from '../lib/mythicCatalog';
+
+const HERO_BANNERS = [
+  {
+    id: 'dragons',
+    sub: 'DRAGON',
+    badge: 'YANGI KOLLEKSIYA',
+    title: '10 ta Afsonaviy Ajdarho',
+    subtitle: 'Zepharion, Nythera, Valtor, Xaldris • Sovg‘a va Kirish',
+    image: '/assets/dragons/zepharion.jpg',
+    gradient: 'from-slate-950/90 via-slate-900/65 to-transparent',
+    pillCls: 'bg-amber-400 text-slate-950',
+  },
+  {
+    id: 'vip',
+    sub: 'VIP',
+    badge: 'VIP 1 — VIP 12',
+    title: 'VIP Imtiyozlar & Ramkalar',
+    subtitle: '12 daraja, Ring Aura, Ilohiy Xona Kirishi va 12 ta SVGA ramka',
+    image: '/assets/dragons/xaldris.jpg',
+    gradient: 'from-purple-950/92 via-indigo-950/70 to-transparent',
+    pillCls: 'bg-gradient-to-r from-amber-300 to-yellow-400 text-slate-950',
+  },
+  {
+    id: 'crystals',
+    sub: 'CRYSTAL',
+    badge: 'KRISTALL ENERGIYA',
+    title: 'Amethyst, Citrine, Pyrite',
+    subtitle: 'Kunlik energiya quvvati, PK kuchi va +30% omad bonusi',
+    image: '/assets/crystals/amethyst.webp',
+    gradient: 'from-indigo-950/90 via-purple-950/55 to-transparent',
+    pillCls: 'bg-emerald-400 text-slate-950',
+  },
+];
 
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
@@ -15,6 +49,23 @@ export const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState('');
+  const [bannerIdx, setBannerIdx] = useState(0);
+
+  // Preload dragon thumbnails cleanly in background so GiftDrawer opens instantaneously
+  useEffect(() => {
+    MYTHIC_DRAGONS.forEach((d) => {
+      const img = new Image();
+      img.src = d.image;
+    });
+  }, []);
+
+  // Auto-cycle hero promo banner like Ziigo / Bigo Live
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setBannerIdx((prev) => (prev + 1) % HERO_BANNERS.length);
+    }, 4500);
+    return () => window.clearInterval(id);
+  }, []);
 
   const loadRooms = async (q = searchQ) => {
     setLoading(true);
@@ -22,7 +73,7 @@ export const HomePage: React.FC = () => {
       const base = filter === 'FOLLOWING' ? '?following=1' : `?type=${filter}`;
       const qs = q.trim() ? `${base}&q=${encodeURIComponent(q.trim())}` : base;
       const res = await api<{ rooms: RoomSummary[] }>(`/rooms${qs}`);
-      setRooms(res.rooms);
+      setRooms(res.rooms || []);
     } catch {
       // ignore
     } finally {
@@ -39,212 +90,274 @@ export const HomePage: React.FC = () => {
     else navigate(`/voice/${r.id}`);
   };
 
+  const activeBanner = HERO_BANNERS[bannerIdx];
+
   return (
-    <div className="bg-white min-h-full px-3.5 pt-3 pb-6 space-y-3.5">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <img src="/icon.svg" alt="ZoraLive" className="w-8 h-8 rounded-xl" />
-          <span className="text-lg font-black tracking-tight text-slate-900">ZoraLive</span>
-        </div>
+    <div className="bg-white min-h-full pb-6">
+      {/* Sticky Clean Ziigo Top Header */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-3.5 pt-2.5 pb-2 border-b border-slate-100 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          {/* Primary Ziigo-style Top Tabs */}
+          <div className="flex items-center gap-3.5 overflow-x-auto no-scrollbar">
+            {(
+              [
+                ['ALL', 'Ommabop'],
+                ['VOICE', 'Ovozli'],
+                ['VIDEO', 'Video'],
+                ['GAME', 'O‘yin'],
+                ['FOLLOWING', 'Obuna'],
+              ] as const
+            ).map(([key, label]) => {
+              const active = filter === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setFilter(key)}
+                  className={`relative pb-1 whitespace-nowrap transition ${
+                    active ? 'text-[16px] font-black text-slate-950' : 'text-[13px] font-bold text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  {label}
+                  {active && (
+                    <span className="absolute left-1/2 -translate-x-1/2 -bottom-0.5 w-5 h-[3px] rounded-full bg-gradient-to-r from-[#ff3366] to-amber-400" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => {
-              setSearchOpen((v) => !v);
-              if (searchOpen && searchQ) {
-                setSearchQ('');
-                loadRooms('');
-              }
-            }}
-            className="p-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
-            aria-label="Qidirish"
-          >
-            {searchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
-          </button>
-          {user?.role === 'ADMIN' && (
+          {/* Right Action Icons */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={() => navigate('/admin')}
+              onClick={() => {
+                setSearchOpen((v) => !v);
+                if (searchOpen && searchQ) {
+                  setSearchQ('');
+                  loadRooms('');
+                }
+              }}
               className="p-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
-              title="Admin"
+              aria-label="Qidirish"
             >
-              <Shield className="w-4 h-4" />
+              {searchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
             </button>
-          )}
-          <button
-            onClick={() => navigate('/profile?tab=wallet')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-amber-700 text-xs font-extrabold"
-          >
-            <Coins className="w-3.5 h-3.5 text-amber-500" />
-            <span>{(user?.coins || 0).toLocaleString()}</span>
-          </button>
-        </div>
-      </div>
 
-      {/* Expandable Room Search */}
-      {searchOpen && (
-        <div className="flex items-center gap-2 bg-slate-100 rounded-full px-3.5 py-2">
-          <Search className="w-3.5 h-3.5 text-slate-400" />
-          <input
-            autoFocus
-            value={searchQ}
-            onChange={(e) => {
-              setSearchQ(e.target.value);
-              loadRooms(e.target.value);
-            }}
-            placeholder="Xona nomi, ID yoki host..."
-            className="flex-1 bg-transparent text-xs text-slate-900 focus:outline-none"
-          />
-        </div>
-      )}
+            {user?.role === 'ADMIN' && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="p-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+                title="Admin"
+              >
+                <Shield className="w-4 h-4" />
+              </button>
+            )}
 
-      {/* Live Hosts Strip */}
-      {!searchOpen && rooms.length > 0 && (
-        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-0.5">
-          {rooms.slice(0, 6).map((r) => (
             <button
-              key={`story-${r.id}`}
-              onClick={() => openRoom(r)}
-              className="flex flex-col items-center gap-1 shrink-0"
+              onClick={() => navigate('/profile?tab=wallet')}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] font-black"
             >
-              <div className="relative p-[2px] rounded-full bg-gradient-to-tr from-[#ff3366] to-amber-400">
-                <div className="w-13 h-13 rounded-full overflow-hidden border-2 border-white bg-slate-100">
-                  <img src={r.hostAvatar} alt={r.hostName} className="w-full h-full object-cover object-top" />
+              <Coins className="w-3.5 h-3.5 text-amber-500" />
+              <span>{(user?.coins || 0).toLocaleString()}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Expandable Search Input */}
+        {searchOpen && (
+          <div className="flex items-center gap-2 bg-slate-100 rounded-full px-3.5 py-2">
+            <Search className="w-3.5 h-3.5 text-slate-400" />
+            <input
+              autoFocus
+              value={searchQ}
+              onChange={(e) => {
+                setSearchQ(e.target.value);
+                loadRooms(e.target.value);
+              }}
+              placeholder="Xona nomi, ID yoki host qidiring..."
+              className="flex-1 bg-transparent text-xs text-slate-900 focus:outline-none"
+            />
+          </div>
+        )}
+      </header>
+
+      <div className="px-3.5 pt-3 space-y-4">
+        {/* Ziigo-style Hero Event Banner Carousel */}
+        {!searchOpen && (
+          <div className="space-y-2.5">
+            <button
+              onClick={() => navigate(`/profile?tab=store&sub=${activeBanner.sub}`)}
+              className="relative w-full h-[108px] rounded-2xl overflow-hidden text-left shadow-sm border border-slate-200/60 block group"
+            >
+              <img
+                src={activeBanner.image}
+                alt={activeBanner.title}
+                loading="eager"
+                className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className={`absolute inset-0 bg-gradient-to-r ${activeBanner.gradient}`} />
+
+              <div className="relative z-10 h-full px-4 py-3 flex flex-col justify-between max-w-[76%]">
+                <span className={`w-fit px-2 py-0.5 rounded-full text-[9px] font-black tracking-wide ${activeBanner.pillCls}`}>
+                  {activeBanner.badge}
+                </span>
+                <div>
+                  <div className="text-[15px] font-black text-white leading-tight drop-shadow-xs">
+                    {activeBanner.title}
+                  </div>
+                  <div className="text-[11px] font-medium text-white/85 truncate mt-0.5">
+                    {activeBanner.subtitle}
+                  </div>
                 </div>
-                <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#ff3366] ring-2 ring-white" />
               </div>
-              <span className="text-[11px] font-semibold text-slate-700 truncate max-w-[58px]">
-                {r.hostName.split(' ')[0]}
+
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center">
+                <ChevronRight className="w-4 h-4" />
               </span>
-            </button>
-          ))}
-        </div>
-      )}
 
-      {/* Mythic Vault Quick Pills (VIP 1-12, 10 Dragons, 12 Animated Frames, 4 Crystal Energies) */}
-      {!searchOpen && (
-        <div className="grid grid-cols-4 gap-1.5">
-          {[
-            { sub: 'VIP', icon: '👑', label: 'VIP 1-12', cls: 'bg-amber-50 border-amber-200/80 text-amber-800' },
-            { sub: 'DRAGON', icon: '🐉', label: 'Ajdarho', cls: 'bg-rose-50 border-rose-200/80 text-rose-700' },
-            { sub: 'FRAME', icon: '🖼️', label: 'Ramka', cls: 'bg-purple-50 border-purple-200/80 text-purple-700' },
-            { sub: 'CRYSTAL', icon: '💎', label: 'Kristall', cls: 'bg-emerald-50 border-emerald-200/80 text-emerald-700' },
-          ].map((btn) => (
-            <button
-              key={btn.sub}
-              onClick={() => navigate(`/profile?tab=store&sub=${btn.sub}`)}
-              className={`flex items-center justify-center gap-1 py-2 rounded-2xl border text-[11px] font-extrabold transition active:scale-95 ${btn.cls}`}
-            >
-              <span>{btn.icon}</span>
-              <span>{btn.label}</span>
+              {/* Slide Dots */}
+              <div className="absolute bottom-2 right-3 flex items-center gap-1 z-10">
+                {HERO_BANNERS.map((b, idx) => (
+                  <span
+                    key={b.id}
+                    className={`h-1.5 rounded-full transition-all ${
+                      idx === bannerIdx ? 'w-4 bg-white' : 'w-1.5 bg-white/45'
+                    }`}
+                  />
+                ))}
+              </div>
             </button>
-          ))}
-        </div>
-      )}
 
-      {/* Underline Category Tabs */}
-      <div className="flex items-center justify-between border-b border-slate-100">
-        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar">
-          {(
-            [
-              ['ALL', 'Hammasi'],
-              ['VOICE', 'Ovozli'],
-              ['VIDEO', 'Video'],
-              ['GAME', 'O‘yin'],
-              ['FOLLOWING', 'Obuna'],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              className={`pb-2.5 text-xs font-extrabold whitespace-nowrap border-b-2 transition ${
-                filter === key
-                  ? 'text-slate-900 border-[#ff3366]'
-                  : 'text-slate-400 border-transparent hover:text-slate-700'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={() => loadRooms(searchQ)}
-          className="pb-2 pl-2 text-slate-400 hover:text-slate-700 shrink-0"
-          aria-label="Yangilash"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
+            {/* 4 Clean Compact Shortcut Pills (Ziigo Sub-menu Strip) */}
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { sub: 'VIP', icon: '👑', label: 'VIP 1-12' },
+                { sub: 'DRAGON', icon: '🐉', label: 'Ajdarho' },
+                { sub: 'FRAME', icon: '🖼️', label: 'Ramkalar' },
+                { sub: 'CRYSTAL', icon: '💎', label: 'Kristall' },
+              ].map((item) => (
+                <button
+                  key={item.sub}
+                  onClick={() => navigate(`/profile?tab=store&sub=${item.sub}`)}
+                  className="flex flex-col items-center justify-center gap-1 py-2 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-slate-100 active:scale-95 transition"
+                >
+                  <span className="text-lg leading-none">{item.icon}</span>
+                  <span className="text-[10px] font-extrabold text-slate-700">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-      {/* 4:5 Photo Cards */}
-      {loading && rooms.length === 0 ? (
-        <div className="grid grid-cols-2 gap-2.5">
-          {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="aspect-[4/5] rounded-2xl bg-slate-100 animate-pulse" />
-          ))}
-        </div>
-      ) : rooms.length === 0 ? (
-        <div className="py-16 text-center text-sm font-semibold text-slate-400">Xonalar topilmadi</div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2.5">
-          {rooms.map((r) => {
-            const roomFrameUrl = getAnimatedFrameUrl(r.hostFrame);
-            return (
+        {/* Active Live Hosts Row (1:1 Crisp Animated Frames!) */}
+        {!searchOpen && rooms.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Crown className="w-3.5 h-3.5 text-amber-500" />
+                <span className="text-xs font-black text-slate-900">Top Jonli Hostlar</span>
+              </div>
+              <button
+                onClick={() => loadRooms(searchQ)}
+                className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-700"
+              >
+                <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                <span>Yangilash</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3.5 overflow-x-auto no-scrollbar py-2 px-1">
+              {rooms.slice(0, 6).map((r) => (
+                <button
+                  key={`story-${r.id}`}
+                  onClick={() => openRoom(r)}
+                  className="flex flex-col items-center gap-2 shrink-0"
+                >
+                  <Avatar
+                    src={r.hostAvatar}
+                    name={r.hostName}
+                    size="md"
+                    frame={r.hostFrame}
+                    vipLevel={r.hostVip}
+                    hideVipBadge
+                  />
+                  <span className="text-[11px] font-bold text-slate-700 truncate max-w-[60px]">
+                    {r.hostName.split(' ')[0]}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Razor-Sharp 2-Column Live Room Cards (Zero Distortion!) */}
+        {loading && rooms.length === 0 ? (
+          <div className="grid grid-cols-2 gap-2.5">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="aspect-[4/5] rounded-2xl bg-slate-100 animate-pulse" />
+            ))}
+          </div>
+        ) : rooms.length === 0 ? (
+          <div className="py-16 text-center text-sm font-semibold text-slate-400">Xonalar topilmadi</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2.5">
+            {rooms.map((r) => (
               <button
                 key={r.id}
                 onClick={() => openRoom(r)}
-                className="group relative aspect-[4/5] rounded-2xl overflow-hidden text-left bg-slate-100 active:scale-[0.98] transition flex flex-col justify-between p-2.5 shadow-xs"
+                className="group relative aspect-[4/5] rounded-2xl overflow-hidden text-left bg-slate-900 active:scale-[0.98] transition flex flex-col justify-between p-2.5 shadow-sm border border-slate-200/70"
               >
                 <img
                   src={r.hostAvatar || getStageWallpaper(r.theme)}
                   alt={r.hostName}
+                  loading="eager"
                   className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-black/25" />
-                {roomFrameUrl && (
-                  <img
-                    src={roomFrameUrl}
-                    alt=""
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 w-full h-full object-fill z-20 opacity-95"
-                  />
-                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/15 to-black/30" />
 
-                <div className="relative z-10 flex items-center justify-between gap-1 px-0.5 pt-0.5">
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold text-white backdrop-blur-md ${
-                      r.type === 'VIDEO'
-                        ? 'bg-[#ff3366]/85'
-                        : r.type === 'GAME'
-                        ? 'bg-emerald-500/85'
-                        : 'bg-slate-900/65'
-                    }`}
-                  >
-                    <LiveWaveBars color="bg-white" className="h-2" />
-                    <span>{r.type === 'VIDEO' ? 'LIVE' : r.type === 'GAME' ? 'GAME' : 'PARTY'}</span>
-                  </span>
+                {/* Top Badges */}
+                <div className="relative z-10 flex items-center justify-between gap-1">
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black text-white backdrop-blur-md ${
+                        r.type === 'VIDEO'
+                          ? 'bg-[#ff3366]/90'
+                          : r.type === 'GAME'
+                          ? 'bg-emerald-500/90'
+                          : 'bg-slate-900/75'
+                      }`}
+                    >
+                      <LiveWaveBars color="bg-white" className="h-2" />
+                      <span>{r.type === 'VIDEO' ? 'LIVE' : r.type === 'GAME' ? 'O‘YIN' : 'OVOZLI'}</span>
+                    </span>
 
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/45 backdrop-blur-md text-[10px] font-bold text-white">
+                    {r.hasPk && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-400 text-[9px] font-black text-slate-950">
+                        <Swords className="w-2.5 h-2.5" /> PK
+                      </span>
+                    )}
+                  </div>
+
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-md text-[10px] font-bold text-white">
                     <Users className="w-2.5 h-2.5" />
                     <span>{r.viewerCount}</span>
                   </span>
                 </div>
 
-                {r.hasPk && (
-                  <span className="relative z-10 w-fit inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#ff3366] text-[9px] font-black text-white">
-                    <Swords className="w-2.5 h-2.5" /> PK
-                  </span>
-                )}
-
-                <div className="relative z-10 space-y-0.5 px-0.5 pb-0.5">
-                  <div className="text-xs font-extrabold text-white line-clamp-1 drop-shadow-xs">{r.title}</div>
-                  <div className="text-[10px] font-medium text-white/80 truncate">{r.hostName}</div>
+                {/* Bottom Room Title & Host Strip */}
+                <div className="relative z-10 space-y-1">
+                  <div className="text-[12px] font-extrabold text-white leading-snug line-clamp-2 drop-shadow-xs">
+                    {r.title}
+                  </div>
+                  <div className="flex items-center justify-between gap-1 pt-0.5">
+                    <span className="text-[10px] font-semibold text-white/85 truncate">{r.hostName}</span>
+                    {r.hostVip > 0 && <VipCrest level={r.hostVip} size="xs" />}
+                  </div>
                 </div>
               </button>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

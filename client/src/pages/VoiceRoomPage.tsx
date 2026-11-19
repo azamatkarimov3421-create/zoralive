@@ -420,14 +420,6 @@ export const VoiceRoomPage: React.FC = () => {
       )}
 
       <div ref={audioContainerRef} className="hidden" />
-      {getAnimatedFrameUrl(roomFrame) && (
-        <img
-          src={getAnimatedFrameUrl(roomFrame)!}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none fixed inset-0 w-full h-full max-w-[430px] mx-auto object-fill z-30 opacity-90"
-        />
-      )}
       <EntryBanner event={entryRide} />
       <GiftOverlay gift={activeGiftAnim} />
 
@@ -577,7 +569,7 @@ export const VoiceRoomPage: React.FC = () => {
                   src={hostSeat.avatar}
                   name={hostSeat.displayName}
                   size="lg"
-                  frame={hostSeat.frame || 'frame-gold'}
+                  frame={roomFrame || hostSeat.frame || 'frame-gold-1'}
                   vipLevel={hostSeat.vipLevel}
                   speaking={hostSeat.isSpeaking && !hostSeat.isMuted}
                 />

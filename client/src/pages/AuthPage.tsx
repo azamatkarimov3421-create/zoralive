@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { Lang, User } from '../types';
 
 export const AuthPage: React.FC = () => {
+  const navigate = useNavigate();
   const { loginWithToken, lang, setLang, toast } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
@@ -26,6 +29,7 @@ export const AuthPage: React.FC = () => {
         body: JSON.stringify(body),
       });
       loginWithToken(res.token, res.user);
+      navigate('/', { replace: true });
     } catch (err: any) {
       toast(err.message, 'error');
     } finally {
@@ -41,6 +45,7 @@ export const AuthPage: React.FC = () => {
         body: JSON.stringify({ preset }),
       });
       loginWithToken(res.token, res.user);
+      navigate('/', { replace: true });
     } catch (err: any) {
       toast(err.message, 'error');
     } finally {
@@ -50,6 +55,16 @@ export const AuthPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative">
+      {/* Back to Home Button */}
+      <button
+        onClick={() => navigate('/')}
+        className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold transition"
+        title="Bosh sahifa"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        <span>Efirga o‘tish</span>
+      </button>
+
       {/* Language Switcher */}
       <div className="absolute top-4 right-4 flex gap-1 bg-slate-100 rounded-full p-1">
         {(['uz', 'ru', 'en'] as Lang[]).map((l) => (

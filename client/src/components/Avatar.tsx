@@ -10,12 +10,13 @@ interface AvatarProps {
   vipLevel?: number;
   speaking?: boolean;
   className?: string;
+  hideVipBadge?: boolean;
 }
 
 const SIZE_MAP = {
   xs: 'w-7 h-7',
   sm: 'w-10 h-10',
-  md: 'w-13 h-13',
+  md: 'w-12 h-12',
   lg: 'w-16 h-16',
   xl: 'w-20 h-20',
   '2xl': 'w-24 h-24',
@@ -29,16 +30,16 @@ export const Avatar: React.FC<AvatarProps> = ({
   vipLevel = 0,
   speaking = false,
   className = '',
+  hideVipBadge = false,
 }) => {
   const [imgError, setImgError] = React.useState(false);
   const animatedFrameUrl = getAnimatedFrameUrl(frame);
-  const cssFrameClass = !animatedFrameUrl && frame ? frame : 'ring-1 ring-slate-200';
+  const cssFrameClass = !animatedFrameUrl && frame ? frame : '';
   const initial = (name || 'Z').trim().charAt(0).toUpperCase();
-  const hasVipRing = vipLevel >= 8;
+  const hasVipRing = vipLevel >= 8 && !animatedFrameUrl;
 
   return (
     <div className={`relative inline-flex items-center justify-center shrink-0 ${className}`}>
-      {/* VIP 8+ Golden Ring Effect */}
       {hasVipRing && (
         <span
           aria-hidden="true"
@@ -48,7 +49,7 @@ export const Avatar: React.FC<AvatarProps> = ({
 
       <div
         className={`${SIZE_MAP[size]} ${
-          animatedFrameUrl ? 'rounded-xl' : 'rounded-full'
+          animatedFrameUrl ? 'rounded-2xl' : 'rounded-full'
         } overflow-hidden bg-slate-100 flex items-center justify-center ${cssFrameClass} ${
           speaking ? 'speaking-ring' : ''
         } transition-all duration-300 relative z-10`}
@@ -58,7 +59,8 @@ export const Avatar: React.FC<AvatarProps> = ({
             src={src}
             alt={name}
             className="w-full h-full object-cover object-top"
-            loading="lazy"
+            loading="eager"
+            decoding="async"
             onError={() => setImgError(true)}
           />
         ) : (
@@ -66,18 +68,19 @@ export const Avatar: React.FC<AvatarProps> = ({
         )}
       </div>
 
-      {/* Animated Transparent Luxury Frame Overlay (from user's SVGA/WebP frames) */}
+      {/* Razor-sharp 1:1 Animated Frame Overlay */}
       {animatedFrameUrl && (
         <img
           src={animatedFrameUrl}
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute -inset-[18%] w-[136%] h-[136%] max-w-none object-contain z-20 drop-shadow-md"
+          loading="eager"
+          className="pointer-events-none absolute -inset-[21%] w-[142%] h-[142%] max-w-none object-contain z-20"
         />
       )}
 
-      {vipLevel > 0 && size !== 'xs' && size !== 'sm' && (
-        <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-30">
+      {!hideVipBadge && vipLevel > 0 && size !== 'xs' && size !== 'sm' && (
+        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-30">
           <VipCrest level={vipLevel} size="xs" />
         </div>
       )}
