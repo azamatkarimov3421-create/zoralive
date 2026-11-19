@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { RoomSummary } from '../types';
 import { LiveWaveBars, getStageWallpaper } from '../components/LuxuryBadges';
+import { getAnimatedFrameUrl } from '../lib/mythicCatalog';
 
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
@@ -120,6 +121,27 @@ export const HomePage: React.FC = () => {
         </div>
       )}
 
+      {/* Mythic Vault Quick Pills (VIP 1-12, 10 Dragons, 12 Animated Frames, 4 Crystal Energies) */}
+      {!searchOpen && (
+        <div className="grid grid-cols-4 gap-1.5">
+          {[
+            { sub: 'VIP', icon: '👑', label: 'VIP 1-12', cls: 'bg-amber-50 border-amber-200/80 text-amber-800' },
+            { sub: 'DRAGON', icon: '🐉', label: 'Ajdarho', cls: 'bg-rose-50 border-rose-200/80 text-rose-700' },
+            { sub: 'FRAME', icon: '🖼️', label: 'Ramka', cls: 'bg-purple-50 border-purple-200/80 text-purple-700' },
+            { sub: 'CRYSTAL', icon: '💎', label: 'Kristall', cls: 'bg-emerald-50 border-emerald-200/80 text-emerald-700' },
+          ].map((btn) => (
+            <button
+              key={btn.sub}
+              onClick={() => navigate(`/profile?tab=store&sub=${btn.sub}`)}
+              className={`flex items-center justify-center gap-1 py-2 rounded-2xl border text-[11px] font-extrabold transition active:scale-95 ${btn.cls}`}
+            >
+              <span>{btn.icon}</span>
+              <span>{btn.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Underline Category Tabs */}
       <div className="flex items-center justify-between border-b border-slate-100">
         <div className="flex items-center gap-4 overflow-x-auto no-scrollbar">
@@ -165,51 +187,62 @@ export const HomePage: React.FC = () => {
         <div className="py-16 text-center text-sm font-semibold text-slate-400">Xonalar topilmadi</div>
       ) : (
         <div className="grid grid-cols-2 gap-2.5">
-          {rooms.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => openRoom(r)}
-              className="group relative aspect-[4/5] rounded-2xl overflow-hidden text-left bg-slate-100 active:scale-[0.98] transition flex flex-col justify-between p-2.5 shadow-xs"
-            >
-              <img
-                src={r.hostAvatar || getStageWallpaper(r.theme)}
-                alt={r.hostName}
-                className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-black/25" />
+          {rooms.map((r) => {
+            const roomFrameUrl = getAnimatedFrameUrl(r.hostFrame);
+            return (
+              <button
+                key={r.id}
+                onClick={() => openRoom(r)}
+                className="group relative aspect-[4/5] rounded-2xl overflow-hidden text-left bg-slate-100 active:scale-[0.98] transition flex flex-col justify-between p-2.5 shadow-xs"
+              >
+                <img
+                  src={r.hostAvatar || getStageWallpaper(r.theme)}
+                  alt={r.hostName}
+                  className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-black/25" />
+                {roomFrameUrl && (
+                  <img
+                    src={roomFrameUrl}
+                    alt=""
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 w-full h-full object-fill z-20 opacity-95"
+                  />
+                )}
 
-              <div className="relative z-10 flex items-center justify-between gap-1">
-                <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold text-white backdrop-blur-md ${
-                    r.type === 'VIDEO'
-                      ? 'bg-[#ff3366]/85'
-                      : r.type === 'GAME'
-                      ? 'bg-emerald-500/85'
-                      : 'bg-slate-900/65'
-                  }`}
-                >
-                  <LiveWaveBars color="bg-white" className="h-2" />
-                  <span>{r.type === 'VIDEO' ? 'LIVE' : r.type === 'GAME' ? 'GAME' : 'PARTY'}</span>
-                </span>
+                <div className="relative z-10 flex items-center justify-between gap-1 px-0.5 pt-0.5">
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold text-white backdrop-blur-md ${
+                      r.type === 'VIDEO'
+                        ? 'bg-[#ff3366]/85'
+                        : r.type === 'GAME'
+                        ? 'bg-emerald-500/85'
+                        : 'bg-slate-900/65'
+                    }`}
+                  >
+                    <LiveWaveBars color="bg-white" className="h-2" />
+                    <span>{r.type === 'VIDEO' ? 'LIVE' : r.type === 'GAME' ? 'GAME' : 'PARTY'}</span>
+                  </span>
 
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/45 backdrop-blur-md text-[10px] font-bold text-white">
-                  <Users className="w-2.5 h-2.5" />
-                  <span>{r.viewerCount}</span>
-                </span>
-              </div>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/45 backdrop-blur-md text-[10px] font-bold text-white">
+                    <Users className="w-2.5 h-2.5" />
+                    <span>{r.viewerCount}</span>
+                  </span>
+                </div>
 
-              {r.hasPk && (
-                <span className="relative z-10 w-fit inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#ff3366] text-[9px] font-black text-white">
-                  <Swords className="w-2.5 h-2.5" /> PK
-                </span>
-              )}
+                {r.hasPk && (
+                  <span className="relative z-10 w-fit inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#ff3366] text-[9px] font-black text-white">
+                    <Swords className="w-2.5 h-2.5" /> PK
+                  </span>
+                )}
 
-              <div className="relative z-10 space-y-0.5">
-                <div className="text-xs font-extrabold text-white line-clamp-1 drop-shadow-xs">{r.title}</div>
-                <div className="text-[10px] font-medium text-white/80 truncate">{r.hostName}</div>
-              </div>
-            </button>
-          ))}
+                <div className="relative z-10 space-y-0.5 px-0.5 pb-0.5">
+                  <div className="text-xs font-extrabold text-white line-clamp-1 drop-shadow-xs">{r.title}</div>
+                  <div className="text-[10px] font-medium text-white/80 truncate">{r.hostName}</div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

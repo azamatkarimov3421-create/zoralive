@@ -19,6 +19,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from '../components/Avatar';
 import { VipCrest } from '../components/LuxuryBadges';
+import { MythicVaultSection } from '../components/MythicVaultSection';
 import { Lang } from '../types';
 
 function resizeAvatar(file: File): Promise<string> {
@@ -67,7 +68,7 @@ export const ProfilePage: React.FC = () => {
   const [kycName, setKycName] = useState('');
 
   const [storeItems, setStoreItems] = useState<any[]>([]);
-  const [storeFilter, setStoreFilter] = useState<'FRAME' | 'RIDE' | 'BUBBLE' | 'VIP'>('FRAME');
+  const initialSub = (searchParams.get('sub') as 'VIP' | 'DRAGON' | 'FRAME' | 'CRYSTAL' | 'RIDE' | 'BUBBLE') || 'VIP';
   const [tasks, setTasks] = useState<any[]>([]);
 
   // Family / Clan state
@@ -364,92 +365,13 @@ export const ProfilePage: React.FC = () => {
         </div>
       )}
 
-      {/* STORE */}
+      {/* STORE — VIP 1-12, 10 MYTHIC DRAGONS, 12 ANIMATED FRAMES & 4 CRYSTAL ENERGIES */}
       {tab === 'store' && (
-        <div className="space-y-3">
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-            {[
-              ['FRAME', 'Ramka'],
-              ['RIDE', 'Kirish'],
-              ['BUBBLE', 'Chat'],
-              ['VIP', 'VIP'],
-            ].map(([k, lbl]) => (
-              <button
-                key={k}
-                onClick={() => setStoreFilter(k as any)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold ${
-                  storeFilter === k ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {lbl}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-2 gap-2.5">
-            {storeItems
-              .filter((i) => i.type === storeFilter)
-              .map((item) => {
-                const isEquipped =
-                  user.activeFrame === item.code ||
-                  user.activeRide === item.code ||
-                  user.activeBubble === item.code ||
-                  (item.type === 'VIP' && user.vipLevel >= item.vip_tier && user.vipLevel > 0);
-
-                return (
-                  <div key={item.id} className="card-white rounded-2xl p-3 flex flex-col justify-between gap-2.5">
-                    <div className="flex flex-col items-center py-2">
-                      {item.type === 'FRAME' ? (
-                        <Avatar src={user.avatar} name={user.displayName} size="md" frame={item.code} />
-                      ) : item.type === 'BUBBLE' ? (
-                        <span className={`px-3 py-1 rounded-2xl text-[11px] font-bold ${item.code}`}>Salom</span>
-                      ) : item.type === 'VIP' ? (
-                        <VipCrest level={item.vip_tier} size="md" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-xl bg-slate-950 overflow-hidden flex items-center justify-center">
-                          <img src={item.code === 'ride-dragon' ? '/assets/gift-dragon.jpg' : '/assets/gift-car.jpg'} alt="" className="w-14 h-14 object-cover" />
-                        </div>
-                      )}
-                      <div className="text-xs font-extrabold text-slate-900 mt-2 text-center">{item.name_uz}</div>
-                    </div>
-
-                    {item.owned && item.type !== 'VIP' ? (
-                      <button
-                        onClick={async () => {
-                          await api('/store/equip', {
-                            method: 'POST',
-                            body: JSON.stringify({ itemType: item.type, itemCode: isEquipped ? '' : item.code }),
-                          });
-                          await refreshUser();
-                        }}
-                        className={`w-full py-2 rounded-full text-xs font-extrabold ${
-                          isEquipped ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-900 text-white'
-                        }`}
-                      >
-                        {isEquipped ? 'Faol' : 'Taqish'}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={async () => {
-                          try {
-                            await api('/store/buy', { method: 'POST', body: JSON.stringify({ itemId: item.id }) });
-                            toast('Sotib olindi', 'success');
-                            await refreshUser();
-                            loadTabData('store');
-                          } catch (err: any) {
-                            toast(err.message, 'error');
-                          }
-                        }}
-                        className="w-full py-2 rounded-full btn-brand text-xs font-extrabold"
-                      >
-                        🪙 {item.price.toLocaleString()}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-        </div>
+        <MythicVaultSection
+          storeItems={storeItems}
+          onReloadStore={() => loadTabData('store')}
+          initialFilter={initialSub}
+        />
       )}
 
       {/* FAMILY / CLAN */}

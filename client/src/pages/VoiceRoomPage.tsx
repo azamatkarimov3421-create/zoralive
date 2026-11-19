@@ -38,6 +38,7 @@ import { LuckyWheelGame } from '../components/LuckyWheelGame';
 import { LudoGame } from '../components/LudoGame';
 import { DrawGuessGame } from '../components/DrawGuessGame';
 import { LiveWaveBars, getStageWallpaper } from '../components/LuxuryBadges';
+import { ANIMATED_FRAMES, getAnimatedFrameUrl } from '../lib/mythicCatalog';
 import { sfx } from '../lib/sound';
 
 const THEME_OPTIONS = [
@@ -62,6 +63,7 @@ export const VoiceRoomPage: React.FC = () => {
 
   const [roomMeta, setRoomMeta] = useState<any>(null);
   const [theme, setTheme] = useState('light');
+  const [roomFrame, setRoomFrame] = useState('');
   const [notice, setNotice] = useState('');
   const [seats, setSeats] = useState<SeatState[]>([]);
   const [viewerCount, setViewerCount] = useState(0);
@@ -252,7 +254,7 @@ export const VoiceRoomPage: React.FC = () => {
       setTotalGifts(g.roomTotalGifts);
       setActiveGiftAnim(g);
       sfx.gift(g.effectType === 'fullscreen' || g.category === 'LUXURY');
-      setTimeout(() => setActiveGiftAnim((curr) => (curr?.id === g.id ? null : curr)), 3300);
+      setTimeout(() => setActiveGiftAnim((curr) => (curr?.id === g.id ? null : curr)), 3900);
     };
     const onRide = (ev: any) => {
       const id = String(Date.now());
@@ -418,6 +420,14 @@ export const VoiceRoomPage: React.FC = () => {
       )}
 
       <div ref={audioContainerRef} className="hidden" />
+      {getAnimatedFrameUrl(roomFrame) && (
+        <img
+          src={getAnimatedFrameUrl(roomFrame)!}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 w-full h-full max-w-[430px] mx-auto object-fill z-30 opacity-90"
+        />
+      )}
       <EntryBanner event={entryRide} />
       <GiftOverlay gift={activeGiftAnim} />
 
@@ -500,22 +510,55 @@ export const VoiceRoomPage: React.FC = () => {
       )}
 
       {themePickerOpen && (
-        <div className="mx-3 mb-2 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-lg flex items-center justify-around gap-1 relative z-20">
-          {THEME_OPTIONS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => {
-                setTheme(t.id);
-                if (isHost) getSocket().emit('room:theme', { roomId, theme: t.id });
-                setThemePickerOpen(false);
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
-                theme === t.id ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="mx-3 mb-2 p-2.5 rounded-2xl bg-white border border-slate-200 shadow-lg space-y-2.5 relative z-20">
+          <div className="flex items-center justify-around gap-1">
+            {THEME_OPTIONS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  setTheme(t.id);
+                  if (isHost) getSocket().emit('room:theme', { roomId, theme: t.id });
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
+                  theme === t.id ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="border-t border-slate-100 pt-2">
+            <div className="text-[10px] font-extrabold text-slate-400 mb-1.5 px-1">🖼️ Xona Ramkasi (Animatsiyali):</div>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+              <button
+                onClick={() => {
+                  setRoomFrame('');
+                  setThemePickerOpen(false);
+                }}
+                className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold shrink-0 border ${
+                  !roomFrame ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200'
+                }`}
+              >
+                Yo‘q
+              </button>
+              {ANIMATED_FRAMES.map((fr) => (
+                <button
+                  key={fr.code}
+                  onClick={() => {
+                    setRoomFrame(fr.code);
+                    setThemePickerOpen(false);
+                  }}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-xl text-[10px] font-bold shrink-0 border ${
+                    roomFrame === fr.code ? 'bg-rose-50 text-[#ff3366] border-[#ff3366]' : 'bg-slate-50 text-slate-700 border-slate-200'
+                  }`}
+                >
+                  <img src={fr.webp} alt="" className="w-6 h-6 object-contain" />
+                  <span>{fr.nameUz.split(' ')[0]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

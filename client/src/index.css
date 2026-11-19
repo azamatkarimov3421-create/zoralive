@@ -134,7 +134,35 @@
   color: #be123c;
 }
 .bubble-gold {
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1.5px solid #fbbf24;
   color: #92400e;
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.18);
+}
+.bubble-cosmic {
+  background: linear-gradient(135deg, #2e1065 0%, #701a75 55%, #9f1239 100%);
+  border: 1.5px solid #fbbf24;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.35);
+}
+
+/* VIP 8+ Golden Ring Effect */
+@keyframes vip-ring-spin {
+  0% { transform: rotate(0deg) scale(1); opacity: 0.85; }
+  50% { transform: rotate(180deg) scale(1.04); opacity: 1; }
+  100% { transform: rotate(360deg) scale(1); opacity: 0.85; }
+}
+.vip-ring-aura {
+  animation: vip-ring-spin 6s linear infinite;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.75), inset 0 0 8px rgba(251, 191, 36, 0.45);
+}
+
+@keyframes dragon-arrive {
+  0% { transform: scale(0.5) translateY(45px); opacity: 0; }
+  14% { transform: scale(1.04) translateY(-6px); opacity: 1; }
+  84% { transform: scale(1) translateY(0); opacity: 1; }
+  100% { transform: scale(0.92) translateY(-18px); opacity: 0; }
+}
+.animate-dragon-arrive {
+  animation: dragon-arrive 3.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
