@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api, getToken, setToken, getStoredUser, setStoredUser } from '../lib/api';
 import { resetSocket } from '../lib/socket';
+import { DEMO_USERS } from '../lib/mockData';
 import { Lang, User } from '../types';
 import { translations } from '../i18n/translations';
 
@@ -26,7 +27,13 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => getStoredUser());
+  const [user, setUser] = useState<User>(() => {
+    const stored = getStoredUser();
+    if (stored) return stored;
+    setStoredUser(DEMO_USERS.user);
+    setToken('demo_token_user');
+    return DEMO_USERS.user;
+  });
   const [loading, setLoading] = useState(false);
   const [lang, setLangState] = useState<Lang>(() => (localStorage.getItem('zoralive_lang') as Lang) || 'uz');
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -75,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setStoredUser(u);
     resetSocket();
     setUser(u);
+    toast(`${u.displayName} sifatida faol!`, 'success');
   };
 
   const updateCoinsLocally = (coins: number) => {
@@ -87,10 +95,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    setToken(null);
-    setStoredUser(null);
+    setToken('demo_token_user');
+    setStoredUser(DEMO_USERS.user);
     resetSocket();
-    setUser(null);
+    setUser(DEMO_USERS.user);
+    toast('Mehmon rejimiga o‘tildi', 'info');
   };
 
   return (

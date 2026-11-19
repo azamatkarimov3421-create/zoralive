@@ -28,10 +28,6 @@ const AppShell: React.FC = () => {
     );
   }
 
-  if (!user) {
-    return <AuthPage />;
-  }
-
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isRoomRoute = location.pathname.startsWith('/voice/') || location.pathname.startsWith('/video/');
 
@@ -62,6 +58,7 @@ const AppShell: React.FC = () => {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<AuthPage />} />
             <Route path="/voice/:id" element={<VoiceRoomPage />} />
             <Route path="/video/:id" element={<VideoRoomPage />} />
             <Route path="/games" element={<GamesPage />} />
