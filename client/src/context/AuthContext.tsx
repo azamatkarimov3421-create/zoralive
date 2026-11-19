@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { api, getToken, setToken } from '../lib/api';
+import { api, getToken, setToken, getStoredUser, setStoredUser } from '../lib/api';
 import { resetSocket } from '../lib/socket';
 import { Lang, User } from '../types';
 import { translations } from '../i18n/translations';
@@ -26,8 +26,8 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() => getStoredUser());
+  const [loading, setLoading] = useState(false);
   const [lang, setLangState] = useState<Lang>(() => (localStorage.getItem('zoralive_lang') as Lang) || 'uz');
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -51,16 +51,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUser = useCallback(async () => {
     if (!getToken()) {
-      setUser(null);
-      setLoading(false);
       return;
     }
     try {
       const data = await api<{ user: User }>('/auth/me');
-      setUser(data.user);
+      if (data?.user) {
+        setUser(data.user);
+        setStoredUser(data.user);
+      }
     } catch {
-      setToken(null);
-      setUser(null);
+      // Keep existing stored user on minor errors
     } finally {
       setLoading(false);
     }
@@ -72,17 +72,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithToken = (token: string, u: User) => {
     setToken(token);
+    setStoredUser(u);
     resetSocket();
     setUser(u);
-    refreshUser();
   };
 
   const updateCoinsLocally = (coins: number) => {
-    setUser((prev) => (prev ? { ...prev, coins } : prev));
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, coins };
+      setStoredUser(updated);
+      return updated;
+    });
   };
 
   const logout = () => {
     setToken(null);
+    setStoredUser(null);
     resetSocket();
     setUser(null);
   };
