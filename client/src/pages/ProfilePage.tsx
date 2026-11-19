@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useWorld } from '../context/WorldContext';
+import { MILITARY_RANKS_10 } from '../lib/worldEcosystemData';
 import { Avatar } from '../components/Avatar';
 import { VipCrest } from '../components/LuxuryBadges';
 import { MythicVaultSection } from '../components/MythicVaultSection';
@@ -55,9 +57,11 @@ const STUDIO_AVATARS = [
 
 export const ProfilePage: React.FC = () => {
   const { user, refreshUser, lang, setLang, logout, toast } = useAuth();
+  const { state: worldState } = useWorld();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [tab, setTab] = useState<'wallet' | 'store' | 'clan' | 'tasks' | 'agency'>((searchParams.get('tab') as any) || 'wallet');
+  const [tab, setTab] = useState<'wallet' | 'store' | 'clan' | 'tasks' | 'agency'>((searchParams.get('tab') as any) || 'store');
+  const currentRank = MILITARY_RANKS_10[worldState.rankLevel - 1] || MILITARY_RANKS_10[0];
 
   const [walletData, setWalletData] = useState<any>(null);
   const [payProvider, setPayProvider] = useState('Click');
@@ -186,11 +190,30 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
 
+      {/* Military Rank (1-10) & 7-Role Governance Portal */}
+      <div className="rounded-3xl p-3 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white border border-amber-400/35 flex items-center justify-between gap-2 shadow-sm">
+        <div className="min-w-0">
+          <div className="text-[10px] font-black text-amber-300">
+            HARBIY UNVON ({currentRank.level}/10) • 💎 {worldState.worldGems} WORLD GEM
+          </div>
+          <div className="text-xs font-black truncate mt-0.5">
+            {currentRank.badge} {currentRank.titleUz} — Turon Imperiyasi
+          </div>
+        </div>
+        <button
+          onClick={() => navigate('/admin')}
+          className="px-3 py-2 rounded-full bg-amber-400 text-slate-950 text-[10.5px] font-black shrink-0 flex items-center gap-1 hover:bg-amber-300 transition"
+        >
+          <Shield className="w-3.5 h-3.5" />
+          <span>Owner & 7 Panel</span>
+        </button>
+      </div>
+
       {/* 5 Compact Tabs */}
       <div className="grid grid-cols-5 gap-1 bg-slate-100 p-1 rounded-full">
         {[
+          { id: 'store', label: 'Sovg‘a/VIP', icon: ShoppingBag },
           { id: 'wallet', label: 'Hamyon', icon: Wallet },
-          { id: 'store', label: 'Do‘kon', icon: ShoppingBag },
           { id: 'clan', label: 'Klan', icon: Users },
           { id: 'tasks', label: 'Vazifa', icon: CheckCircle2 },
           { id: 'agency', label: 'Agent', icon: Briefcase },

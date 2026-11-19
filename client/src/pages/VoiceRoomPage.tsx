@@ -29,6 +29,7 @@ import {
 import { api } from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { useAuth } from '../context/AuthContext';
+import { useWorld } from '../context/WorldContext';
 import { GiftEvent, RoomChatMessage, SeatState } from '../types';
 import { Avatar } from '../components/Avatar';
 import { GiftDrawer } from '../components/GiftDrawer';
@@ -60,6 +61,7 @@ export const VoiceRoomPage: React.FC = () => {
   const { id: roomId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, updateCoinsLocally, toast } = useAuth();
+  const { joinVoiceRoomMeta } = useWorld();
 
   const [roomMeta, setRoomMeta] = useState<any>(null);
   const [theme, setTheme] = useState('light');
@@ -185,6 +187,7 @@ export const VoiceRoomPage: React.FC = () => {
     api<{ room: any }>(`/rooms/${roomId}`)
       .then((res) => {
         setRoomMeta(res.room);
+        joinVoiceRoomMeta(roomId, res.room.title || 'Do‘stlar xonasi');
         setNotice(res.room.notice || '');
         setNoticeDraft(res.room.notice || '');
         setIsFollowing(Boolean(res.room.isFollowing));
@@ -475,6 +478,30 @@ export const VoiceRoomPage: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* Seamless Jump to World / Balkon Battle while keeping Voice Active (Section 8) */}
+      <div className="px-3 pb-1.5 flex items-center gap-1.5 relative z-20 overflow-x-auto no-scrollbar">
+        <button
+          onClick={() => navigate('/games')}
+          className="px-2.5 py-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-black shadow-xs shrink-0"
+        >
+          🔥 Balkon Jangi (Ovoz saqlanadi)
+        </button>
+        <button
+          onClick={() => navigate('/world')}
+          className="px-2.5 py-1 rounded-full bg-slate-900 text-white text-[10px] font-black shadow-xs shrink-0"
+        >
+          🗺️ World • 10 Qit’a
+        </button>
+        <button
+          onClick={() => navigate('/market')}
+          className={`px-2.5 py-1 rounded-full text-[10px] font-black shrink-0 border ${
+            isLight ? 'bg-white border-slate-200 text-slate-700' : 'glass-dark border-white/15 text-white'
+          }`}
+        >
+          🛍️ Market
+        </button>
+      </div>
 
       {/* Pinned Room Notice + Active Lucky Coin Box */}
       {(notice || luckyBox) && (

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coins, Users, Shield, RefreshCw, Swords, Search, X, ChevronRight, Crown } from 'lucide-react';
+import { Coins, Users, Shield, RefreshCw, Swords, Search, X, ChevronRight, Crown, Plus } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { RoomSummary } from '../types';
@@ -10,38 +10,38 @@ import { MYTHIC_DRAGONS } from '../lib/mythicCatalog';
 
 const HERO_BANNERS = [
   {
-    id: 'dragons',
-    sub: 'DRAGON',
-    badge: 'YANGI KOLLEKSIYA',
-    title: '10 ta Afsonaviy Ajdarho',
-    subtitle: 'Zepharion, Nythera, Valtor, Xaldris • Sovg‘a va Kirish',
-    image: '/assets/dragons/zepharion.jpg',
-    gradient: 'from-slate-950/90 via-slate-900/65 to-transparent',
-    pillCls: 'bg-amber-400 text-slate-950',
+    id: 'balcony-battle',
+    to: '/games',
+    badge: 'ODAMLARSIZ • BALKON ARENASI',
+    title: 'Ajdarho vs Ajdarho Jangi 🔥',
+    subtitle: '1-Tomon vs 2-Tomon • Balkonga chiqib olov purkash • Evolyutsiya',
+    image: '/assets/balcony-dragon-poster.jpg',
+    gradient: 'from-slate-950/90 via-slate-900/55 to-transparent',
+    pillCls: 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950',
   },
   {
-    id: 'vip',
-    sub: 'VIP',
-    badge: 'VIP 1 — VIP 12',
-    title: 'VIP Imtiyozlar & Ramkalar',
-    subtitle: '12 daraja, Ring Aura, Ilohiy Xona Kirishi va 12 ta SVGA ramka',
+    id: 'world-map',
+    to: '/world',
+    badge: '10 QIT’A • DAVLATLAR',
+    title: 'Umumiy Dunyo & Mayning',
+    subtitle: '10 ta Kristall koni, Davlatlar urushi, 20 ta Maxluqni do‘stlashtirish',
     image: '/assets/dragons/xaldris.jpg',
-    gradient: 'from-purple-950/92 via-indigo-950/70 to-transparent',
-    pillCls: 'bg-gradient-to-r from-amber-300 to-yellow-400 text-slate-950',
+    gradient: 'from-purple-950/92 via-indigo-950/65 to-transparent',
+    pillCls: 'bg-emerald-400 text-slate-950',
   },
   {
-    id: 'crystals',
-    sub: 'CRYSTAL',
-    badge: 'KRISTALL ENERGIYA',
-    title: 'Amethyst, Citrine, Pyrite',
-    subtitle: 'Kunlik energiya quvvati, PK kuchi va +30% omad bonusi',
-    image: '/assets/crystals/amethyst.webp',
-    gradient: 'from-indigo-950/90 via-purple-950/55 to-transparent',
-    pillCls: 'bg-emerald-400 text-slate-950',
+    id: 'dragons',
+    to: '/profile?tab=store&sub=DRAGON',
+    badge: '10 TA AJDARHO • VIP 1-12',
+    title: 'Sovg‘alar, Ramkalar & VIP',
+    subtitle: 'Zepharion, Nythera, Valtor, Thalassor • 12 ta SVGA ramka',
+    image: '/assets/dragons/zepharion.jpg',
+    gradient: 'from-slate-950/90 via-slate-900/60 to-transparent',
+    pillCls: 'bg-amber-400 text-slate-950',
   },
 ];
 
-export const HomePage: React.FC = () => {
+export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'ALL' | 'VOICE' | 'VIDEO' | 'GAME' | 'FOLLOWING'>('ALL');
@@ -95,10 +95,10 @@ export const HomePage: React.FC = () => {
   return (
     <div className="bg-white min-h-full pb-6">
       {/* Sticky Clean Ziigo Top Header */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-3.5 pt-2.5 pb-2 border-b border-slate-100 space-y-2">
+      <header className="sticky top-[46px] z-30 bg-white/95 backdrop-blur-md px-3.5 pt-2 pb-2 border-b border-slate-100 space-y-2">
         <div className="flex items-center justify-between gap-2">
           {/* Primary Ziigo-style Top Tabs */}
-          <div className="flex items-center gap-3.5 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
             {(
               [
                 ['ALL', 'Ommabop'],
@@ -114,7 +114,7 @@ export const HomePage: React.FC = () => {
                   key={key}
                   onClick={() => setFilter(key)}
                   className={`relative pb-1 whitespace-nowrap transition ${
-                    active ? 'text-[16px] font-black text-slate-950' : 'text-[13px] font-bold text-slate-400 hover:text-slate-700'
+                    active ? 'text-[15px] font-black text-slate-950' : 'text-[13px] font-bold text-slate-400 hover:text-slate-700'
                   }`}
                 >
                   {label}
@@ -127,7 +127,17 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Right Action Icons */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
+            {onGoLive && (
+              <button
+                onClick={onGoLive}
+                className="p-1.5 rounded-full btn-brand text-white shadow-xs"
+                title="Yangi Ovozli / Video xona ochish"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.8]" />
+              </button>
+            )}
+
             <button
               onClick={() => {
                 setSearchOpen((v) => !v);
@@ -136,27 +146,25 @@ export const HomePage: React.FC = () => {
                   loadRooms('');
                 }
               }}
-              className="p-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+              className="p-1.5 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
               aria-label="Qidirish"
             >
-              {searchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
+              {searchOpen ? <X className="w-3.5 h-3.5" /> : <Search className="w-3.5 h-3.5" />}
             </button>
 
-            {user?.role === 'ADMIN' && (
-              <button
-                onClick={() => navigate('/admin')}
-                className="p-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
-                title="Admin"
-              >
-                <Shield className="w-4 h-4" />
-              </button>
-            )}
+            <button
+              onClick={() => navigate('/admin')}
+              className="p-1.5 rounded-full bg-slate-900 text-amber-300 hover:bg-slate-800"
+              title="Owner & 7 Boshqaruv Paneli"
+            >
+              <Shield className="w-3.5 h-3.5" />
+            </button>
 
             <button
               onClick={() => navigate('/profile?tab=wallet')}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] font-black"
+              className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-[10.5px] font-black"
             >
-              <Coins className="w-3.5 h-3.5 text-amber-500" />
+              <Coins className="w-3 h-3 text-amber-500" />
               <span>{(user?.coins || 0).toLocaleString()}</span>
             </button>
           </div>
@@ -185,8 +193,8 @@ export const HomePage: React.FC = () => {
         {!searchOpen && (
           <div className="space-y-2.5">
             <button
-              onClick={() => navigate(`/profile?tab=store&sub=${activeBanner.sub}`)}
-              className="relative w-full h-[108px] rounded-2xl overflow-hidden text-left shadow-sm border border-slate-200/60 block group"
+              onClick={() => navigate(activeBanner.to)}
+              className="relative w-full h-[112px] rounded-2xl overflow-hidden text-left shadow-sm border border-slate-200/60 block group"
             >
               <img
                 src={activeBanner.image}
@@ -196,7 +204,7 @@ export const HomePage: React.FC = () => {
               />
               <div className={`absolute inset-0 bg-gradient-to-r ${activeBanner.gradient}`} />
 
-              <div className="relative z-10 h-full px-4 py-3 flex flex-col justify-between max-w-[76%]">
+              <div className="relative z-10 h-full px-4 py-3 flex flex-col justify-between max-w-[82%]">
                 <span className={`w-fit px-2 py-0.5 rounded-full text-[9px] font-black tracking-wide ${activeBanner.pillCls}`}>
                   {activeBanner.badge}
                 </span>
@@ -204,7 +212,7 @@ export const HomePage: React.FC = () => {
                   <div className="text-[15px] font-black text-white leading-tight drop-shadow-xs">
                     {activeBanner.title}
                   </div>
-                  <div className="text-[11px] font-medium text-white/85 truncate mt-0.5">
+                  <div className="text-[11px] font-medium text-white/90 truncate mt-0.5">
                     {activeBanner.subtitle}
                   </div>
                 </div>
@@ -227,17 +235,17 @@ export const HomePage: React.FC = () => {
               </div>
             </button>
 
-            {/* 4 Clean Compact Shortcut Pills (Ziigo Sub-menu Strip) */}
+            {/* 4 Clean Compact Shortcut Pills */}
             <div className="grid grid-cols-4 gap-2">
               {[
-                { sub: 'VIP', icon: '👑', label: 'VIP 1-12' },
-                { sub: 'DRAGON', icon: '🐉', label: 'Ajdarho' },
-                { sub: 'FRAME', icon: '🖼️', label: 'Ramkalar' },
-                { sub: 'CRYSTAL', icon: '💎', label: 'Kristall' },
+                { to: '/games', icon: '🔥', label: 'Balkon Jangi' },
+                { to: '/world', icon: '🗺️', label: '10 Qit’a' },
+                { to: '/market', icon: '🛍️', label: 'Market' },
+                { to: '/admin', icon: '👑', label: '7 Panel' },
               ].map((item) => (
                 <button
-                  key={item.sub}
-                  onClick={() => navigate(`/profile?tab=store&sub=${item.sub}`)}
+                  key={item.to}
+                  onClick={() => navigate(item.to)}
                   className="flex flex-col items-center justify-center gap-1 py-2 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-slate-100 active:scale-95 transition"
                 >
                   <span className="text-lg leading-none">{item.icon}</span>
