@@ -217,7 +217,7 @@ export const WorldProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return DEFAULT_STATE;
   });
 
-  const [voiceConnected, setVoiceConnected] = useState(true);
+  const [voiceConnected, setVoiceConnected] = useState(false);
   const [micEnabled, setMicEnabled] = useState(true);
   const [activeVoiceRoomId, setActiveVoiceRoomId] = useState('room_voice_1');
   const [activeVoiceRoomTitle, setActiveVoiceRoomTitle] = useState('Do‘stlar xonasi');

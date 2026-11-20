@@ -7,9 +7,11 @@ import { AuthPage } from './pages/AuthPage';
 import { HomePage } from './pages/HomePage';
 import { VoiceRoomPage } from './pages/VoiceRoomPage';
 import { VideoRoomPage } from './pages/VideoRoomPage';
+import { GamesPage } from './pages/GamesPage';
 import { DragonArenaPage } from './pages/DragonArenaPage';
 import { WorldMapPage } from './pages/WorldMapPage';
 import { MarketPage } from './pages/MarketPage';
+import { ShopPage } from './pages/ShopPage';
 import { SocialPage } from './pages/SocialPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { GovernanceSuitePage } from './pages/GovernanceSuitePage';
@@ -79,10 +81,11 @@ const AppShell: React.FC = () => {
             <Route path="/login" element={<AuthPage />} />
             <Route path="/voice/:id" element={<VoiceRoomPage />} />
             <Route path="/video/:id" element={<VideoRoomPage />} />
-            <Route path="/world" element={<WorldMapPage />} />
-            <Route path="/games" element={<DragonArenaPage />} />
+            <Route path="/games" element={<GamesPage />} />
             <Route path="/battle" element={<DragonArenaPage />} />
+            <Route path="/world" element={<WorldMapPage />} />
             <Route path="/market" element={<MarketPage />} />
+            <Route path="/shop" element={<ShopPage />} />
             <Route path="/social" element={<SocialPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

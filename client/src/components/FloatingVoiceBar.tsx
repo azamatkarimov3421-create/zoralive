@@ -28,8 +28,9 @@ export const FloatingVoiceBar: React.FC = () => {
   const location = useLocation();
   const [expanded, setExpanded] = useState(false);
 
-  // Don't double-show inside the actual Voice/Video room or Login screen
+  // Don't show if not connected to an active voice room, or inside actual room / login screen
   if (
+    !voiceConnected ||
     location.pathname.startsWith('/voice/') ||
     location.pathname.startsWith('/video/') ||
     location.pathname === '/login'

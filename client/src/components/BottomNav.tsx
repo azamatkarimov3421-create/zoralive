@@ -1,17 +1,19 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MessageCircle, Globe, Swords, Store, Gift } from 'lucide-react';
+import { Compass, Gamepad2, Plus, ShoppingBag, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
-export const BottomNav: React.FC<{ onGoLive?: () => void }> = () => {
+export const BottomNav: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useAuth();
 
   const items = [
-    { path: '/', label: 'Chat', icon: MessageCircle },
-    { path: '/world', label: 'World', icon: Globe },
-    { path: '/games', label: 'Jang', icon: Swords, center: true },
-    { path: '/market', label: 'Market', icon: Store },
-    { path: '/profile', label: 'Sovg‘a', icon: Gift },
+    { path: '/', label: t('navLive'), icon: Compass },
+    { path: '/games', label: t('navGames'), icon: Gamepad2 },
+    { path: '__LIVE__', label: t('goLive'), icon: Plus, center: true },
+    { path: '/shop', label: t('navShop'), icon: ShoppingBag },
+    { path: '/profile', label: t('navProfile'), icon: User },
   ];
 
   return (
@@ -23,21 +25,15 @@ export const BottomNav: React.FC<{ onGoLive?: () => void }> = () => {
         if (item.center) {
           return (
             <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
+              key="go-live"
+              onClick={onGoLive}
               aria-label={item.label}
               className="flex flex-col items-center -mt-4 group"
             >
-              <span
-                className={`w-12 h-12 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg transition active:scale-95 ${
-                  active
-                    ? 'bg-gradient-to-tr from-amber-500 via-red-500 to-[#ff3366] text-white'
-                    : 'btn-brand text-white'
-                }`}
-              >
-                <Icon className="w-5 h-5 stroke-[2.4]" />
+              <span className="w-12 h-12 rounded-full btn-brand flex items-center justify-center ring-4 ring-white shadow-lg active:scale-95 transition">
+                <Plus className="w-6 h-6 text-white stroke-[2.6]" />
               </span>
-              <span className={`text-[10px] font-black mt-0.5 ${active ? 'text-[#ff3366]' : 'text-slate-600'}`}>
+              <span className="text-[10px] font-black mt-0.5 text-slate-600">
                 {item.label}
               </span>
             </button>

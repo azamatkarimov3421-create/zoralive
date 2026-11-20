@@ -40,7 +40,25 @@ function getOwnedCodes(): string[] {
   } catch {
     // ignore
   }
-  return ['frame-gold-1', 'frame-bronze-3', 'ride-dragon-zepharion', 'ride-lambo', 'bubble-gold', 'bubble-neon'];
+  return [
+    'frame-obsidian-gold',
+    'frame-crystal-violet',
+    'frame-palace-gold',
+    'frame-bronze-3',
+    'frame-frost-2',
+    'frame-inferno-1',
+    'frame-golden-wings',
+    'frame-emerald-crown',
+    'frame-amethyst-spark',
+    'frame-rose-3',
+    'frame-violet-2',
+    'frame-gold-1',
+    'ride-dragon-zepharion',
+    'ride-dragon-xaldris',
+    'ride-lambo',
+    'bubble-gold',
+    'bubble-cosmic',
+  ];
 }
 
 function addOwnedCode(code: string): void {

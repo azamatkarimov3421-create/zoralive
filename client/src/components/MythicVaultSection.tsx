@@ -81,11 +81,11 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
   };
 
   const tabs: Array<[typeof filter, string]> = [
-    ['VIP', '👑 VIP 1-12'],
     ['DRAGON', '🐉 Ajdarho (10)'],
-    ['FRAME', '🖼️ Ramka (12)'],
+    ['VIP', '👑 VIP 1-12'],
+    ['FRAME', '🖼️ Siken / Ramka (12)'],
     ['CRYSTAL', '💎 Kristall (4)'],
-    ['RIDE', '🏎️ Kirish'],
+    ['RIDE', '🏎️ Boshqa Ulovlar'],
     ['BUBBLE', '💬 Chat'],
   ];
 
@@ -312,7 +312,7 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
                   {fr.badge}
                 </span>
 
-                <div className="py-2">
+                <div className="py-3.5 px-2 flex items-center justify-center min-h-[92px]">
                   <Avatar src={user.avatar} name={user.displayName} size="lg" frame={fr.code} />
                 </div>
 

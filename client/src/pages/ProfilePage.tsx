@@ -22,6 +22,7 @@ import { MILITARY_RANKS_10 } from '../lib/worldEcosystemData';
 import { Avatar } from '../components/Avatar';
 import { VipCrest } from '../components/LuxuryBadges';
 import { MythicVaultSection } from '../components/MythicVaultSection';
+import { ProfileDragonEntrance } from '../components/ProfileDragonEntrance';
 import { Lang } from '../types';
 
 function resizeAvatar(file: File): Promise<string> {
@@ -134,59 +135,64 @@ export const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="bg-white min-h-full px-3.5 pt-3 pb-8 space-y-4">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
-        <div className="flex items-center gap-3">
-          <Avatar src={user.avatar} name={user.displayName} size="lg" frame={user.activeFrame} vipLevel={user.vipLevel} />
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h2 className="text-base font-black text-slate-900">{user.displayName}</h2>
-              <button onClick={openEditor} className="p-1 rounded-full bg-slate-100 text-slate-600" title="Tahrirlash">
-                <Pencil className="w-3 h-3" />
-              </button>
-            </div>
+    <div className="bg-white min-h-full px-3.5 pt-2 pb-8 space-y-3">
+      {/* Top Utility Bar */}
+      <div className="flex items-center justify-between pb-1">
+        <div className="flex gap-0.5 bg-slate-100 rounded-full p-0.5">
+          {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
             <button
-              onClick={() => {
-                navigator.clipboard?.writeText(String(user.uid));
-                toast(`ID: ${user.uid}`, 'info');
-              }}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-700 mt-0.5"
+              key={l}
+              onClick={() => setLang(l)}
+              className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                lang === l ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
+              }`}
             >
-              <span>ID {user.uid}</span>
-              <Copy className="w-3 h-3" />
+              {l}
             </button>
-            <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500">
-              <span><b className="text-slate-900">{user.followersCount ?? 0}</b> obunachi</span>
-              <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
-            </div>
-          </div>
+          ))}
+        </div>
+        <div className="flex gap-1.5">
+          {user.role === 'ADMIN' && (
+            <button onClick={() => navigate('/admin')} className="p-2 rounded-full bg-slate-900 text-white" title="Admin">
+              <Shield className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button onClick={logout} className="p-2 rounded-full bg-slate-100 text-slate-600 hover:text-rose-600" title="Chiqish">
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Centered Hero Profile Section (Lowered with plenty of room for flying & perched dragon) */}
+      <div className="flex flex-col items-center text-center pt-8 pb-3 border-b border-slate-100 relative">
+        <div className="relative p-2 flex items-center justify-center">
+          {/* Flying Dragon Entrance & Perched Companion with 12 VIP tier adaptation */}
+          <ProfileDragonEntrance vipLevel={user.vipLevel} activeFrame={user.activeFrame} />
+          <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
         </div>
 
-        <div className="flex flex-col items-end gap-1.5">
-          <div className="flex gap-0.5 bg-slate-100 rounded-full p-0.5">
-            {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
-              <button
-                key={l}
-                onClick={() => setLang(l)}
-                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                  lang === l ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
-                }`}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-1.5">
-            {user.role === 'ADMIN' && (
-              <button onClick={() => navigate('/admin')} className="p-2 rounded-full bg-slate-900 text-white" title="Admin">
-                <Shield className="w-3.5 h-3.5" />
-              </button>
-            )}
-            <button onClick={logout} className="p-2 rounded-full bg-slate-100 text-slate-600 hover:text-rose-600" title="Chiqish">
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
-          </div>
+        <div className="mt-2.5 flex items-center justify-center gap-2">
+          <h2 className="text-lg font-black text-slate-900 tracking-tight">{user.displayName}</h2>
+          <button onClick={openEditor} className="p-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="Tahrirlash">
+            <Pencil className="w-3 h-3" />
+          </button>
+        </div>
+
+        <button
+          onClick={() => {
+            navigator.clipboard?.writeText(String(user.uid));
+            toast(`ID: ${user.uid}`, 'info');
+          }}
+          className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mt-1 font-semibold group"
+        >
+          <span className="px-2 py-0.5 rounded-md bg-slate-100 group-hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition">ID {user.uid}</span>
+          <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
+        </button>
+
+        <div className="flex items-center justify-center gap-4 mt-2 text-xs text-slate-500 font-medium">
+          <span><b className="text-slate-900">{user.followersCount ?? 0}</b> obunachi</span>
+          <span className="w-1 h-1 rounded-full bg-slate-300" />
+          <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
         </div>
       </div>
 
