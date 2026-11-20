@@ -104,7 +104,7 @@ export const ProfilePage: React.FC = () => {
   const [dragonConfig, setDragonConfig] = useState<DragonPositionConfig>(() => {
     try {
       const saved = localStorage.getItem('zoralive_dragon_config');
-      if (saved) return JSON.parse(saved);
+      if (saved) return { ...DEFAULT_DRAGON_CONFIG, ...JSON.parse(saved) };
     } catch {}
     return DEFAULT_DRAGON_CONFIG;
   });
@@ -256,11 +256,11 @@ export const ProfilePage: React.FC = () => {
 
         {/* Live Interactive Calibrator Tool */}
         {hasDragon && dragonTunerOpen && (
-          <div className="w-full max-w-sm mt-3 p-3.5 rounded-2xl bg-amber-50/95 border-2 border-amber-400 shadow-xl text-left space-y-3">
+          <div className="w-full max-w-sm mt-3 p-3.5 rounded-2xl bg-amber-50/95 border-2 border-amber-400 shadow-xl text-left space-y-3.5 max-h-[75vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-1.5 border-b border-amber-200">
               <div className="flex items-center gap-1.5 font-black text-xs text-slate-900">
                 <Sliders className="w-3.5 h-3.5 text-amber-600" />
-                <span>Ajdarni Katta-Kichiklashtirish va Joylashuv</span>
+                <span>Ajdarni Katta-Kichiklashtirish & O‘lchamlari</span>
               </div>
               <button
                 type="button"
@@ -271,17 +271,17 @@ export const ProfilePage: React.FC = () => {
               </button>
             </div>
 
-            {/* 1. Scale Slider (Kattaligi) */}
+            {/* 1. Umumiy Kattalik (Masshtab) */}
             <div className="space-y-1">
               <div className="flex justify-between text-[11px] font-bold text-slate-700">
-                <span>🔍 Kattalik (Masshtab):</span>
-                <span className="text-amber-700 font-black">{Math.round(dragonConfig.scale * 100)}%</span>
+                <span>🔍 Umumiy Kattalik:</span>
+                <span className="text-amber-700 font-black">{Math.round((dragonConfig.scale || 1.0) * 100)}%</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() =>
-                    setDragonConfig((p) => ({ ...p, scale: Math.max(0.4, Number((p.scale - 0.05).toFixed(2))) }))
+                    setDragonConfig((p) => ({ ...p, scale: Math.max(0.4, Number(((p.scale || 1.0) - 0.05).toFixed(2))) }))
                   }
                   className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
                   title="Kichiklashtirish"
@@ -291,16 +291,16 @@ export const ProfilePage: React.FC = () => {
                 <input
                   type="range"
                   min="0.4"
-                  max="2.0"
+                  max="2.5"
                   step="0.02"
-                  value={dragonConfig.scale}
+                  value={dragonConfig.scale || 1.0}
                   onChange={(e) => setDragonConfig((p) => ({ ...p, scale: Number(e.target.value) }))}
                   className="w-full accent-amber-500 cursor-pointer"
                 />
                 <button
                   type="button"
                   onClick={() =>
-                    setDragonConfig((p) => ({ ...p, scale: Math.min(2.5, Number((p.scale + 0.05).toFixed(2))) }))
+                    setDragonConfig((p) => ({ ...p, scale: Math.min(2.5, Number(((p.scale || 1.0) + 0.05).toFixed(2))) }))
                   }
                   className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
                   title="Kattalashtirish"
@@ -310,20 +310,176 @@ export const ProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {/* 2. Offset Y (Balandlik: Tepaga / Pastga) */}
+            {/* 2. Eniga cho‘zish / siqish (Scale X) */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] font-bold text-slate-700">
+                <span>↔️ Eniga cho‘zish (Tomonlar):</span>
+                <span className="text-amber-700 font-black">{Math.round((dragonConfig.scaleX || 1.0) * 100)}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDragonConfig((p) => ({ ...p, scaleX: Math.max(0.4, Number(((p.scaleX || 1.0) - 0.05).toFixed(2))) }))
+                  }
+                  className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="Enini siqish"
+                >
+                  -
+                </button>
+                <input
+                  type="range"
+                  min="0.4"
+                  max="2.5"
+                  step="0.02"
+                  value={dragonConfig.scaleX || 1.0}
+                  onChange={(e) => setDragonConfig((p) => ({ ...p, scaleX: Number(e.target.value) }))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDragonConfig((p) => ({ ...p, scaleX: Math.min(2.5, Number(((p.scaleX || 1.0) + 0.05).toFixed(2))) }))
+                  }
+                  className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="Enini cho‘zish"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* 3. Bo‘yiga cho‘zish / siqish (Scale Y) */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] font-bold text-slate-700">
+                <span>↕️ Bo‘yiga cho‘zish (Baland-past):</span>
+                <span className="text-amber-700 font-black">{Math.round((dragonConfig.scaleY || 1.0) * 100)}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDragonConfig((p) => ({ ...p, scaleY: Math.max(0.4, Number(((p.scaleY || 1.0) - 0.05).toFixed(2))) }))
+                  }
+                  className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="Bo‘yini siqish"
+                >
+                  -
+                </button>
+                <input
+                  type="range"
+                  min="0.4"
+                  max="2.5"
+                  step="0.02"
+                  value={dragonConfig.scaleY || 1.0}
+                  onChange={(e) => setDragonConfig((p) => ({ ...p, scaleY: Number(e.target.value) }))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDragonConfig((p) => ({ ...p, scaleY: Math.min(2.5, Number(((p.scaleY || 1.0) + 0.05).toFixed(2))) }))
+                  }
+                  className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="Bo‘yini cho‘zish"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* 4. Video Oq Foni Kengligi (Box Width) */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] font-bold text-slate-700">
+                <span>📦 Video Foni Eni (Kengligi):</span>
+                <span className="text-amber-700 font-black">{dragonConfig.boxWidth || 396} px</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDragonConfig((p) => ({ ...p, boxWidth: Math.max(180, (p.boxWidth || 396) - 10) }))
+                  }
+                  className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="-10px"
+                >
+                  -10
+                </button>
+                <input
+                  type="range"
+                  min="180"
+                  max="600"
+                  step="4"
+                  value={dragonConfig.boxWidth || 396}
+                  onChange={(e) => setDragonConfig((p) => ({ ...p, boxWidth: Number(e.target.value) }))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDragonConfig((p) => ({ ...p, boxWidth: Math.min(650, (p.boxWidth || 396) + 10) }))
+                  }
+                  className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="+10px"
+                >
+                  +10
+                </button>
+              </div>
+            </div>
+
+            {/* 5. Video Oq Foni Bo‘yi (Box Height) */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] font-bold text-slate-700">
+                <span>📦 Video Foni Bo‘yi (Balandligi):</span>
+                <span className="text-amber-700 font-black">{dragonConfig.boxHeight || 196} px</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDragonConfig((p) => ({ ...p, boxHeight: Math.max(90, (p.boxHeight || 196) - 10) }))
+                  }
+                  className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="-10px"
+                >
+                  -10
+                </button>
+                <input
+                  type="range"
+                  min="90"
+                  max="450"
+                  step="4"
+                  value={dragonConfig.boxHeight || 196}
+                  onChange={(e) => setDragonConfig((p) => ({ ...p, boxHeight: Number(e.target.value) }))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDragonConfig((p) => ({ ...p, boxHeight: Math.min(500, (p.boxHeight || 196) + 10) }))
+                  }
+                  className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="+10px"
+                >
+                  +10
+                </button>
+              </div>
+            </div>
+
+            {/* 6. Offset Y (Balandlik: Tepaga / Pastga) */}
             <div className="space-y-1">
               <div className="flex justify-between text-[11px] font-bold text-slate-700">
                 <span>↕️ Balandlik (Pastga / Tepaga):</span>
                 <span className="text-amber-700 font-black">
-                  {dragonConfig.offsetY > 0
+                  {(dragonConfig.offsetY || 0) > 0
                     ? `+${dragonConfig.offsetY}px (Pastga)`
-                    : `${dragonConfig.offsetY}px (Tepaga)`}
+                    : `${dragonConfig.offsetY || 0}px (Tepaga)`}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setDragonConfig((p) => ({ ...p, offsetY: p.offsetY - 3 }))}
+                  onClick={() => setDragonConfig((p) => ({ ...p, offsetY: (p.offsetY || 0) - 3 }))}
                   className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
                   title="Tepaga siljitish"
                 >
@@ -331,16 +487,16 @@ export const ProfilePage: React.FC = () => {
                 </button>
                 <input
                   type="range"
-                  min="-120"
-                  max="120"
+                  min="-150"
+                  max="150"
                   step="2"
-                  value={dragonConfig.offsetY}
+                  value={dragonConfig.offsetY || 0}
                   onChange={(e) => setDragonConfig((p) => ({ ...p, offsetY: Number(e.target.value) }))}
                   className="w-full accent-amber-500 cursor-pointer"
                 />
                 <button
                   type="button"
-                  onClick={() => setDragonConfig((p) => ({ ...p, offsetY: p.offsetY + 3 }))}
+                  onClick={() => setDragonConfig((p) => ({ ...p, offsetY: (p.offsetY || 0) + 3 }))}
                   className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
                   title="Pastga siljitish"
                 >
@@ -349,20 +505,20 @@ export const ProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {/* 3. Offset X (Chapga / O'ngga) */}
+            {/* 7. Offset X (Chapga / O'ngga) */}
             <div className="space-y-1">
               <div className="flex justify-between text-[11px] font-bold text-slate-700">
                 <span>↔️ Yon tomon (Chapga / O‘ngga):</span>
                 <span className="text-amber-700 font-black">
-                  {dragonConfig.offsetX > 0
+                  {(dragonConfig.offsetX || 0) > 0
                     ? `+${dragonConfig.offsetX}px (O'ngga)`
-                    : `${dragonConfig.offsetX}px (Chapga)`}
+                    : `${dragonConfig.offsetX || 0}px (Chapga)`}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setDragonConfig((p) => ({ ...p, offsetX: p.offsetX - 3 }))}
+                  onClick={() => setDragonConfig((p) => ({ ...p, offsetX: (p.offsetX || 0) - 3 }))}
                   className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
                   title="Chapga siljitish"
                 >
@@ -370,16 +526,16 @@ export const ProfilePage: React.FC = () => {
                 </button>
                 <input
                   type="range"
-                  min="-120"
-                  max="120"
+                  min="-150"
+                  max="150"
                   step="2"
-                  value={dragonConfig.offsetX}
+                  value={dragonConfig.offsetX || 0}
                   onChange={(e) => setDragonConfig((p) => ({ ...p, offsetX: Number(e.target.value) }))}
                   className="w-full accent-amber-500 cursor-pointer"
                 />
                 <button
                   type="button"
-                  onClick={() => setDragonConfig((p) => ({ ...p, offsetX: p.offsetX + 3 }))}
+                  onClick={() => setDragonConfig((p) => ({ ...p, offsetX: (p.offsetX || 0) + 3 }))}
                   className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
                   title="O'ngga siljitish"
                 >

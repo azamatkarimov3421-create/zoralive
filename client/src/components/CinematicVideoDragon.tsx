@@ -2,12 +2,20 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 
 export interface DragonPositionConfig {
   scale: number;
+  scaleX: number;
+  scaleY: number;
+  boxWidth: number;
+  boxHeight: number;
   offsetX: number;
   offsetY: number;
 }
 
 export const DEFAULT_DRAGON_CONFIG: DragonPositionConfig = {
   scale: 1.0,
+  scaleX: 1.0,
+  scaleY: 1.0,
+  boxWidth: 396,
+  boxHeight: 196,
   offsetX: 0,
   offsetY: 0,
 };
@@ -34,20 +42,27 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({
   frameTopPx = 50,
   config,
 }) => {
-  const contentW = Math.min(DRAGON_W, DRAGON_H * (16 / 9));
-  const contentH = contentW / (16 / 9);
-  const feetXPx = (DRAGON_W - contentW) / 2 + FEET_X_RATIO * contentW;
-  const feetYPx = (DRAGON_H - contentH) / 2 + FEET_Y_RATIO * contentH;
-
   const [localConfig, setLocalConfig] = useState<DragonPositionConfig>(() => {
     try {
       const saved = localStorage.getItem('zoralive_dragon_config');
-      if (saved) return JSON.parse(saved);
+      if (saved) return { ...DEFAULT_DRAGON_CONFIG, ...JSON.parse(saved) };
     } catch {}
     return DEFAULT_DRAGON_CONFIG;
   });
 
-  const activeConfig = config || localConfig;
+  const activeConfig = { ...DEFAULT_DRAGON_CONFIG, ...(config || localConfig) };
+
+  const currentBoxW = activeConfig.boxWidth || DRAGON_W;
+  const currentBoxH = activeConfig.boxHeight || DRAGON_H;
+
+  const contentW = Math.min(currentBoxW, currentBoxH * (16 / 9));
+  const contentH = contentW / (16 / 9);
+  const feetXPx = (currentBoxW - contentW) / 2 + FEET_X_RATIO * contentW;
+  const feetYPx = (currentBoxH - contentH) / 2 + FEET_Y_RATIO * contentH;
+
+  const finalScale = activeConfig.scale || 1.0;
+  const finalScaleX = (activeConfig.scaleX || 1.0) * finalScale;
+  const finalScaleY = (activeConfig.scaleY || 1.0) * finalScale;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const isReplayingRef = useRef(false);
