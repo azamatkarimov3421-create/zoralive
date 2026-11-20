@@ -22,7 +22,6 @@ import { MILITARY_RANKS_10 } from '../lib/worldEcosystemData';
 import { Avatar } from '../components/Avatar';
 import { VipCrest } from '../components/LuxuryBadges';
 import { MythicVaultSection } from '../components/MythicVaultSection';
-import { ProfileDragonEntrance } from '../components/ProfileDragonEntrance';
 import { Lang } from '../types';
 
 function resizeAvatar(file: File): Promise<string> {
@@ -166,8 +165,6 @@ export const ProfilePage: React.FC = () => {
       {/* Centered Hero Profile Section (Lowered with plenty of room for flying & perched dragon) */}
       <div className="flex flex-col items-center text-center pt-8 pb-3 border-b border-slate-100 relative">
         <div className="relative p-2 flex items-center justify-center">
-          {/* Flying Dragon Entrance & Perched Companion with 12 VIP tier adaptation */}
-          <ProfileDragonEntrance vipLevel={user.vipLevel} activeFrame={user.activeFrame} />
           <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
         </div>
 
