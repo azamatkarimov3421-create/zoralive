@@ -48,6 +48,10 @@ desktop.ini
 *.ntvs*
 *.njsproj
 *.sln
+
+# Android build outputs & local scratch
+client/android/
+scratch_*
 *.sw?
 
 *.bak

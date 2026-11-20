@@ -384,7 +384,8 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
     const code = found?.code || body.code;
 
     if (currentUser.coins < price) {
-      throw new Error('Tangalar yetarli emas — Hamyon bo‘limidan to‘ldiring');
+      // Test rejimi: Foydalanuvchilar barcha narsani bemalol sinab ko'rishlari uchun tangalar avtomatik to'ldiriladi
+      currentUser.coins += price + 50000;
     }
 
     currentUser.coins -= price;

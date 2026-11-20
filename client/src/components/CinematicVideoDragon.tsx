@@ -112,6 +112,7 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ clas
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isReplayingRef = useRef(false);
+  const startLoopRef = useRef<() => void>(() => {});
   const [isEnded, setIsEnded] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
@@ -122,14 +123,17 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ clas
     isReplayingRef.current = true;
     setIsEnded(false);
     video.currentTime = 0;
-    video.play().then(() => {
-      // HTML5 video seeking is asynchronous. Keep flag true until video is safely in playback from t=0
-      setTimeout(() => {
+    video
+      .play()
+      .then(() => {
+        startLoopRef.current();
+        setTimeout(() => {
+          isReplayingRef.current = false;
+        }, 400);
+      })
+      .catch(() => {
         isReplayingRef.current = false;
-      }, 400);
-    }).catch(() => {
-      isReplayingRef.current = false;
-    });
+      });
   }, []);
 
   useEffect(() => {
@@ -138,9 +142,12 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ clas
     if (!canvas || !video) return;
 
     let destroyed = false;
-    let animId: number;
+    let rfcId: number | null = null;
+    let animId: number | null = null;
+    let loopRunning = false;
+    let lastDrawnTime = -1;
 
-    const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
+    const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false, powerPreference: 'high-performance' });
     if (!gl) {
       console.error('WebGL not supported for transparent video');
       return;
@@ -208,26 +215,74 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ clas
 
     gl.viewport(0, 0, canvas.width, canvas.height);
 
-    const render = () => {
-      if (destroyed) return;
+    const stopLoop = () => {
+      loopRunning = false;
+      if (rfcId !== null && 'cancelVideoFrameCallback' in video) {
+        (video as any).cancelVideoFrameCallback(rfcId);
+        rfcId = null;
+      }
+      if (animId !== null) {
+        cancelAnimationFrame(animId);
+        animId = null;
+      }
+    };
+
+    const drawCurrentFrame = () => {
+      if (destroyed || !gl || !program || !texture) return;
+      if (video.readyState < video.HAVE_CURRENT_DATA) return;
+
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    };
+
+    const renderLoop = () => {
+      if (destroyed || !loopRunning) return;
 
       if (video.readyState >= video.HAVE_CURRENT_DATA) {
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        // Only re-upload texture if video time has changed
+        if (video.currentTime !== lastDrawnTime) {
+          drawCurrentFrame();
+          lastDrawnTime = video.currentTime;
+        }
       }
 
       // Calm perched cutoff: at the end of the video sequence (t >= 9.5s), dragon is stably perched
       if (!isReplayingRef.current && video.currentTime >= 9.5 && !video.paused && !video.ended) {
         video.pause();
         setIsEnded(true);
+        drawCurrentFrame(); // ensure final perched frame is drawn
         if (onEnded) onEnded();
+        stopLoop(); // Complete shutdown of render loop: 0% CPU & 0% GPU while perched!
+        return;
       }
 
-      animId = requestAnimationFrame(render);
+      if (video.paused || video.ended) {
+        stopLoop();
+        return;
+      }
+
+      // Use requestVideoFrameCallback for hardware-synchronized 24fps decode (no 60fps/144fps redundant overhead)
+      if ('requestVideoFrameCallback' in video) {
+        rfcId = (video as any).requestVideoFrameCallback(renderLoop);
+      } else {
+        animId = requestAnimationFrame(renderLoop);
+      }
     };
+
+    const startLoop = () => {
+      if (destroyed || loopRunning) return;
+      loopRunning = true;
+      if ('requestVideoFrameCallback' in video) {
+        rfcId = (video as any).requestVideoFrameCallback(renderLoop);
+      } else {
+        animId = requestAnimationFrame(renderLoop);
+      }
+    };
+
+    startLoopRef.current = startLoop;
 
     // Auto-play video muted, DO NOT LOOP (stop at end on perched frame)
     video.muted = true;
@@ -236,29 +291,33 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ clas
 
     const handleVideoEnded = () => {
       setIsEnded(true);
+      drawCurrentFrame();
+      stopLoop();
       if (onEnded) onEnded();
     };
 
     video.addEventListener('ended', handleVideoEnded);
+    video.addEventListener('play', startLoop);
 
     const playPromise = video.play();
     if (playPromise) {
       playPromise
         .then(() => {
           if (!destroyed) {
-            render();
+            startLoop();
           }
         })
         .catch((err) => {
           console.warn('Video auto-play prevented:', err);
-          render();
+          startLoop();
         });
     }
 
     return () => {
       destroyed = true;
-      cancelAnimationFrame(animId);
+      stopLoop();
       video.removeEventListener('ended', handleVideoEnded);
+      video.removeEventListener('play', startLoop);
       video.pause();
       if (program) gl.deleteProgram(program);
       if (vs) gl.deleteShader(vs);
@@ -277,7 +336,8 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ clas
         left: '50%',
         top: '50%', // = avatar centre
         // Claws land exactly on the top crest of whatever VIP frame is active (never on the face)
-        transform: `translate(${-feetXPx}px, ${-(feetYPx + frameTopPx - CLAW_GRIP_PX)}px)`,
+        transform: `translate3d(${-feetXPx}px, ${-(feetYPx + frameTopPx - CLAW_GRIP_PX)}px, 0)`,
+        willChange: 'transform',
       }}
       title="Ajdarchani qayta uchirish uchun bosing!"
       aria-label="Kinematik Ajdarho (uchish, qo'nish va olov)"
@@ -295,18 +355,10 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ clas
       {/* Transparent WebGL Canvas with Realtime White-Removal Chroma Shader */}
       <canvas
         ref={canvasRef}
-        width={960}
-        height={540}
-        className="w-full h-full object-contain filter drop-shadow-[0_6px_20px_rgba(234,179,8,0.25)]"
+        width={640}
+        height={360}
+        className="w-full h-full object-contain"
       />
-
-      {/* Subtle indicator when perched & paused */}
-      {isEnded && (
-        <div className="pointer-events-none absolute top-[84px] left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-slate-900/80 text-amber-300 text-[10px] font-bold border border-amber-400/40 shadow-xs flex items-center gap-1 opacity-90 transition-opacity">
-          <span>🔥</span>
-          <span>Bosing</span>
-        </div>
-      )}
     </div>
   );
 };
