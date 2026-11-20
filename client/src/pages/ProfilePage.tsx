@@ -138,168 +138,72 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="bg-white min-h-full px-3.5 pt-2 pb-8 space-y-3">
-      {/* Centered Hero Profile Section: Luxury Mythic Dragon Sanctuary */}
-      {hasDragon ? (
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#050714] via-[#0b102b] to-[#160c2d] text-white border border-amber-400/35 shadow-xl shadow-amber-950/20 p-3 pt-3 pb-5 transform-gpu">
-          {/* Celestial Cosmic Aura & Golden Dragon Nebula (GPU accelerated) */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden transform-gpu">
-            {/* Golden Dragon Aurora behind flight & perched dragon */}
-            <div className="absolute top-[38%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-72 bg-gradient-to-b from-amber-400/25 via-orange-500/15 to-transparent rounded-full blur-3xl will-change-transform" />
-            {/* Royal Indigo & Mystic Violet Nebulae */}
-            <div className="absolute top-2 left-4 w-40 h-40 bg-indigo-600/20 rounded-full blur-2xl will-change-transform" />
-            <div className="absolute top-2 right-4 w-40 h-40 bg-purple-600/20 rounded-full blur-2xl will-change-transform" />
-            {/* Starlight Constellation Dots */}
-            <div className="absolute inset-0 bg-[radial-gradient(#fbbf24_1px,transparent_1px)] [background-size:24px_24px] opacity-25" />
-          </div>
-
-          {/* Top Utility Bar inside Celestial Banner */}
-          <div className="relative z-10 flex items-center justify-between pb-1">
-            <div className="flex gap-0.5 bg-black/40 backdrop-blur-md rounded-full p-0.5 border border-white/10">
-              {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => setLang(l)}
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase transition ${
-                    lang === l ? 'bg-amber-400 text-slate-950 shadow-xs' : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              {/* Unlocked 7-Role Governance Portal for all users to test */}
-              <button
-                onClick={() => navigate('/admin')}
-                className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-[10.5px] font-black shrink-0 flex items-center gap-1 shadow-[0_0_15px_rgba(245,158,11,0.5)] hover:scale-105 active:scale-95 transition"
-                title="7-Rolli Boshqaruv Markazi (Ochiq)"
-              >
-                <Shield className="w-3.5 h-3.5" />
-                <span>7-Rolli Panel</span>
-              </button>
-
-              <button
-                onClick={logout}
-                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-rose-400 border border-white/10 transition"
-                title="Chiqish"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Mythic Dragon Domain Header Crest */}
-          <div className="relative z-10 flex items-center justify-center pt-1">
-            <div className="px-3 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/25 text-[9px] font-black uppercase tracking-[0.22em] text-amber-300/90 flex items-center gap-1.5 shadow-xs">
-              <span className="text-amber-400">✦</span>
-              <span>AFSANAVIY AJDARHO SAROYI</span>
-              <span className="text-amber-400">✦</span>
-            </div>
-          </div>
-
-          {/* Hero Dragon + Avatar Display (Generous room for flying & perched dragon) */}
-          <div className="flex flex-col items-center text-center pt-40 pb-2 relative z-10">
-            <div className="relative p-2 flex items-center justify-center">
-              <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
-              <CinematicVideoDragon frameTopPx={40 * getFrameScale(user.activeFrame)} />
-            </div>
-
-            <div className="mt-2.5 flex items-center justify-center gap-2">
-              <h2 className="text-xl font-black text-white tracking-tight drop-shadow-md">{user.displayName}</h2>
-              {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
-              <button
-                onClick={openEditor}
-                className="p-1 rounded-full bg-white/10 hover:bg-white/20 text-amber-200 transition"
-                title="Tahrirlash"
-              >
-                <Pencil className="w-3 h-3" />
-              </button>
-            </div>
-
+      {/* Top Utility Bar */}
+      <div className="flex items-center justify-between pb-1">
+        <div className="flex gap-0.5 bg-slate-100 rounded-full p-0.5">
+          {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
             <button
-              onClick={() => {
-                navigator.clipboard?.writeText(String(user.uid));
-                toast(`ID: ${user.uid}`, 'info');
-              }}
-              className="inline-flex items-center gap-1.5 text-xs text-amber-200 hover:text-white mt-1 font-semibold group"
+              key={l}
+              onClick={() => setLang(l)}
+              className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                lang === l ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
+              }`}
             >
-              <span className="px-2.5 py-0.5 rounded-full bg-white/10 border border-white/15 text-[11px] font-bold text-amber-200 backdrop-blur-xs transition group-hover:bg-white/20">
-                ID {user.uid}
-              </span>
-              <Copy className="w-3 h-3 text-amber-300/70 group-hover:text-amber-200" />
+              {l}
             </button>
-
-            <div className="flex items-center justify-center gap-4 mt-2 text-xs text-slate-300 font-medium">
-              <span><b className="text-white font-black">{user.followersCount ?? 0}</b> obunachi</span>
-              <span className="w-1 h-1 rounded-full bg-amber-400/50" />
-              <span><b className="text-white font-black">{user.followingCount ?? 0}</b> obuna</span>
-            </div>
-          </div>
+          ))}
         </div>
-      ) : (
-        /* Regular Light Theme for users without dragon */
-        <div>
-          <div className="flex items-center justify-between pb-1">
-            <div className="flex gap-0.5 bg-slate-100 rounded-full p-0.5">
-              {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => setLang(l)}
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                    lang === l ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
-                  }`}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-1.5">
-              <button
-                onClick={() => navigate('/admin')}
-                className="px-3 py-1 rounded-full bg-slate-900 text-white text-[10.5px] font-black flex items-center gap-1"
-                title="7-Rolli Panel"
-              >
-                <Shield className="w-3.5 h-3.5" />
-                <span>7-Rolli Panel</span>
-              </button>
-              <button onClick={logout} className="p-2 rounded-full bg-slate-100 text-slate-600 hover:text-rose-600" title="Chiqish">
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center text-center pt-6 pb-4 border-b border-slate-100 relative">
-            <div className="relative p-2 flex items-center justify-center">
-              <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
-            </div>
-
-            <div className="mt-2.5 flex items-center justify-center gap-2">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">{user.displayName}</h2>
-              <button onClick={openEditor} className="p-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="Tahrirlash">
-                <Pencil className="w-3 h-3" />
-              </button>
-            </div>
-
-            <button
-              onClick={() => {
-                navigator.clipboard?.writeText(String(user.uid));
-                toast(`ID: ${user.uid}`, 'info');
-              }}
-              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mt-1 font-semibold group"
-            >
-              <span className="px-2 py-0.5 rounded-md bg-slate-100 group-hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition">ID {user.uid}</span>
-              <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
-            </button>
-
-            <div className="flex items-center justify-center gap-4 mt-2 text-xs text-slate-500 font-medium">
-              <span><b className="text-slate-900">{user.followersCount ?? 0}</b> obunachi</span>
-              <span className="w-1 h-1 rounded-full bg-slate-300" />
-              <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
-            </div>
-          </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => navigate('/admin')}
+            className="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-[10.5px] font-black flex items-center gap-1 shadow-xs transition"
+            title="7-Rolli Boshqaruv Markazi (Ochiq)"
+          >
+            <Shield className="w-3.5 h-3.5 text-amber-400" />
+            <span>7-Rolli Panel</span>
+          </button>
+          <button
+            onClick={logout}
+            className="p-2 rounded-full bg-slate-100 text-slate-600 hover:text-rose-600 transition"
+            title="Chiqish"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
-      )}
+      </div>
+
+      {/* Centered Hero Profile Section: Pure Clean White */}
+      <div className={`flex flex-col items-center text-center ${hasDragon ? 'pt-40' : 'pt-6'} pb-4 border-b border-slate-100 relative`}>
+        <div className="relative p-2 flex items-center justify-center">
+          <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
+          {hasDragon && <CinematicVideoDragon frameTopPx={40 * getFrameScale(user.activeFrame)} />}
+        </div>
+
+        <div className="mt-2.5 flex items-center justify-center gap-2">
+          <h2 className="text-lg font-black text-slate-900 tracking-tight">{user.displayName}</h2>
+          {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
+          <button onClick={openEditor} className="p-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="Tahrirlash">
+            <Pencil className="w-3 h-3" />
+          </button>
+        </div>
+
+        <button
+          onClick={() => {
+            navigator.clipboard?.writeText(String(user.uid));
+            toast(`ID: ${user.uid}`, 'info');
+          }}
+          className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mt-1 font-semibold group"
+        >
+          <span className="px-2 py-0.5 rounded-md bg-slate-100 group-hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition">ID {user.uid}</span>
+          <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
+        </button>
+
+        <div className="flex items-center justify-center gap-4 mt-2 text-xs text-slate-500 font-medium">
+          <span><b className="text-slate-900">{user.followersCount ?? 0}</b> obunachi</span>
+          <span className="w-1 h-1 rounded-full bg-slate-300" />
+          <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
+        </div>
+      </div>
 
       {/* Military Rank (1-10) & 7-Role Governance Portal */}
       <div className="rounded-3xl p-3 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white border border-amber-400/35 flex items-center justify-between gap-2 shadow-sm">
