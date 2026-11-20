@@ -29,6 +29,7 @@ import {
 import { api } from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { useAuth } from '../context/AuthContext';
+import { useWorld } from '../context/WorldContext';
 import { GiftEvent, RoomChatMessage, SeatState } from '../types';
 import { Avatar } from '../components/Avatar';
 import { GiftDrawer } from '../components/GiftDrawer';
@@ -38,6 +39,7 @@ import { LuckyWheelGame } from '../components/LuckyWheelGame';
 import { LudoGame } from '../components/LudoGame';
 import { DrawGuessGame } from '../components/DrawGuessGame';
 import { LiveWaveBars, getStageWallpaper } from '../components/LuxuryBadges';
+import { ANIMATED_FRAMES, getAnimatedFrameUrl } from '../lib/mythicCatalog';
 import { sfx } from '../lib/sound';
 
 const THEME_OPTIONS = [
@@ -59,9 +61,11 @@ export const VoiceRoomPage: React.FC = () => {
   const { id: roomId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, updateCoinsLocally, toast } = useAuth();
+  const { joinVoiceRoomMeta } = useWorld();
 
   const [roomMeta, setRoomMeta] = useState<any>(null);
   const [theme, setTheme] = useState('light');
+  const [roomFrame, setRoomFrame] = useState('');
   const [notice, setNotice] = useState('');
   const [seats, setSeats] = useState<SeatState[]>([]);
   const [viewerCount, setViewerCount] = useState(0);
@@ -183,6 +187,7 @@ export const VoiceRoomPage: React.FC = () => {
     api<{ room: any }>(`/rooms/${roomId}`)
       .then((res) => {
         setRoomMeta(res.room);
+        joinVoiceRoomMeta(roomId, res.room.title || 'Do‘stlar xonasi');
         setNotice(res.room.notice || '');
         setNoticeDraft(res.room.notice || '');
         setIsFollowing(Boolean(res.room.isFollowing));
@@ -252,7 +257,7 @@ export const VoiceRoomPage: React.FC = () => {
       setTotalGifts(g.roomTotalGifts);
       setActiveGiftAnim(g);
       sfx.gift(g.effectType === 'fullscreen' || g.category === 'LUXURY');
-      setTimeout(() => setActiveGiftAnim((curr) => (curr?.id === g.id ? null : curr)), 3300);
+      setTimeout(() => setActiveGiftAnim((curr) => (curr?.id === g.id ? null : curr)), 3900);
     };
     const onRide = (ev: any) => {
       const id = String(Date.now());
@@ -474,6 +479,30 @@ export const VoiceRoomPage: React.FC = () => {
         </div>
       </header>
 
+      {/* Seamless Jump to World / Balkon Battle while keeping Voice Active (Section 8) */}
+      <div className="px-3 pb-1.5 flex items-center gap-1.5 relative z-20 overflow-x-auto no-scrollbar">
+        <button
+          onClick={() => navigate('/games')}
+          className="px-2.5 py-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-black shadow-xs shrink-0"
+        >
+          🔥 Balkon Jangi (Ovoz saqlanadi)
+        </button>
+        <button
+          onClick={() => navigate('/world')}
+          className="px-2.5 py-1 rounded-full bg-slate-900 text-white text-[10px] font-black shadow-xs shrink-0"
+        >
+          🗺️ World • 10 Qit’a
+        </button>
+        <button
+          onClick={() => navigate('/market')}
+          className={`px-2.5 py-1 rounded-full text-[10px] font-black shrink-0 border ${
+            isLight ? 'bg-white border-slate-200 text-slate-700' : 'glass-dark border-white/15 text-white'
+          }`}
+        >
+          🛍️ Market
+        </button>
+      </div>
+
       {/* Pinned Room Notice + Active Lucky Coin Box */}
       {(notice || luckyBox) && (
         <div className="px-3 pb-1 flex items-center justify-between gap-2 relative z-20">
@@ -500,22 +529,55 @@ export const VoiceRoomPage: React.FC = () => {
       )}
 
       {themePickerOpen && (
-        <div className="mx-3 mb-2 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-lg flex items-center justify-around gap-1 relative z-20">
-          {THEME_OPTIONS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => {
-                setTheme(t.id);
-                if (isHost) getSocket().emit('room:theme', { roomId, theme: t.id });
-                setThemePickerOpen(false);
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
-                theme === t.id ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="mx-3 mb-2 p-2.5 rounded-2xl bg-white border border-slate-200 shadow-lg space-y-2.5 relative z-20">
+          <div className="flex items-center justify-around gap-1">
+            {THEME_OPTIONS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  setTheme(t.id);
+                  if (isHost) getSocket().emit('room:theme', { roomId, theme: t.id });
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
+                  theme === t.id ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="border-t border-slate-100 pt-2">
+            <div className="text-[10px] font-extrabold text-slate-400 mb-1.5 px-1">🖼️ Xona Ramkasi (Animatsiyali):</div>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+              <button
+                onClick={() => {
+                  setRoomFrame('');
+                  setThemePickerOpen(false);
+                }}
+                className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold shrink-0 border ${
+                  !roomFrame ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200'
+                }`}
+              >
+                Yo‘q
+              </button>
+              {ANIMATED_FRAMES.map((fr) => (
+                <button
+                  key={fr.code}
+                  onClick={() => {
+                    setRoomFrame(fr.code);
+                    setThemePickerOpen(false);
+                  }}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-xl text-[10px] font-bold shrink-0 border ${
+                    roomFrame === fr.code ? 'bg-rose-50 text-[#ff3366] border-[#ff3366]' : 'bg-slate-50 text-slate-700 border-slate-200'
+                  }`}
+                >
+                  <img src={fr.webp} alt="" className="w-6 h-6 object-contain" />
+                  <span>{fr.nameUz.split(' ')[0]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -534,7 +596,7 @@ export const VoiceRoomPage: React.FC = () => {
                   src={hostSeat.avatar}
                   name={hostSeat.displayName}
                   size="lg"
-                  frame={hostSeat.frame || 'frame-gold'}
+                  frame={roomFrame || hostSeat.frame || 'frame-gold-1'}
                   vipLevel={hostSeat.vipLevel}
                   speaking={hostSeat.isSpeaking && !hostSeat.isMuted}
                 />

@@ -79,6 +79,71 @@ export function seedExtras(): void {
       new Date(Date.now() - 10800 * 1000).toISOString()
     );
   }
+
+  // Ensure all 10 Mythical Dragon gifts exist
+  const insGiftIgnore = db.prepare(`
+    INSERT OR IGNORE INTO gifts (id, name, name_uz, icon, category, price, effect_type, accent_color, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+  `);
+  const dragonGifts = [
+    ['gift-dragon-zepharion', 'Zepharion', 'Zepharion (Osmon ajdarhosi)', '🐉', 'LUXURY', 2500, 'fullscreen', '#f59e0b'],
+    ['gift-dragon-nythera', 'Nythera', 'Nythera (Kosmik ajdarho)', '🐉', 'LUXURY', 8888, 'fullscreen', '#a855f7'],
+    ['gift-dragon-valtor', 'Valtor', 'Valtor (Olov va lava ajdarhosi)', '🐉', 'LUXURY', 3500, 'fullscreen', '#ef4444'],
+    ['gift-dragon-sylvanna', 'Sylvanna', 'Sylvanna (Tabiat ajdarhosi)', '🐉', 'LUXURY', 2200, 'fullscreen', '#10b981'],
+    ['gift-dragon-thalassor', 'Thalassor', 'Thalassor (Dengiz ajdarhosi)', '🐉', 'LUXURY', 2800, 'fullscreen', '#06b6d4'],
+    ['gift-dragon-umbra', 'Umbra', 'Umbra (Soya ajdarhosi)', '🐉', 'LUXURY', 4500, 'fullscreen', '#6366f1'],
+    ['gift-dragon-auriel', 'Auriel', 'Auriel (Kristall ajdarhosi)', '🐉', 'LUXURY', 5200, 'fullscreen', '#eab308'],
+    ['gift-dragon-drakthar', 'Drakthar', 'Drakthar (Bo‘ron ajdarhosi)', '🐉', 'LUXURY', 4200, 'fullscreen', '#3b82f6'],
+    ['gift-dragon-morvaxis', 'Morvaxis', 'Morvaxis (Suyak ajdarhosi)', '🐉', 'LUXURY', 6666, 'fullscreen', '#94a3b8'],
+    ['gift-dragon-xaldris', 'Xaldris', 'Xaldris (Elementlar ajdarhosi)', '🐉', 'LUXURY', 19999, 'fullscreen', '#ec4899'],
+  ];
+  for (const dg of dragonGifts) insGiftIgnore.run(...dg);
+
+  // Ensure all 12 Animated Frames, 10 Dragon Rides, VIP 1-12 & Cosmic Bubble exist
+  const insStoreIgnore = db.prepare(`
+    INSERT OR IGNORE INTO store_items (id, type, code, name, name_uz, description_uz, price, duration_days, preview_style, vip_tier)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const extraStore = [
+    ['st-af-bronze-3', 'FRAME', 'frame-bronze-3', 'Bronze #3', 'Bronza #3 G‘olib', 'Animatsiyali Bronza ramka', 800, 30, 'frame-bronze-3', 1],
+    ['st-af-frost-2', 'FRAME', 'frame-frost-2', 'Frost #2', 'Muzli #2 Ritsar', 'Animatsiyali Muzli ramka', 1200, 30, 'frame-frost-2', 2],
+    ['st-af-rose-3', 'FRAME', 'frame-rose-3', 'Rose Crystal', 'Atirgul Kristall', 'Animatsiyali Atirgul ramka', 1500, 30, 'frame-rose-3', 3],
+    ['st-af-gold-1', 'FRAME', 'frame-gold-1', 'Royal Gold #1', 'Qirollik Oltin #1', 'Animatsiyali Oltin #1 ramka', 2200, 30, 'frame-gold-1', 4],
+    ['st-af-golden-wings', 'FRAME', 'frame-golden-wings', 'Golden Wings', 'Oltin Qanotlar', 'Animatsiyali Qanotli ramka', 2800, 30, 'frame-golden-wings', 5],
+    ['st-af-amethyst-spark', 'FRAME', 'frame-amethyst-spark', 'Amethyst Spark', 'Ametist Uchqun', 'Animatsiyali Ametist ramka', 3200, 30, 'frame-amethyst-spark', 6],
+    ['st-af-crystal-violet', 'FRAME', 'frame-crystal-violet', 'Cosmic Violet', 'Kosmik Binafsha', 'Animatsiyali Kosmik ramka', 4000, 30, 'frame-crystal-violet', 7],
+    ['st-af-emerald-crown', 'FRAME', 'frame-emerald-crown', 'Emerald Crown', 'Zumrad Olmos Toj', 'Animatsiyali Zumrad ramka', 4800, 30, 'frame-emerald-crown', 8],
+    ['st-af-palace-gold', 'FRAME', 'frame-palace-gold', 'Palace Gold', 'Saroy Oltini', 'Animatsiyali Saroy ramkasi', 5500, 30, 'frame-palace-gold', 9],
+    ['st-af-inferno-1', 'FRAME', 'frame-inferno-1', 'Inferno #1', 'Olovli #1 Chempion', 'Animatsiyali Olovli ramka', 6800, 30, 'frame-inferno-1', 10],
+    ['st-af-violet-2', 'FRAME', 'frame-violet-2', 'Imperial Violet', 'Binafsha Imperator', 'Animatsiyali Imperator ramkasi', 8500, 30, 'frame-violet-2', 11],
+    ['st-af-obsidian-gold', 'FRAME', 'frame-obsidian-gold', 'Divine XII', 'Kosmik Ilohiy XII', 'VIP 12 Ilohiy Kosmik ramka', 12000, 30, 'frame-obsidian-gold', 12],
+
+    ['st-rd-horse', 'RIDE', 'ride-horse', 'Armored Horse', '🐎 Zirhli Ritsar Oti', 'VIP 5 kirish ulovi', 1800, 30, 'ride-horse', 5],
+    ['st-rd-mecha', 'RIDE', 'ride-mecha', 'Mecha Dragon', '🦾 Mexa Ajdarho', 'VIP 6 kirish ulovi', 2800, 30, 'ride-mecha', 6],
+    ['st-drg-zepharion', 'RIDE', 'ride-dragon-zepharion', 'Zepharion', '🐉 Zepharion (Osmon)', 'Bo‘ron va osmonni boshqarish', 6500, 30, 'ride-dragon-zepharion', 9],
+    ['st-drg-nythera', 'RIDE', 'ride-dragon-nythera', 'Nythera', '🐉 Nythera (Kosmik)', 'Koinot energiyasi kirishi', 14500, 30, 'ride-dragon-nythera', 11],
+    ['st-drg-valtor', 'RIDE', 'ride-dragon-valtor', 'Valtor', '🐉 Valtor (Olov)', 'Lava va olov kirishi', 8500, 30, 'ride-dragon-valtor', 10],
+    ['st-drg-sylvanna', 'RIDE', 'ride-dragon-sylvanna', 'Sylvanna', '🐉 Sylvanna (Tabiat)', 'Hayot energiyasi kirishi', 5500, 30, 'ride-dragon-sylvanna', 0],
+    ['st-drg-thalassor', 'RIDE', 'ride-dragon-thalassor', 'Thalassor', '🐉 Thalassor (Dengiz)', 'Okean to‘lqini kirishi', 6800, 30, 'ride-dragon-thalassor', 0],
+    ['st-drg-umbra', 'RIDE', 'ride-dragon-umbra', 'Umbra', '🐉 Umbra (Soya)', 'Zulmat va soya kirishi', 9500, 30, 'ride-dragon-umbra', 0],
+    ['st-drg-auriel', 'RIDE', 'ride-dragon-auriel', 'Auriel', '🐉 Auriel (Kristall)', 'Kristall nuri kirishi', 11000, 30, 'ride-dragon-auriel', 0],
+    ['st-drg-drakthar', 'RIDE', 'ride-dragon-drakthar', 'Drakthar', '🐉 Drakthar (Bo‘ron)', 'Chaqmoq tezligi kirishi', 8900, 30, 'ride-dragon-drakthar', 0],
+    ['st-drg-morvaxis', 'RIDE', 'ride-dragon-morvaxis', 'Morvaxis', '🐉 Morvaxis (Suyak)', 'Suyak zirhi kirishi', 12500, 30, 'ride-dragon-morvaxis', 0],
+    ['st-drg-xaldris', 'RIDE', 'ride-dragon-xaldris', 'Xaldris', '🐉 Xaldris (Elementlar)', 'VIP 12 Ilohiy cheksiz kirish', 29999, 30, 'ride-dragon-xaldris', 12],
+
+    ['st-bb-cosmic', 'BUBBLE', 'bubble-cosmic', 'Cosmic VIP Chat', 'Cheksiz Kosmik VIP Chat', 'VIP 11-12 kosmik chat pufagi', 4500, 30, 'bubble-cosmic', 11],
+
+    ['st-vip-2', 'VIP', 'vip-2', 'VIP 2 Bronze', 'VIP 2 — Bronza II', 'Muzli ramka + 2-daraja kirish', 2000, 30, 'vip-2', 2],
+    ['st-vip-4', 'VIP', 'vip-4', 'VIP 4 Gold', 'VIP 4 — Oltin Nur', 'Yaltiroq oltin ramka + animatsiyali chat', 5500, 30, 'vip-4', 4],
+    ['st-vip-6', 'VIP', 'vip-6', 'VIP 6 Mecha', 'VIP 6 — Mexa VI', 'Mexa ajdarho + eksklyuziv sovg‘alar', 12000, 30, 'vip-6', 6],
+    ['st-vip-7', 'VIP', 'vip-7', 'VIP 7 Diamond', 'VIP 7 — Olmos VII', 'Lyuks avto + maxsus profil + Ring Effect', 18000, 30, 'vip-7', 7],
+    ['st-vip-8', 'VIP', 'vip-8', 'VIP 8 Diamond', 'VIP 8 — Olmos VIII', 'Zumrad olmos ramka + Ring Effect', 25000, 30, 'vip-8', 8],
+    ['st-vip-9', 'VIP', 'vip-9', 'VIP 9 Diamond G.', 'VIP 9 — Olmos Oltin IX', 'Zepharion kirishi + xona animatsiyasi', 35000, 30, 'vip-9', 9],
+    ['st-vip-10', 'VIP', 'vip-10', 'VIP 10 Diamond G.', 'VIP 10 — Olmos Oltin X', 'Valtor olov animatsiyasi + Olovli #1 ramka', 50000, 30, 'vip-10', 10],
+    ['st-vip-11', 'VIP', 'vip-11', 'VIP 11 Cosmic', 'VIP 11 — Kosmik XI', 'Nythera kosmik transformatsiya + cheksiz chat', 75000, 30, 'vip-11', 11],
+    ['st-vip-12', 'VIP', 'vip-12', 'VIP 12 Divine', 'VIP 12 — Ilohiy Kosmik XII', 'VIP 12 Ilohiy xona kirishi + Xaldris', 120000, 30, 'vip-12', 12],
+  ];
+  for (const st of extraStore) insStoreIgnore.run(...st);
 }
 
 export function seedDatabase(): void {

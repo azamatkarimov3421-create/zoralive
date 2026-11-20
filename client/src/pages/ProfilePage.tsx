@@ -17,8 +17,12 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useWorld } from '../context/WorldContext';
+import { MILITARY_RANKS_10 } from '../lib/worldEcosystemData';
 import { Avatar } from '../components/Avatar';
 import { VipCrest } from '../components/LuxuryBadges';
+import { MythicVaultSection } from '../components/MythicVaultSection';
+import { ProfileDragonEntrance } from '../components/ProfileDragonEntrance';
 import { Lang } from '../types';
 
 function resizeAvatar(file: File): Promise<string> {
@@ -54,9 +58,11 @@ const STUDIO_AVATARS = [
 
 export const ProfilePage: React.FC = () => {
   const { user, refreshUser, lang, setLang, logout, toast } = useAuth();
+  const { state: worldState } = useWorld();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [tab, setTab] = useState<'wallet' | 'store' | 'clan' | 'tasks' | 'agency'>((searchParams.get('tab') as any) || 'wallet');
+  const [tab, setTab] = useState<'wallet' | 'store' | 'clan' | 'tasks' | 'agency'>((searchParams.get('tab') as any) || 'store');
+  const currentRank = MILITARY_RANKS_10[worldState.rankLevel - 1] || MILITARY_RANKS_10[0];
 
   const [walletData, setWalletData] = useState<any>(null);
   const [payProvider, setPayProvider] = useState('Click');
@@ -67,7 +73,7 @@ export const ProfilePage: React.FC = () => {
   const [kycName, setKycName] = useState('');
 
   const [storeItems, setStoreItems] = useState<any[]>([]);
-  const [storeFilter, setStoreFilter] = useState<'FRAME' | 'RIDE' | 'BUBBLE' | 'VIP'>('FRAME');
+  const initialSub = (searchParams.get('sub') as 'VIP' | 'DRAGON' | 'FRAME' | 'CRYSTAL' | 'RIDE' | 'BUBBLE') || 'VIP';
   const [tasks, setTasks] = useState<any[]>([]);
 
   // Family / Clan state
@@ -129,67 +135,91 @@ export const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="bg-white min-h-full px-3.5 pt-3 pb-8 space-y-4">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
-        <div className="flex items-center gap-3">
-          <Avatar src={user.avatar} name={user.displayName} size="lg" frame={user.activeFrame} vipLevel={user.vipLevel} />
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h2 className="text-base font-black text-slate-900">{user.displayName}</h2>
-              <button onClick={openEditor} className="p-1 rounded-full bg-slate-100 text-slate-600" title="Tahrirlash">
-                <Pencil className="w-3 h-3" />
-              </button>
-            </div>
+    <div className="bg-white min-h-full px-3.5 pt-2 pb-8 space-y-3">
+      {/* Top Utility Bar */}
+      <div className="flex items-center justify-between pb-1">
+        <div className="flex gap-0.5 bg-slate-100 rounded-full p-0.5">
+          {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
             <button
-              onClick={() => {
-                navigator.clipboard?.writeText(String(user.uid));
-                toast(`ID: ${user.uid}`, 'info');
-              }}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-700 mt-0.5"
+              key={l}
+              onClick={() => setLang(l)}
+              className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                lang === l ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
+              }`}
             >
-              <span>ID {user.uid}</span>
-              <Copy className="w-3 h-3" />
+              {l}
             </button>
-            <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500">
-              <span><b className="text-slate-900">{user.followersCount ?? 0}</b> obunachi</span>
-              <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
-            </div>
-          </div>
+          ))}
+        </div>
+        <div className="flex gap-1.5">
+          {user.role === 'ADMIN' && (
+            <button onClick={() => navigate('/admin')} className="p-2 rounded-full bg-slate-900 text-white" title="Admin">
+              <Shield className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button onClick={logout} className="p-2 rounded-full bg-slate-100 text-slate-600 hover:text-rose-600" title="Chiqish">
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Centered Hero Profile Section (Lowered with plenty of room for flying & perched dragon) */}
+      <div className="flex flex-col items-center text-center pt-8 pb-3 border-b border-slate-100 relative">
+        <div className="relative p-2 flex items-center justify-center">
+          {/* Flying Dragon Entrance & Perched Companion with 12 VIP tier adaptation */}
+          <ProfileDragonEntrance vipLevel={user.vipLevel} activeFrame={user.activeFrame} />
+          <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
         </div>
 
-        <div className="flex flex-col items-end gap-1.5">
-          <div className="flex gap-0.5 bg-slate-100 rounded-full p-0.5">
-            {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
-              <button
-                key={l}
-                onClick={() => setLang(l)}
-                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                  lang === l ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
-                }`}
-              >
-                {l}
-              </button>
-            ))}
+        <div className="mt-2.5 flex items-center justify-center gap-2">
+          <h2 className="text-lg font-black text-slate-900 tracking-tight">{user.displayName}</h2>
+          <button onClick={openEditor} className="p-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="Tahrirlash">
+            <Pencil className="w-3 h-3" />
+          </button>
+        </div>
+
+        <button
+          onClick={() => {
+            navigator.clipboard?.writeText(String(user.uid));
+            toast(`ID: ${user.uid}`, 'info');
+          }}
+          className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mt-1 font-semibold group"
+        >
+          <span className="px-2 py-0.5 rounded-md bg-slate-100 group-hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition">ID {user.uid}</span>
+          <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
+        </button>
+
+        <div className="flex items-center justify-center gap-4 mt-2 text-xs text-slate-500 font-medium">
+          <span><b className="text-slate-900">{user.followersCount ?? 0}</b> obunachi</span>
+          <span className="w-1 h-1 rounded-full bg-slate-300" />
+          <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
+        </div>
+      </div>
+
+      {/* Military Rank (1-10) & 7-Role Governance Portal */}
+      <div className="rounded-3xl p-3 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white border border-amber-400/35 flex items-center justify-between gap-2 shadow-sm">
+        <div className="min-w-0">
+          <div className="text-[10px] font-black text-amber-300">
+            HARBIY UNVON ({currentRank.level}/10) • 💎 {worldState.worldGems} WORLD GEM
           </div>
-          <div className="flex gap-1.5">
-            {user.role === 'ADMIN' && (
-              <button onClick={() => navigate('/admin')} className="p-2 rounded-full bg-slate-900 text-white" title="Admin">
-                <Shield className="w-3.5 h-3.5" />
-              </button>
-            )}
-            <button onClick={logout} className="p-2 rounded-full bg-slate-100 text-slate-600 hover:text-rose-600" title="Chiqish">
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
+          <div className="text-xs font-black truncate mt-0.5">
+            {currentRank.badge} {currentRank.titleUz} — Turon Imperiyasi
           </div>
         </div>
+        <button
+          onClick={() => navigate('/admin')}
+          className="px-3 py-2 rounded-full bg-amber-400 text-slate-950 text-[10.5px] font-black shrink-0 flex items-center gap-1 hover:bg-amber-300 transition"
+        >
+          <Shield className="w-3.5 h-3.5" />
+          <span>Owner & 7 Panel</span>
+        </button>
       </div>
 
       {/* 5 Compact Tabs */}
       <div className="grid grid-cols-5 gap-1 bg-slate-100 p-1 rounded-full">
         {[
+          { id: 'store', label: 'Sovg‘a/VIP', icon: ShoppingBag },
           { id: 'wallet', label: 'Hamyon', icon: Wallet },
-          { id: 'store', label: 'Do‘kon', icon: ShoppingBag },
           { id: 'clan', label: 'Klan', icon: Users },
           { id: 'tasks', label: 'Vazifa', icon: CheckCircle2 },
           { id: 'agency', label: 'Agent', icon: Briefcase },
@@ -364,92 +394,13 @@ export const ProfilePage: React.FC = () => {
         </div>
       )}
 
-      {/* STORE */}
+      {/* STORE — VIP 1-12, 10 MYTHIC DRAGONS, 12 ANIMATED FRAMES & 4 CRYSTAL ENERGIES */}
       {tab === 'store' && (
-        <div className="space-y-3">
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-            {[
-              ['FRAME', 'Ramka'],
-              ['RIDE', 'Kirish'],
-              ['BUBBLE', 'Chat'],
-              ['VIP', 'VIP'],
-            ].map(([k, lbl]) => (
-              <button
-                key={k}
-                onClick={() => setStoreFilter(k as any)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold ${
-                  storeFilter === k ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {lbl}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-2 gap-2.5">
-            {storeItems
-              .filter((i) => i.type === storeFilter)
-              .map((item) => {
-                const isEquipped =
-                  user.activeFrame === item.code ||
-                  user.activeRide === item.code ||
-                  user.activeBubble === item.code ||
-                  (item.type === 'VIP' && user.vipLevel >= item.vip_tier && user.vipLevel > 0);
-
-                return (
-                  <div key={item.id} className="card-white rounded-2xl p-3 flex flex-col justify-between gap-2.5">
-                    <div className="flex flex-col items-center py-2">
-                      {item.type === 'FRAME' ? (
-                        <Avatar src={user.avatar} name={user.displayName} size="md" frame={item.code} />
-                      ) : item.type === 'BUBBLE' ? (
-                        <span className={`px-3 py-1 rounded-2xl text-[11px] font-bold ${item.code}`}>Salom</span>
-                      ) : item.type === 'VIP' ? (
-                        <VipCrest level={item.vip_tier} size="md" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-xl bg-slate-950 overflow-hidden flex items-center justify-center">
-                          <img src={item.code === 'ride-dragon' ? '/assets/gift-dragon.jpg' : '/assets/gift-car.jpg'} alt="" className="w-14 h-14 object-cover" />
-                        </div>
-                      )}
-                      <div className="text-xs font-extrabold text-slate-900 mt-2 text-center">{item.name_uz}</div>
-                    </div>
-
-                    {item.owned && item.type !== 'VIP' ? (
-                      <button
-                        onClick={async () => {
-                          await api('/store/equip', {
-                            method: 'POST',
-                            body: JSON.stringify({ itemType: item.type, itemCode: isEquipped ? '' : item.code }),
-                          });
-                          await refreshUser();
-                        }}
-                        className={`w-full py-2 rounded-full text-xs font-extrabold ${
-                          isEquipped ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-900 text-white'
-                        }`}
-                      >
-                        {isEquipped ? 'Faol' : 'Taqish'}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={async () => {
-                          try {
-                            await api('/store/buy', { method: 'POST', body: JSON.stringify({ itemId: item.id }) });
-                            toast('Sotib olindi', 'success');
-                            await refreshUser();
-                            loadTabData('store');
-                          } catch (err: any) {
-                            toast(err.message, 'error');
-                          }
-                        }}
-                        className="w-full py-2 rounded-full btn-brand text-xs font-extrabold"
-                      >
-                        🪙 {item.price.toLocaleString()}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-        </div>
+        <MythicVaultSection
+          storeItems={storeItems}
+          onReloadStore={() => loadTabData('store')}
+          initialFilter={initialSub}
+        />
       )}
 
       {/* FAMILY / CLAN */}

@@ -1,8 +1,10 @@
 import { DEMO_USERS, MOCK_FAMILIES, MOCK_GIFTS, MOCK_MOMENTS, MOCK_ROOMS } from './mockData';
+import { ANIMATED_FRAMES, MYTHIC_DRAGONS, VIP_LEVELS_1_TO_12 } from './mythicCatalog';
 import { RoomSummary, User } from '../types';
 
 const TOKEN_KEY = 'zoralive_token';
 const USER_KEY = 'zoralive_user';
+const OWNED_KEY = 'zoralive_owned_codes';
 const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 
 export function getToken(): string | null {
@@ -31,14 +33,125 @@ export function setStoredUser(user: User | null): void {
   else localStorage.removeItem(USER_KEY);
 }
 
+function getOwnedCodes(): string[] {
+  try {
+    const raw = localStorage.getItem(OWNED_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // ignore
+  }
+  return [
+    'frame-obsidian-gold',
+    'frame-crystal-violet',
+    'frame-palace-gold',
+    'frame-bronze-3',
+    'frame-frost-2',
+    'frame-inferno-1',
+    'frame-golden-wings',
+    'frame-emerald-crown',
+    'frame-amethyst-spark',
+    'frame-rose-3',
+    'frame-violet-2',
+    'frame-gold-1',
+    'ride-dragon-zepharion',
+    'ride-dragon-xaldris',
+    'ride-lambo',
+    'bubble-gold',
+    'bubble-cosmic',
+  ];
+}
+
+function addOwnedCode(code: string): void {
+  const set = new Set(getOwnedCodes());
+  set.add(code);
+  localStorage.setItem(OWNED_KEY, JSON.stringify(Array.from(set)));
+}
+
+const WHEEL_SECTORS = [
+  { id: 's1', label: '0.5x', icon: '🍀', multiplier: 0.5, color: '#64748b' },
+  { id: 's2', label: '1.5x', icon: '🪙', multiplier: 1.5, color: '#0ea5e9' },
+  { id: 's3', label: '2x', icon: '💎', multiplier: 2, color: '#10b981' },
+  { id: 's4', label: '0x', icon: '💨', multiplier: 0, color: '#334155' },
+  { id: 's5', label: '3x', icon: '🔥', multiplier: 3, color: '#f97316' },
+  { id: 's6', label: '5x', icon: '👑', multiplier: 5, color: '#eab308' },
+  { id: 's7', label: '1.2x', icon: '⭐', multiplier: 1.2, color: '#8b5cf6' },
+  { id: 's8', label: '10x', icon: '🐉', multiplier: 10, color: '#ff3366' },
+];
+
 // In-memory state for client mock
-let mockUser: User = DEMO_USERS.user;
 let mockRooms: RoomSummary[] = [...MOCK_ROOMS];
 let mockMoments = [...MOCK_MOMENTS];
 let mockFamilies = [...MOCK_FAMILIES];
+let mockMyFamilyId: string | null = 'clan_sherlar';
+let mockLedger: Array<{ id: string; currency: string; amount: number; description: string; created_at: string }> = [
+  { id: 'tx1', currency: 'COINS', amount: 50000, description: 'VIP Start Balansi', created_at: new Date().toISOString() },
+  { id: 'tx2', currency: 'COINS', amount: -2500, description: 'Sovg‘a: Zepharion', created_at: new Date().toISOString() },
+];
+let mockClaimedTasks = new Set<string>(['t4']);
+let mockWheelRecent = [
+  { id: 'w1', display_name: 'Laylo 🌙', bet_amount: 100, sector_label: '5x', multiplier: 5, win_amount: 500 },
+  { id: 'w2', display_name: 'Sardor Prime', bet_amount: 500, sector_label: '10x', multiplier: 10, win_amount: 5000 },
+];
+let mockFollows = new Set<string>(['user_host_1', 'user_admin_1']);
+let mockComments: Record<string, any[]> = {
+  m1: [
+    { id: 'c1', display_name: 'Laylo 🌙', content: 'Valtor olov effekti dahshat chiqdi! 🔥🐉' },
+    { id: 'c2', display_name: 'Sardor Prime', content: 'Zo‘r efir bo‘ldi!' },
+  ],
+  m2: [{ id: 'c3', display_name: 'Madina 🎵', content: 'VIP 12 muborak bo‘lsin! 👑✨' }],
+};
+
+function buildMockStoreItems() {
+  const owned = new Set(getOwnedCodes());
+  return [
+    // 12 Animated Frames
+    ...ANIMATED_FRAMES.map((f) => ({
+      id: f.id,
+      type: 'FRAME',
+      code: f.code,
+      name: f.nameUz,
+      name_uz: f.nameUz,
+      price: f.price,
+      vip_tier: f.vipTier || 0,
+      owned: owned.has(f.code),
+    })),
+    // Classic Rides + VIP 5-8 Riders + All 10 Dragon Rides
+    { id: 'st-rd-horse', type: 'RIDE', code: 'ride-horse', name_uz: '🐎 Zirhli Ritsar Oti (VIP 5)', price: 1800, vip_tier: 5, owned: owned.has('ride-horse'), image: '/assets/gift-crown.jpg' },
+    { id: 'st-rd-mecha', type: 'RIDE', code: 'ride-mecha', name_uz: '🦾 Mexa Ajdarho (VIP 6)', price: 2800, vip_tier: 6, owned: owned.has('ride-mecha'), image: '/assets/gift-dragon.jpg' },
+    { id: 'st-rd-lambo', type: 'RIDE', code: 'ride-lambo', name_uz: '🏎️ Lyuks Sport Avto (VIP 7)', price: 3500, vip_tier: 7, owned: owned.has('ride-lambo'), image: '/assets/gift-car.jpg' },
+    { id: 'st-rd-jet', type: 'RIDE', code: 'ride-jet', name_uz: '✈️ Shaxsiy Layner (VIP 8)', price: 4800, vip_tier: 8, owned: owned.has('ride-jet'), image: '/assets/gift-yacht.jpg' },
+    ...MYTHIC_DRAGONS.map((d) => ({
+      id: `st-drg-${d.id}`,
+      type: 'RIDE',
+      code: d.rideCode,
+      name_uz: `🐉 ${d.name} (${d.titleUz})`,
+      price: d.ridePrice,
+      vip_tier: d.vipUnlock || 0,
+      owned: owned.has(d.rideCode),
+      image: d.image,
+    })),
+    // Chat Bubbles
+    { id: 'st-bb-neon', type: 'BUBBLE', code: 'bubble-neon', name_uz: 'Neon Chat Pufagi', price: 450, vip_tier: 1, owned: owned.has('bubble-neon') },
+    { id: 'st-bb-rose', type: 'BUBBLE', code: 'bubble-rose', name_uz: 'Pushti Chat Pufagi', price: 650, vip_tier: 3, owned: owned.has('bubble-rose') },
+    { id: 'st-bb-gold', type: 'BUBBLE', code: 'bubble-gold', name_uz: 'Oltin Animatsiyali Chat', price: 1200, vip_tier: 4, owned: owned.has('bubble-gold') },
+    { id: 'st-bb-cosmic', type: 'BUBBLE', code: 'bubble-cosmic', name_uz: 'Cheksiz Kosmik VIP Chat', price: 4500, vip_tier: 11, owned: owned.has('bubble-cosmic') },
+    // VIP 1-12
+    ...VIP_LEVELS_1_TO_12.map((v) => ({
+      id: `st-vip-${v.level}`,
+      type: 'VIP',
+      code: `vip-${v.level}`,
+      name_uz: `VIP ${v.level} — ${v.tierName}`,
+      price: v.price,
+      vip_tier: v.level,
+      owned: false,
+    })),
+  ];
+}
 
 export async function api<T = any>(path: string, options: RequestInit = {}): Promise<T> {
-  const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const isLocal =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
   // If deployed remotely (Vercel) without external backend, immediately serve fast mock
@@ -75,11 +188,12 @@ export async function api<T = any>(path: string, options: RequestInit = {}): Pro
     // Network error, 404/405/500, or timeout - proceed to mock
   }
 
-  // Graceful Mock Fallback (Guarantees zero crashes and 100% interactive functionality)
   return handleMockRequest<T>(cleanPath, options);
 }
 
-function handleMockRequest<T>(path: string, options: RequestInit): T {
+function handleMockRequest<T>(rawPath: string, options: RequestInit): T {
+  const [path, queryStr] = rawPath.split('?');
+  const params = new URLSearchParams(queryStr || '');
   const method = (options.method || 'GET').toUpperCase();
   let body: any = {};
   if (options.body && typeof options.body === 'string') {
@@ -90,12 +204,10 @@ function handleMockRequest<T>(path: string, options: RequestInit): T {
     }
   }
 
-  const currentUser = getStoredUser() || mockUser;
+  const currentUser: User = getStoredUser() || { ...DEMO_USERS.user };
 
   // 1. Auth routes
   if (path === '/auth/me') {
-    const token = getToken();
-    if (!token) throw new Error('Not authenticated');
     return { user: currentUser } as unknown as T;
   }
 
@@ -114,7 +226,7 @@ function handleMockRequest<T>(path: string, options: RequestInit): T {
 
   if (path === '/auth/demo') {
     const preset = (body.preset || 'user') as keyof typeof DEMO_USERS;
-    const selected = DEMO_USERS[preset] || DEMO_USERS.user;
+    const selected = { ...(DEMO_USERS[preset] || DEMO_USERS.user) };
     setStoredUser(selected);
     setToken(`demo_token_${preset}`);
     return { token: `demo_token_${preset}`, user: selected } as unknown as T;
@@ -127,16 +239,16 @@ function handleMockRequest<T>(path: string, options: RequestInit): T {
         id: `room_${Date.now()}`,
         roomNumber: Math.floor(Math.random() * 8000) + 1000,
         title: body.title || 'Yangi Ovozli Xona',
-        type: (body.type === 'VIDEO' ? 'VIDEO' : body.type === 'GAME' ? 'GAME' : 'VOICE'),
-        theme: 'PALACE',
+        type: body.type === 'VIDEO' ? 'VIDEO' : body.type === 'GAME' ? 'GAME' : 'VOICE',
+        theme: body.theme || 'gold',
         cover: '/assets/stage-palace.jpg',
         country: 'UZ',
         hostId: currentUser.id,
         hostName: currentUser.displayName,
         hostAvatar: currentUser.avatar,
-        hostFrame: currentUser.activeFrame || 'frame_gold',
-        hostVip: currentUser.vipLevel || 1,
-        hostUid: currentUser.uid || 100000,
+        hostFrame: currentUser.activeFrame || 'frame-gold-1',
+        hostVip: currentUser.vipLevel || 4,
+        hostUid: currentUser.uid || 100888,
         seatCount: body.seatCount || 8,
         isLive: true,
         isFeatured: true,
@@ -149,14 +261,46 @@ function handleMockRequest<T>(path: string, options: RequestInit): T {
       return { room: newRoom } as unknown as T;
     }
 
+    if (path.endsWith('/report') || path.endsWith('/close')) {
+      return { ok: true } as unknown as T;
+    }
+
     const roomIdMatch = path.match(/^\/rooms\/([^/?]+)/);
     if (roomIdMatch) {
       const rId = roomIdMatch[1];
       const found = mockRooms.find((r) => r.id === rId) || mockRooms[0];
-      return { room: found } as unknown as T;
+      return {
+        room: {
+          ...found,
+          notice: `Xush kelibsiz! ${found.title} — sovg‘alar va jonli suhbatlar 🐉✨`,
+          isFollowing: mockFollows.has(found.hostId),
+          host: {
+            id: found.hostId,
+            displayName: found.hostName,
+            avatar: found.hostAvatar,
+            activeFrame: found.hostFrame,
+            vipLevel: found.hostVip,
+          },
+        },
+      } as unknown as T;
     }
 
-    return { rooms: mockRooms } as unknown as T;
+    const typeFilter = params.get('type');
+    const q = (params.get('q') || '').toLowerCase().trim();
+    const onlyFollowing = params.get('following') === '1';
+
+    let list = [...mockRooms];
+    if (onlyFollowing) list = list.filter((r) => mockFollows.has(r.hostId));
+    else if (typeFilter && typeFilter !== 'ALL') list = list.filter((r) => r.type === typeFilter);
+    if (q) {
+      list = list.filter(
+        (r) =>
+          r.title.toLowerCase().includes(q) ||
+          r.hostName.toLowerCase().includes(q) ||
+          String(r.roomNumber).includes(q)
+      );
+    }
+    return { rooms: list } as unknown as T;
   }
 
   // 3. Store & Gifts
@@ -165,52 +309,91 @@ function handleMockRequest<T>(path: string, options: RequestInit): T {
   }
 
   if (path === '/store/items') {
-    return {
-      items: [
-        { id: 'frame_gold', name: 'Oltin Ramka', type: 'FRAME', cost: 1000, previewUrl: '👑' },
-        { id: 'frame_diamond', name: 'Olmos Ramka', type: 'FRAME', cost: 2500, previewUrl: '💎' },
-        { id: 'entry_car', name: 'Supercar Kirish', type: 'ENTRY_EFFECT', cost: 5000, previewUrl: '🏎️' },
-        { id: 'entry_dragon', name: 'Ajdaho Kirish', type: 'ENTRY_EFFECT', cost: 10000, previewUrl: '🐉' },
-      ],
-      equipped: [currentUser.activeFrame, currentUser.activeRide].filter(Boolean),
-    } as unknown as T;
+    return { items: buildMockStoreItems() } as unknown as T;
   }
 
-  if (path === '/store/buy' || path === '/store/equip') {
-    return { success: true } as unknown as T;
+  if (path === '/store/buy') {
+    const items = buildMockStoreItems();
+    const found = items.find((i) => i.id === body.itemId || i.code === body.code);
+    const price = Number(found?.price ?? body.price ?? 0);
+    const itemType = found?.type || body.itemType;
+    const code = found?.code || body.code;
+
+    if (currentUser.coins < price) {
+      throw new Error('Tangalar yetarli emas — Hamyon bo‘limidan to‘ldiring');
+    }
+
+    currentUser.coins -= price;
+    currentUser.wealthXp = (currentUser.wealthXp || 0) + price;
+
+    if (itemType === 'VIP') {
+      const tierNum = Number(found?.vip_tier || String(code).replace('vip-', '') || 1);
+      const vipMeta = VIP_LEVELS_1_TO_12[Math.min(12, Math.max(1, tierNum)) - 1];
+      currentUser.vipLevel = tierNum;
+      if (vipMeta) {
+        currentUser.activeFrame = vipMeta.frameCode;
+        currentUser.activeBubble = vipMeta.bubbleCode;
+        addOwnedCode(vipMeta.frameCode);
+        addOwnedCode(vipMeta.bubbleCode);
+        if (vipMeta.rideCode) {
+          currentUser.activeRide = vipMeta.rideCode;
+          addOwnedCode(vipMeta.rideCode);
+        }
+      }
+    } else if (itemType === 'FRAME' && code) {
+      currentUser.activeFrame = code;
+      addOwnedCode(code);
+    } else if (itemType === 'RIDE' && code) {
+      currentUser.activeRide = code;
+      addOwnedCode(code);
+    } else if (itemType === 'BUBBLE' && code) {
+      currentUser.activeBubble = code;
+      addOwnedCode(code);
+    }
+
+    mockLedger.unshift({
+      id: `tx_${Date.now()}`,
+      currency: 'COINS',
+      amount: -price,
+      description: `Do‘kon: ${found?.name_uz || code}`,
+      created_at: new Date().toISOString(),
+    });
+    setStoredUser(currentUser);
+    return { ok: true, user: currentUser } as unknown as T;
+  }
+
+  if (path === '/store/equip') {
+    const { itemType, itemCode } = body;
+    if (itemType === 'FRAME') currentUser.activeFrame = itemCode || '';
+    else if (itemType === 'RIDE') currentUser.activeRide = itemCode || '';
+    else if (itemType === 'BUBBLE') currentUser.activeBubble = itemCode || '';
+    setStoredUser(currentUser);
+    return { ok: true, user: currentUser } as unknown as T;
   }
 
   // 4. Lucky Wheel
   if (path === '/games/wheel/config') {
-    return {
-      sectors: [
-        { label: '50 Tangalar', value: 50, color: '#f59e0b' },
-        { label: '100 Tangalar', value: 100, color: '#3b82f6' },
-        { label: 'Supercar', value: 500, color: '#ec4899' },
-        { label: '200 Tangalar', value: 200, color: '#10b981' },
-        { label: 'Oltin Toj', value: 1500, color: '#8b5cf6' },
-        { label: '500 Tangalar', value: 500, color: '#f97316' },
-        { label: '1000 Tangalar', value: 1000, color: '#06b6d4' },
-        { label: 'Omadli Ajdaho', value: 3000, color: '#ef4444' },
-      ],
-      recent: [
-        { id: 1, user: 'Laylo', prize: '1000 Tangalar', time: '1 daqiqa oldin' },
-        { id: 2, user: 'Sardor', prize: 'Supercar', time: '3 daqiqa oldin' },
-      ],
-    } as unknown as T;
+    return { sectors: WHEEL_SECTORS, recent: mockWheelRecent } as unknown as T;
   }
 
   if (path === '/games/wheel/spin') {
-    const winIndex = Math.floor(Math.random() * 8);
-    const prizes = [50, 100, 500, 200, 1500, 500, 1000, 3000];
-    const gain = prizes[winIndex];
-    currentUser.coins = (currentUser.coins || 0) + gain;
+    const bet = Math.max(10, Number(body.bet || 50));
+    if (currentUser.coins < bet) throw new Error('Tangalar yetarli emas');
+    const sectorIndex = Math.floor(Math.random() * WHEEL_SECTORS.length);
+    const sector = WHEEL_SECTORS[sectorIndex];
+    const winAmount = Math.round(bet * sector.multiplier);
+    currentUser.coins = currentUser.coins - bet + winAmount;
     setStoredUser(currentUser);
-    return {
-      sectorIndex: winIndex,
-      prize: `${gain} Tangalar`,
-      coins: currentUser.coins,
-    } as unknown as T;
+    mockWheelRecent.unshift({
+      id: `w_${Date.now()}`,
+      display_name: currentUser.displayName,
+      bet_amount: bet,
+      sector_label: sector.label,
+      multiplier: sector.multiplier,
+      win_amount: winAmount,
+    });
+    mockWheelRecent = mockWheelRecent.slice(0, 12);
+    return { sectorIndex, sector, bet, winAmount, coins: currentUser.coins } as unknown as T;
   }
 
   // 5. Moments
@@ -219,13 +402,15 @@ function handleMockRequest<T>(path: string, options: RequestInit): T {
       const newM = {
         id: `m_${Date.now()}`,
         userId: currentUser.id,
-        authorName: currentUser.displayName,
-        authorAvatar: currentUser.avatar,
+        displayName: currentUser.displayName,
+        avatar: currentUser.avatar,
+        frame: currentUser.activeFrame || 'frame-gold-1',
+        vipLevel: currentUser.vipLevel || 4,
         content: body.content || '',
         imageUrl: body.imageUrl || '',
         likesCount: 0,
         commentsCount: 0,
-        likedByMe: false,
+        liked: false,
         createdAt: new Date().toISOString(),
       };
       mockMoments.unshift(newM);
@@ -234,97 +419,147 @@ function handleMockRequest<T>(path: string, options: RequestInit): T {
     return { moments: mockMoments } as unknown as T;
   }
 
-  if (path.match(/\/moments\/[^/]+\/like/)) {
+  const momentLikeMatch = path.match(/^\/moments\/([^/]+)\/like$/);
+  if (momentLikeMatch) {
+    const m = mockMoments.find((x) => x.id === momentLikeMatch[1]);
+    if (m) {
+      m.liked = !m.liked;
+      m.likesCount += m.liked ? 1 : -1;
+      return { liked: m.liked } as unknown as T;
+    }
     return { liked: true } as unknown as T;
   }
 
-  if (path.match(/\/moments\/[^/]+\/comments/)) {
+  const momentCommentMatch = path.match(/^\/moments\/([^/]+)\/comments$/);
+  if (momentCommentMatch) {
+    const mid = momentCommentMatch[1];
     if (method === 'POST') {
-      return {
-        comment: {
-          id: `c_${Date.now()}`,
-          authorName: currentUser.displayName,
-          authorAvatar: currentUser.avatar,
-          text: body.text || 'Ajoyib!',
-          createdAt: new Date().toISOString(),
-        },
-      } as unknown as T;
+      const comment = {
+        id: `c_${Date.now()}`,
+        display_name: currentUser.displayName,
+        content: body.content || body.text || 'Ajoyib!',
+        created_at: new Date().toISOString(),
+      };
+      mockComments[mid] = [...(mockComments[mid] || []), comment];
+      const m = mockMoments.find((x) => x.id === mid);
+      if (m) m.commentsCount += 1;
+      return { comment } as unknown as T;
     }
-    return {
-      comments: [
-        { id: 'c1', authorName: 'Laylo', authorAvatar: '/assets/avatar-laylo.jpg', text: 'ZoraLive super!' },
-        { id: 'c2', authorName: 'Sardor', authorAvatar: '/assets/avatar-sardor.jpg', text: 'Tabriklayman!' },
-      ],
-    } as unknown as T;
+    return { comments: mockComments[mid] || [] } as unknown as T;
   }
 
-  // 6. Families
+  // 6. Families / Clans
   if (path.startsWith('/families')) {
     if (path === '/families/create') {
       const clan = {
         id: `clan_${Date.now()}`,
+        tag: (body.tag || 'NEW').toUpperCase().slice(0, 4),
         name: body.name || 'Yangi Klan',
-        badge: '👑',
+        badge: body.badge || '👑',
         level: 1,
-        memberCount: 1,
-        totalDiamonds: 0,
-        leaderName: currentUser.displayName,
-        description: body.description || '',
+        member_count: 1,
+        honor_xp: 1000,
+        leader_name: currentUser.displayName,
+        members: [
+          {
+            id: currentUser.id,
+            display_name: currentUser.displayName,
+            avatar: currentUser.avatar,
+            vip_level: currentUser.vipLevel,
+            wealth_xp: currentUser.wealthXp,
+          },
+        ],
       };
-      mockFamilies.push(clan);
-      setStoredUser(currentUser);
+      mockFamilies.unshift(clan);
+      mockMyFamilyId = clan.id;
       return { family: clan } as unknown as T;
     }
-    return { families: mockFamilies, myFamily: mockFamilies[0] } as unknown as T;
+    if (path === '/families/leave') {
+      mockMyFamilyId = null;
+      return { ok: true } as unknown as T;
+    }
+    const joinMatch = path.match(/^\/families\/([^/]+)\/join$/);
+    if (joinMatch) {
+      mockMyFamilyId = joinMatch[1];
+      return { ok: true } as unknown as T;
+    }
+    const myFamily = mockFamilies.find((f) => f.id === mockMyFamilyId) || null;
+    return { families: mockFamilies, myFamily } as unknown as T;
   }
 
   // 7. Tasks
   if (path === '/tasks') {
-    return {
-      tasks: [
-        { id: 't1', title: 'Kundalik kirish', reward: 100, completed: false, claimed: false, progress: 1, maxProgress: 1 },
-        { id: 't2', title: '5 daqiqa jonli efir ko‘rish', reward: 250, completed: true, claimed: false, progress: 5, maxProgress: 5 },
-        { id: 't3', title: '1 ta sovg‘a yuborish', reward: 300, completed: false, claimed: false, progress: 0, maxProgress: 1 },
-        { id: 't4', title: 'Ludo yoki O‘yin o‘ynash', reward: 500, completed: true, claimed: true, progress: 1, maxProgress: 1 },
-      ],
-    } as unknown as T;
+    const baseTasks = [
+      { id: 't1', code: 'daily_checkin', title: 'Kundalik kirish bonusi', reward: 500, claimed: mockClaimedTasks.has('t1') },
+      { id: 't2', code: 'watch_5m', title: '5 daqiqa jonli efir ko‘rish', reward: 350, claimed: mockClaimedTasks.has('t2') },
+      { id: 't3', code: 'send_dragon', title: '1 ta Ajdarho sovg‘a yuborish', reward: 1000, claimed: mockClaimedTasks.has('t3') },
+      { id: 't4', code: 'play_ludo', title: 'Ludo yoki Wheel o‘ynash', reward: 400, claimed: mockClaimedTasks.has('t4') },
+    ];
+    return { tasks: baseTasks } as unknown as T;
   }
 
   if (path === '/tasks/claim') {
-    currentUser.coins = (currentUser.coins || 0) + 250;
+    const code = body.code || body.taskId || 't1';
+    mockClaimedTasks.add(code);
+    const reward = 500;
+    currentUser.coins += reward;
     setStoredUser(currentUser);
-    return { reward: 250, coins: currentUser.coins } as unknown as T;
+    mockLedger.unshift({
+      id: `tx_${Date.now()}`,
+      currency: 'COINS',
+      amount: reward,
+      description: 'Kundalik vazifa mukofoti',
+      created_at: new Date().toISOString(),
+    });
+    return { reward, coins: currentUser.coins } as unknown as T;
   }
 
   // 8. Wallet
   if (path === '/wallet') {
     return {
-      coins: currentUser.coins || 25000,
-      diamonds: currentUser.diamonds || 4200,
-      history: [
-        { id: 1, type: 'TOPUP', amount: 5000, description: 'Payme orqali to‘ldirish', date: 'Bugun, 10:15' },
-        { id: 2, type: 'GIFT_SENT', amount: -500, description: 'Supercar sovg‘asi', date: 'Bugun, 09:30' },
-      ],
+      coins: currentUser.coins,
+      diamonds: currentUser.diamonds,
+      ledger: mockLedger,
     } as unknown as T;
   }
 
   if (path === '/wallet/topup') {
-    const add = body.amount || 5000;
-    currentUser.coins = (currentUser.coins || 0) + add;
+    const added = Number(body.coins || body.amount || 5000);
+    currentUser.coins += added;
     setStoredUser(currentUser);
-    return { added: add, coins: currentUser.coins } as unknown as T;
+    mockLedger.unshift({
+      id: `tx_${Date.now()}`,
+      currency: 'COINS',
+      amount: added,
+      description: `${body.provider || 'Click'} orqali to‘ldirish`,
+      created_at: new Date().toISOString(),
+    });
+    return { added, coins: currentUser.coins } as unknown as T;
   }
 
   if (path === '/wallet/exchange') {
-    const coinsGain = (body.diamonds || 100) * 10;
-    currentUser.coins = (currentUser.coins || 0) + coinsGain;
-    currentUser.diamonds = Math.max(0, (currentUser.diamonds || 0) - (body.diamonds || 100));
+    const diamonds = Number(body.diamonds || 100);
+    if (currentUser.diamonds < diamonds) throw new Error('Olmoslar yetarli emas');
+    const coinsGain = diamonds * 2;
+    currentUser.diamonds -= diamonds;
+    currentUser.coins += coinsGain;
     setStoredUser(currentUser);
+    mockLedger.unshift({
+      id: `tx_${Date.now()}`,
+      currency: 'COINS',
+      amount: coinsGain,
+      description: `${diamonds} 💎 almashtirildi`,
+      created_at: new Date().toISOString(),
+    });
     return { coinsGain, coins: currentUser.coins, diamonds: currentUser.diamonds } as unknown as T;
   }
 
   if (path === '/wallet/withdraw') {
-    return { usdAmount: 50, success: true } as unknown as T;
+    const diamonds = Number(body.diamonds || 500);
+    if (currentUser.diamonds < diamonds) throw new Error('Olmoslar yetarli emas');
+    currentUser.diamonds -= diamonds;
+    setStoredUser(currentUser);
+    return { usdAmount: Number((diamonds / 100).toFixed(2)), success: true } as unknown as T;
   }
 
   // 9. Agency
@@ -333,52 +568,81 @@ function handleMockRequest<T>(path: string, options: RequestInit): T {
       agency: {
         id: 'agency_tashkent',
         name: 'Tashkent Stars',
-        code: 'STAR77',
-        hostCount: 14,
-        monthlyCommission: 350,
+        code: 'ZORA77',
+        commission_rate: 0.1,
+        total_earned: 14800,
+        members: Object.values(DEMO_USERS).slice(0, 4),
       },
     } as unknown as T;
   }
 
-  // 10. Users & Leaderboard
-  if (path.startsWith('/users/leaderboard')) {
-    return {
-      topGifters: [
-        { rank: 1, name: 'Abrorbek (VIP)', avatar: '/assets/avatar-abrorbek.jpg', amount: 154000, vip: 'KING' },
-        { rank: 2, name: 'Sardor', avatar: '/assets/avatar-sardor.jpg', amount: 89000, vip: 'DIAMOND' },
-        { rank: 3, name: 'Jasur', avatar: '/assets/avatar-jasur.jpg', amount: 45000, vip: 'GOLD' },
-      ],
-      topHosts: [
-        { rank: 1, name: 'Madina 🎵', avatar: '/assets/avatar-madina.jpg', amount: 289000, vip: 'DIAMOND' },
-        { rank: 2, name: 'Laylo', avatar: '/assets/avatar-laylo.jpg', amount: 145000, vip: 'GOLD' },
-      ],
-    } as unknown as T;
+  // 10. Users, Leaderboard & Directory
+  if (path === '/users/leaderboard') {
+    const type = params.get('type') || 'wealth';
+    if (type === 'agency') {
+      return {
+        agencies: [
+          { id: 'ag1', name: 'Zora Star Agency', code: 'ZORA77', total_earned: 148000, member_count: 24 },
+          { id: 'ag2', name: 'Toshkent Prime', code: 'TASH01', total_earned: 96500, member_count: 18 },
+        ],
+      } as unknown as T;
+    }
+    const users = Object.values(DEMO_USERS).sort((a, b) =>
+      type === 'charm' ? b.charmXp - a.charmXp : b.wealthXp - a.wealthXp
+    );
+    return { users } as unknown as T;
   }
 
-  if (path.startsWith('/users/directory')) {
-    return { users: Object.values(DEMO_USERS) } as unknown as T;
+  if (path === '/users/directory') {
+    const q = (params.get('q') || '').toLowerCase();
+    const list = Object.values(DEMO_USERS)
+      .filter((u) => !q || u.displayName.toLowerCase().includes(q) || u.username.toLowerCase().includes(q))
+      .map((u) => ({ ...u, isFollowing: mockFollows.has(u.id) }));
+    return { users: list } as unknown as T;
   }
 
-  if (path.match(/\/users\/[^/]+\/follow/)) {
+  const followMatch = path.match(/^\/users\/([^/]+)\/follow$/);
+  if (followMatch) {
+    const tid = followMatch[1];
+    if (mockFollows.has(tid)) {
+      mockFollows.delete(tid);
+      return { following: false } as unknown as T;
+    }
+    mockFollows.add(tid);
     return { following: true } as unknown as T;
   }
 
   if (path === '/users/profile') {
-    Object.assign(currentUser, body);
+    Object.assign(currentUser, {
+      displayName: body.displayName || currentUser.displayName,
+      bio: body.bio !== undefined ? body.bio : currentUser.bio,
+      avatar: body.avatar || currentUser.avatar,
+    });
     setStoredUser(currentUser);
     return { user: currentUser } as unknown as T;
   }
 
   // 11. Messages
-  if (path.startsWith('/messages')) {
+  if (path === '/messages/conversations') {
     return {
       conversations: [
-        { id: 'conv1', user: DEMO_USERS.host, lastMessage: 'Salom, live xonaga kiring!', unread: 1 },
-        { id: 'conv2', user: DEMO_USERS.user, lastMessage: 'Bugun PK o‘ynaymizmi?', unread: 0 },
+        { peer: DEMO_USERS.host, lastMessage: 'Salom! Kechki efirga kiring 🎤', updatedAt: new Date().toISOString() },
+        { peer: DEMO_USERS.admin, lastMessage: 'VIP 12 va Ajdarholar muborak! 🐉', updatedAt: new Date().toISOString() },
       ],
+    } as unknown as T;
+  }
+
+  const dmMatch = path.match(/^\/messages\/([^/]+)$/);
+  if (dmMatch) {
+    return {
       messages: [
-        { id: 'msg1', senderId: 'user_host_1', text: 'Assalomu alaykum!', createdAt: new Date().toISOString() },
-        { id: 'msg2', senderId: currentUser.id, text: 'Va alaykum assalom!', createdAt: new Date().toISOString() },
+        {
+          id: 'dm1',
+          sender_id: dmMatch[1],
+          receiver_id: currentUser.id,
+          content: 'Assalomu alaykum! ZoraLive’ga xush kelibsiz 🐉✨',
+          created_at: new Date(Date.now() - 120000).toISOString(),
+        },
       ],
     } as unknown as T;
   }
@@ -387,18 +651,19 @@ function handleMockRequest<T>(path: string, options: RequestInit): T {
   if (path.startsWith('/admin')) {
     return {
       stats: {
-        totalUsers: 1420,
-        activeRooms: 18,
-        todayGifts: 840,
-        platformRevenue: '$1,850',
+        users: 1420,
+        liveRooms: mockRooms.length,
+        totalGifts: 284000,
+        pendingPayouts: 1,
+        openReports: 1,
       },
       users: Object.values(DEMO_USERS),
       rooms: mockRooms,
       payouts: [
-        { id: 'p1', hostName: 'Madina 🎵', amount: 150, diamonds: 15000, method: 'Payme / UzCard', status: 'PENDING' },
+        { id: 'p1', display_name: 'Madina 🎵', usd_amount: 150, diamonds_amount: 15000, method: 'USDT_TRC20', status: 'PENDING' },
       ],
       reports: [
-        { id: 'rep1', targetName: 'Spam User', reason: 'Nomaqbul xabar', status: 'PENDING' },
+        { id: 'rep1', reporter_name: 'Laylo 🌙', reason: 'Spam xabar', status: 'PENDING' },
       ],
     } as unknown as T;
   }

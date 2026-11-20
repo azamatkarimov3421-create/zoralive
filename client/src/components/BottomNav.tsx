@@ -1,9 +1,9 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Compass, Gamepad2, Plus, Trophy, User } from 'lucide-react';
+import { Compass, Gamepad2, Plus, ShoppingBag, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export const BottomNav: React.FC<{ onGoLive: () => void }> = ({ onGoLive }) => {
+export const BottomNav: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useAuth();
@@ -11,29 +11,35 @@ export const BottomNav: React.FC<{ onGoLive: () => void }> = ({ onGoLive }) => {
   const items = [
     { path: '/', label: t('navLive'), icon: Compass },
     { path: '/games', label: t('navGames'), icon: Gamepad2 },
-    { path: '__LIVE__', label: '', icon: Plus },
-    { path: '/social', label: t('navSocial'), icon: Trophy },
+    { path: '__LIVE__', label: t('goLive'), icon: Plus, center: true },
+    { path: '/shop', label: t('navShop'), icon: ShoppingBag },
     { path: '/profile', label: t('navProfile'), icon: User },
   ];
 
   return (
-    <nav className="sticky bottom-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-2 flex items-center justify-around">
+    <nav className="sticky bottom-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-1.5 flex items-center justify-around">
       {items.map((item) => {
         const Icon = item.icon;
-        if (item.path === '__LIVE__') {
+        const active = location.pathname === item.path;
+
+        if (item.center) {
           return (
             <button
               key="go-live"
               onClick={onGoLive}
-              aria-label={t('goLive')}
-              className="-mt-5 w-12 h-12 rounded-full btn-brand flex items-center justify-center ring-4 ring-white active:scale-95 transition"
+              aria-label={item.label}
+              className="flex flex-col items-center -mt-4 group"
             >
-              <Plus className="w-6 h-6 text-white stroke-[2.6]" />
+              <span className="w-12 h-12 rounded-full btn-brand flex items-center justify-center ring-4 ring-white shadow-lg active:scale-95 transition">
+                <Plus className="w-6 h-6 text-white stroke-[2.6]" />
+              </span>
+              <span className="text-[10px] font-black mt-0.5 text-slate-600">
+                {item.label}
+              </span>
             </button>
           );
         }
 
-        const active = location.pathname === item.path;
         return (
           <button
             key={item.path}
@@ -43,7 +49,7 @@ export const BottomNav: React.FC<{ onGoLive: () => void }> = ({ onGoLive }) => {
             }`}
           >
             <Icon className={`w-5 h-5 ${active ? 'stroke-[2.4]' : 'stroke-[2]'}`} />
-            <span className="text-[10px] font-bold">{item.label}</span>
+            <span className="text-[10px] font-extrabold">{item.label}</span>
           </button>
         );
       })}
