@@ -11,13 +11,13 @@ export interface DragonPositionConfig {
 }
 
 export const DEFAULT_DRAGON_CONFIG: DragonPositionConfig = {
-  scale: 1.0,
-  scaleX: 1.0,
-  scaleY: 1.0,
-  boxWidth: 396,
-  boxHeight: 196,
-  offsetX: 0,
-  offsetY: 0,
+  scale: 1.22,
+  scaleX: 1.38,
+  scaleY: 1.48,
+  boxWidth: 440,
+  boxHeight: 222,
+  offsetX: 18,
+  offsetY: 4,
 };
 
 interface CinematicVideoDragonProps {
