@@ -46,6 +46,14 @@ const FRAME_TIER_STYLES: Record<string, { scale: string; dropShadow: string; aur
   'frame-gold-1': { scale: 'w-[140%] h-[140%]', dropShadow: 'drop-shadow-[0_6px_24px_rgba(234,179,8,0.85)]', auraClass: 'vip-aura-god' },
 };
 
+/** Returns the rendered frame size relative to the avatar (e.g. 1.4 for 140%). 1 = no frame overlay. */
+export function getFrameScale(frame?: string): number {
+  if (!frame || !getAnimatedFrameUrl(frame)) return 1.08; // CSS ring frames hug the avatar
+  const style = FRAME_TIER_STYLES[frame];
+  const m = style?.scale.match(/w-\[(\d+)%\]/);
+  return m ? Number(m[1]) / 100 : 1.24;
+}
+
 export const Avatar: React.FC<AvatarProps> = ({
   src,
   name = 'Z',

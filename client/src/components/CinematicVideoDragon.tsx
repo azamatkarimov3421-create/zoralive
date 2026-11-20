@@ -3,7 +3,16 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 interface CinematicVideoDragonProps {
   className?: string;
   onEnded?: () => void;
+  /** Distance (px) from the avatar centre up to the top crest of the active VIP frame */
+  frameTopPx?: number;
 }
+
+// Canvas box & where the dragon's claws are inside it on the final perched frame
+const DRAGON_W = 396;
+const DRAGON_H = 196;
+const FEET_X_RATIO = 0.477; // claws centre (x) in the clean video
+const FEET_Y_RATIO = 0.907; // claws bottom (y) in the clean video
+const CLAW_GRIP_PX = 3; // claws sink slightly into the crest so it looks gripped
 
 const VS_SOURCE = `
 attribute vec2 a_position;
@@ -94,7 +103,12 @@ function createProgram(gl: WebGLRenderingContext, vs: WebGLShader, fs: WebGLShad
   return program;
 }
 
-export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ className = '', onEnded }) => {
+export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ className = '', onEnded, frameTopPx = 50 }) => {
+  // Canvas (16:9) is object-contain'ed inside the box -> compute real claw position in px
+  const contentW = Math.min(DRAGON_W, DRAGON_H * (16 / 9));
+  const contentH = contentW / (16 / 9);
+  const feetXPx = (DRAGON_W - contentW) / 2 + FEET_X_RATIO * contentW;
+  const feetYPx = (DRAGON_H - contentH) / 2 + FEET_Y_RATIO * contentH;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isReplayingRef = useRef(false);
@@ -258,13 +272,12 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ clas
       onClick={handleReplay}
       className={`select-none absolute z-25 flex items-center justify-center cursor-pointer group ${className}`}
       style={{
-        // Stretched horizontally by ~2cm each side, and ~0.5cm vertically
-        width: '396px',
-        height: '196px',
+        width: `${DRAGON_W}px`,
+        height: `${DRAGON_H}px`,
         left: '50%',
-        top: '50%',
-        // -74% shift places dragon claws directly gripping the top crest of the VIP frame with 0% face obstruction
-        transform: 'translate(-50%, -74%)',
+        top: '50%', // = avatar centre
+        // Claws land exactly on the top crest of whatever VIP frame is active (never on the face)
+        transform: `translate(${-feetXPx}px, ${-(feetYPx + frameTopPx - CLAW_GRIP_PX)}px)`,
       }}
       title="Ajdarchani qayta uchirish uchun bosing!"
       aria-label="Kinematik Ajdarho (uchish, qo'nish va olov)"
@@ -284,12 +297,12 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ clas
         ref={canvasRef}
         width={960}
         height={540}
-        className="w-full h-full object-contain filter drop-shadow-[0_6px_20px_rgba(234,179,8,0.25)] transition-transform duration-200 group-hover:scale-105"
+        className="w-full h-full object-contain filter drop-shadow-[0_6px_20px_rgba(234,179,8,0.25)]"
       />
 
       {/* Subtle indicator when perched & paused */}
       {isEnded && (
-        <div className="pointer-events-none absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-slate-900/80 text-amber-300 text-[10px] font-bold border border-amber-400/40 shadow-xs flex items-center gap-1 opacity-90 transition-opacity">
+        <div className="pointer-events-none absolute top-[84px] left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-slate-900/80 text-amber-300 text-[10px] font-bold border border-amber-400/40 shadow-xs flex items-center gap-1 opacity-90 transition-opacity">
           <span>🔥</span>
           <span>Bosing</span>
         </div>

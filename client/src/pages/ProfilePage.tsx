@@ -19,7 +19,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useWorld } from '../context/WorldContext';
 import { MILITARY_RANKS_10 } from '../lib/worldEcosystemData';
-import { Avatar } from '../components/Avatar';
+import { Avatar, getFrameScale } from '../components/Avatar';
 import { CinematicVideoDragon } from '../components/CinematicVideoDragon';
 import { VipCrest } from '../components/LuxuryBadges';
 import { MythicVaultSection } from '../components/MythicVaultSection';
@@ -164,10 +164,10 @@ export const ProfilePage: React.FC = () => {
       </div>
 
       {/* Centered Hero Profile Section (Lowered by ~2.5-3cm with generous room for flying & perched dragon) */}
-      <div className="flex flex-col items-center text-center pt-24 pb-4 border-b border-slate-100 relative">
+      <div className="flex flex-col items-center text-center pt-44 pb-4 border-b border-slate-100 relative">
         <div className="relative p-2 flex items-center justify-center">
           <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
-          <CinematicVideoDragon />
+          <CinematicVideoDragon frameTopPx={40 * getFrameScale(user.activeFrame)} />
         </div>
 
         <div className="mt-2.5 flex items-center justify-center gap-2">
