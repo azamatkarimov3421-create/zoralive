@@ -204,43 +204,8 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Centered Hero Profile Section: Pure Clean White center with Golden Dragon Flanks on the sides */}
-      <div
-        className={`flex flex-col items-center text-center ${
-          hasDragon
-            ? 'pt-44 bg-gradient-to-r from-amber-500/10 via-amber-400/5 via-15% via-white via-50% via-amber-400/5 via-85% to-amber-500/10 rounded-3xl border border-amber-200/60 shadow-xs'
-            : 'pt-6 border-b border-slate-100'
-        } pb-4 relative overflow-hidden transition-all duration-300`}
-      >
-        {/* Dragon-Themed Flank Backgrounds (Left & Right Sides for VIP) */}
-        {hasDragon && (
-          <>
-            {/* Left Flank: Radiant Dragon Amber Glow & Energy Pillar */}
-            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-24 sm:w-36 bg-gradient-to-r from-amber-400/20 via-orange-500/10 to-transparent flex flex-col justify-between py-5 pl-2 z-0">
-              <div className="w-1.5 h-16 rounded-full bg-gradient-to-b from-amber-400 via-orange-400 to-transparent shadow-[0_0_12px_rgba(245,158,11,0.5)]" />
-              <div className="text-[9px] text-amber-600/50 font-black tracking-widest uppercase rotate-90 select-none">
-                ✦ VIP DRAGON ✦
-              </div>
-              <div className="w-1.5 h-16 rounded-full bg-gradient-to-t from-amber-400 via-orange-400 to-transparent shadow-[0_0_12px_rgba(245,158,11,0.5)]" />
-            </div>
-
-            {/* Left Ambient Wing Aura */}
-            <div className="pointer-events-none absolute -left-12 top-16 w-36 h-48 rounded-full bg-gradient-to-r from-amber-400/25 to-orange-400/5 blur-2xl z-0" />
-
-            {/* Right Flank: Radiant Dragon Amber Glow & Energy Pillar */}
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-24 sm:w-36 bg-gradient-to-l from-amber-400/20 via-orange-500/10 to-transparent flex flex-col items-end justify-between py-5 pr-2 z-0">
-              <div className="w-1.5 h-16 rounded-full bg-gradient-to-b from-amber-400 via-orange-400 to-transparent shadow-[0_0_12px_rgba(245,158,11,0.5)]" />
-              <div className="text-[9px] text-amber-600/50 font-black tracking-widest uppercase -rotate-90 select-none">
-                ✦ VIP DRAGON ✦
-              </div>
-              <div className="w-1.5 h-16 rounded-full bg-gradient-to-t from-amber-400 via-orange-400 to-transparent shadow-[0_0_12px_rgba(245,158,11,0.5)]" />
-            </div>
-
-            {/* Right Ambient Wing Aura */}
-            <div className="pointer-events-none absolute -right-12 top-16 w-36 h-48 rounded-full bg-gradient-to-l from-amber-400/25 to-orange-400/5 blur-2xl z-0" />
-          </>
-        )}
-
+      {/* Centered Hero Profile Section: Pure Clean White */}
+      <div className={`flex flex-col items-center text-center ${hasDragon ? 'pt-44' : 'pt-6'} pb-4 border-b border-slate-100 relative`}>
         <div className="relative p-2 flex items-center justify-center">
           <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
           {hasDragon && (
