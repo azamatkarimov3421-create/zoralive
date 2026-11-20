@@ -1,10 +1,24 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 
+export interface DragonPositionConfig {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+export const DEFAULT_DRAGON_CONFIG: DragonPositionConfig = {
+  scale: 1.0,
+  offsetX: 0,
+  offsetY: 0,
+};
+
 interface CinematicVideoDragonProps {
   className?: string;
   onEnded?: () => void;
   /** Distance (px) from the avatar centre up to the top crest of the active VIP frame */
   frameTopPx?: number;
+  /** Dynamic positioning and scale configuration */
+  config?: DragonPositionConfig;
 }
 
 // Box & claw placement metrics on the final perched frame
@@ -18,11 +32,22 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({
   className = '',
   onEnded,
   frameTopPx = 50,
+  config,
 }) => {
   const contentW = Math.min(DRAGON_W, DRAGON_H * (16 / 9));
   const contentH = contentW / (16 / 9);
   const feetXPx = (DRAGON_W - contentW) / 2 + FEET_X_RATIO * contentW;
   const feetYPx = (DRAGON_H - contentH) / 2 + FEET_Y_RATIO * contentH;
+
+  const [localConfig, setLocalConfig] = useState<DragonPositionConfig>(() => {
+    try {
+      const saved = localStorage.getItem('zoralive_dragon_config');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEFAULT_DRAGON_CONFIG;
+  });
+
+  const activeConfig = config || localConfig;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const isReplayingRef = useRef(false);
@@ -88,7 +113,8 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({
         height: `${DRAGON_H}px`,
         left: '50%',
         top: '50%',
-        transform: `translate3d(${-feetXPx}px, ${-(feetYPx + frameTopPx - CLAW_GRIP_PX)}px, 0)`,
+        transform: `translate3d(${-feetXPx + (activeConfig.offsetX || 0)}px, ${-(feetYPx + frameTopPx - CLAW_GRIP_PX) + (activeConfig.offsetY || 0)}px, 0) scale(${activeConfig.scale || 1.0})`,
+        transformOrigin: `${feetXPx}px ${feetYPx}px`,
         willChange: 'transform',
       }}
       title="Ajdarchani qayta uchirish uchun bosing!"

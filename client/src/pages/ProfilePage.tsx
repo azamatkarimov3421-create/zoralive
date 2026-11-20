@@ -14,13 +14,19 @@ import {
   Pencil,
   X,
   Camera,
+  Sliders,
+  Check,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useWorld } from '../context/WorldContext';
 import { MILITARY_RANKS_10 } from '../lib/worldEcosystemData';
 import { Avatar, getFrameScale } from '../components/Avatar';
-import { CinematicVideoDragon } from '../components/CinematicVideoDragon';
+import {
+  CinematicVideoDragon,
+  DragonPositionConfig,
+  DEFAULT_DRAGON_CONFIG,
+} from '../components/CinematicVideoDragon';
 import { VipCrest } from '../components/LuxuryBadges';
 import { MythicVaultSection } from '../components/MythicVaultSection';
 import { Lang } from '../types';
@@ -93,6 +99,32 @@ export const ProfilePage: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [editBio, setEditBio] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
+
+  // Dragon Visual Calibration & Tuning State
+  const [dragonConfig, setDragonConfig] = useState<DragonPositionConfig>(() => {
+    try {
+      const saved = localStorage.getItem('zoralive_dragon_config');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEFAULT_DRAGON_CONFIG;
+  });
+  const [dragonTunerOpen, setDragonTunerOpen] = useState(false);
+
+  const saveDragonConfig = () => {
+    try {
+      localStorage.setItem('zoralive_dragon_config', JSON.stringify(dragonConfig));
+      toast('Ajdarho o‘lchami va o‘rni muvaffaqiyatli saqlandi! 🎉', 'success');
+      setDragonTunerOpen(false);
+    } catch {
+      toast('Saqlashda xatolik yuz berdi', 'error');
+    }
+  };
+
+  const resetDragonConfig = () => {
+    setDragonConfig(DEFAULT_DRAGON_CONFIG);
+    localStorage.removeItem('zoralive_dragon_config');
+    toast('Zavod sozlamasiga qaytarildi', 'info');
+  };
 
   const loadTabData = async (currentTab = tab) => {
     try {
@@ -176,7 +208,12 @@ export const ProfilePage: React.FC = () => {
       <div className={`flex flex-col items-center text-center ${hasDragon ? 'pt-40' : 'pt-6'} pb-4 border-b border-slate-100 relative`}>
         <div className="relative p-2 flex items-center justify-center">
           <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
-          {hasDragon && <CinematicVideoDragon frameTopPx={40 * getFrameScale(user.activeFrame)} />}
+          {hasDragon && (
+            <CinematicVideoDragon
+              frameTopPx={40 * getFrameScale(user.activeFrame)}
+              config={dragonConfig}
+            />
+          )}
         </div>
 
         <div className="mt-2.5 flex items-center justify-center gap-2">
@@ -203,6 +240,174 @@ export const ProfilePage: React.FC = () => {
           <span className="w-1 h-1 rounded-full bg-slate-300" />
           <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
         </div>
+
+        {/* Toggle Dragon Adjuster Button */}
+        {hasDragon && (
+          <button
+            type="button"
+            onClick={() => setDragonTunerOpen((p) => !p)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-black mt-2.5 shadow-xs transition active:scale-95"
+            title="Ajdarni kattalashtirish, kichiklashtirish va joyini sozlash"
+          >
+            <Sliders className="w-3.5 h-3.5 text-amber-600" />
+            <span>⚙️ Ajdarni sozlash (O‘lcham & Joylashuv)</span>
+          </button>
+        )}
+
+        {/* Live Interactive Calibrator Tool */}
+        {hasDragon && dragonTunerOpen && (
+          <div className="w-full max-w-sm mt-3 p-3.5 rounded-2xl bg-amber-50/95 border-2 border-amber-400 shadow-xl text-left space-y-3">
+            <div className="flex items-center justify-between pb-1.5 border-b border-amber-200">
+              <div className="flex items-center gap-1.5 font-black text-xs text-slate-900">
+                <Sliders className="w-3.5 h-3.5 text-amber-600" />
+                <span>Ajdarni Katta-Kichiklashtirish va Joylashuv</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDragonTunerOpen(false)}
+                className="p-1 rounded-full bg-white hover:bg-slate-100 text-slate-600 transition"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* 1. Scale Slider (Kattaligi) */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] font-bold text-slate-700">
+                <span>🔍 Kattalik (Masshtab):</span>
+                <span className="text-amber-700 font-black">{Math.round(dragonConfig.scale * 100)}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDragonConfig((p) => ({ ...p, scale: Math.max(0.4, Number((p.scale - 0.05).toFixed(2))) }))
+                  }
+                  className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="Kichiklashtirish"
+                >
+                  -
+                </button>
+                <input
+                  type="range"
+                  min="0.4"
+                  max="2.0"
+                  step="0.02"
+                  value={dragonConfig.scale}
+                  onChange={(e) => setDragonConfig((p) => ({ ...p, scale: Number(e.target.value) }))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDragonConfig((p) => ({ ...p, scale: Math.min(2.5, Number((p.scale + 0.05).toFixed(2))) }))
+                  }
+                  className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="Kattalashtirish"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Offset Y (Balandlik: Tepaga / Pastga) */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] font-bold text-slate-700">
+                <span>↕️ Balandlik (Pastga / Tepaga):</span>
+                <span className="text-amber-700 font-black">
+                  {dragonConfig.offsetY > 0
+                    ? `+${dragonConfig.offsetY}px (Pastga)`
+                    : `${dragonConfig.offsetY}px (Tepaga)`}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDragonConfig((p) => ({ ...p, offsetY: p.offsetY - 3 }))}
+                  className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="Tepaga siljitish"
+                >
+                  ▲
+                </button>
+                <input
+                  type="range"
+                  min="-120"
+                  max="120"
+                  step="2"
+                  value={dragonConfig.offsetY}
+                  onChange={(e) => setDragonConfig((p) => ({ ...p, offsetY: Number(e.target.value) }))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() => setDragonConfig((p) => ({ ...p, offsetY: p.offsetY + 3 }))}
+                  className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="Pastga siljitish"
+                >
+                  ▼
+                </button>
+              </div>
+            </div>
+
+            {/* 3. Offset X (Chapga / O'ngga) */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] font-bold text-slate-700">
+                <span>↔️ Yon tomon (Chapga / O‘ngga):</span>
+                <span className="text-amber-700 font-black">
+                  {dragonConfig.offsetX > 0
+                    ? `+${dragonConfig.offsetX}px (O'ngga)`
+                    : `${dragonConfig.offsetX}px (Chapga)`}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDragonConfig((p) => ({ ...p, offsetX: p.offsetX - 3 }))}
+                  className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="Chapga siljitish"
+                >
+                  ◀
+                </button>
+                <input
+                  type="range"
+                  min="-120"
+                  max="120"
+                  step="2"
+                  value={dragonConfig.offsetX}
+                  onChange={(e) => setDragonConfig((p) => ({ ...p, offsetX: Number(e.target.value) }))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() => setDragonConfig((p) => ({ ...p, offsetX: p.offsetX + 3 }))}
+                  className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-black text-xs hover:bg-slate-50"
+                  title="O'ngga siljitish"
+                >
+                  ▶
+                </button>
+              </div>
+            </div>
+
+            {/* Saqlash va Asliga qaytarish tugmalari */}
+            <div className="flex items-center gap-2 pt-2 border-t border-amber-200">
+              <button
+                type="button"
+                onClick={saveDragonConfig}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black text-xs shadow-md active:scale-95 transition flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>SAQLASH</span>
+              </button>
+              <button
+                type="button"
+                onClick={resetDragonConfig}
+                className="px-3 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition"
+              >
+                Asliga qaytarish
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Military Rank (1-10) & 7-Role Governance Portal */}
