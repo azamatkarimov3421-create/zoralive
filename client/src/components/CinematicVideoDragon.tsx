@@ -43,18 +43,25 @@ void main() {
   if (isFire) {
     alpha = max(alpha, 0.98);
   } else {
-    // For smoke: smoothly fade out very light greys so there is no harsh border
-    if (lum > 0.90 && sat < 0.10) {
-      alpha = smoothstep(0.98, 0.88, lum);
+    // Erase light grey smoke / haze completely
+    if (lum > 0.88 && sat < 0.15) {
+      alpha = smoothstep(0.96, 0.85, lum);
+    }
+    if (sat < 0.18 && minC > 0.35) {
+      alpha = 0.0;
     }
   }
 
   // Floor plane cutoff: clean up bottom floor shadow edge
   if (v_texCoord.y > 0.92 && !isFire) {
-    if (minC > 0.82 && sat < 0.12) {
+    if (minC > 0.78 && sat < 0.12) {
       alpha = 0.0;
     }
   }
+
+  // Soft right-edge feather to guarantee zero sharp vertical edge cutoff
+  float edgeFade = smoothstep(0.995, 0.92, v_texCoord.x);
+  alpha *= edgeFade;
 
   gl_FragColor = vec4(col.rgb, alpha);
 }
@@ -90,6 +97,7 @@ function createProgram(gl: WebGLRenderingContext, vs: WebGLShader, fs: WebGLShad
 export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ className = '', onEnded }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const isReplayingRef = useRef(false);
   const [isEnded, setIsEnded] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
@@ -97,10 +105,17 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ clas
   const handleReplay = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
+    isReplayingRef.current = true;
+    setIsEnded(false);
     video.currentTime = 0;
     video.play().then(() => {
-      setIsEnded(false);
-    }).catch(() => {});
+      // HTML5 video seeking is asynchronous. Keep flag true until video is safely in playback from t=0
+      setTimeout(() => {
+        isReplayingRef.current = false;
+      }, 400);
+    }).catch(() => {
+      isReplayingRef.current = false;
+    });
   }, []);
 
   useEffect(() => {
@@ -190,6 +205,13 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ clas
         gl.drawArrays(gl.TRIANGLES, 0, 6);
       }
 
+      // Calm perched cutoff: at the end of the video sequence (t >= 9.5s), dragon is stably perched
+      if (!isReplayingRef.current && video.currentTime >= 9.5 && !video.paused && !video.ended) {
+        video.pause();
+        setIsEnded(true);
+        if (onEnded) onEnded();
+      }
+
       animId = requestAnimationFrame(render);
     };
 
@@ -236,15 +258,13 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({ clas
       onClick={handleReplay}
       className={`select-none absolute z-25 flex items-center justify-center cursor-pointer group ${className}`}
       style={{
-        // 30% smaller: 460px -> 322px width, 258px -> 181px height
-        width: '322px',
-        height: '181px',
+        // Stretched horizontally by ~2cm each side, and ~0.5cm vertically
+        width: '396px',
+        height: '196px',
         left: '50%',
         top: '50%',
-        // Feet land at X=50.9%, Y=95.1% of canvas.
-        // -120% shift places dragon claws directly on the top crest of the VIP frame
-        // leaving the avatar face 100% visible and unblocked below
-        transform: 'translate(-50.9%, -120%)',
+        // -74% shift places dragon claws directly gripping the top crest of the VIP frame with 0% face obstruction
+        transform: 'translate(-50%, -74%)',
       }}
       title="Ajdarchani qayta uchirish uchun bosing!"
       aria-label="Kinematik Ajdarho (uchish, qo'nish va olov)"

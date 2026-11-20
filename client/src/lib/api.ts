@@ -78,7 +78,9 @@ const WHEEL_SECTORS = [
   { id: 's8', label: '10x', icon: '🐉', multiplier: 10, color: '#ff3366' },
 ];
 
-// In-memory state for client mock
+// In-memory state for client mock & local offline database
+const LOCAL_DB_KEY = 'zoralive_local_database_v2';
+
 let mockRooms: RoomSummary[] = [...MOCK_ROOMS];
 let mockMoments = [...MOCK_MOMENTS];
 let mockFamilies = [...MOCK_FAMILIES];
@@ -100,6 +102,47 @@ let mockComments: Record<string, any[]> = {
   ],
   m2: [{ id: 'c3', display_name: 'Madina 🎵', content: 'VIP 12 muborak bo‘lsin! 👑✨' }],
 };
+
+export function loadLocalDb() {
+  try {
+    const raw = localStorage.getItem(LOCAL_DB_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (Array.isArray(data.rooms)) mockRooms = data.rooms;
+      if (Array.isArray(data.moments)) mockMoments = data.moments;
+      if (Array.isArray(data.families)) mockFamilies = data.families;
+      if (Array.isArray(data.ledger)) mockLedger = data.ledger;
+      if (data.myFamilyId !== undefined) mockMyFamilyId = data.myFamilyId;
+      if (Array.isArray(data.claimedTasks)) mockClaimedTasks = new Set(data.claimedTasks);
+      if (Array.isArray(data.follows)) mockFollows = new Set(data.follows);
+      if (data.comments) mockComments = data.comments;
+    }
+  } catch (e) {
+    console.warn('Failed to load local DB:', e);
+  }
+}
+
+export function saveLocalDb() {
+  try {
+    const data = {
+      rooms: mockRooms,
+      moments: mockMoments,
+      families: mockFamilies,
+      ledger: mockLedger,
+      myFamilyId: mockMyFamilyId,
+      claimedTasks: Array.from(mockClaimedTasks),
+      follows: Array.from(mockFollows),
+      comments: mockComments,
+    };
+    localStorage.setItem(LOCAL_DB_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save local DB:', e);
+  }
+}
+
+if (typeof window !== 'undefined') {
+  loadLocalDb();
+}
 
 function buildMockStoreItems() {
   const owned = new Set(getOwnedCodes());
@@ -149,10 +192,22 @@ function buildMockStoreItems() {
 }
 
 export async function api<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+  const isCapacitor =
+    typeof window !== 'undefined' &&
+    (Boolean((window as any).Capacitor) ||
+      window.location.protocol === 'capacitor:' ||
+      (window.location.hostname === 'localhost' && !window.location.port));
+
   const isLocal =
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+  // If inside Capacitor on Android/iOS without remote backend, or offline:
+  // immediately serve fast local database with 0ms latency for buttery-smooth 60fps performance!
+  if (isCapacitor && !API_BASE) {
+    return handleMockRequest<T>(cleanPath, options);
+  }
 
   // If deployed remotely (Vercel) without external backend, immediately serve fast mock
   if (!API_BASE && !isLocal) {
@@ -192,6 +247,15 @@ export async function api<T = any>(path: string, options: RequestInit = {}): Pro
 }
 
 function handleMockRequest<T>(rawPath: string, options: RequestInit): T {
+  const result = executeMockRequest<T>(rawPath, options);
+  const method = (options.method || 'GET').toUpperCase();
+  if (method !== 'GET') {
+    saveLocalDb();
+  }
+  return result;
+}
+
+function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
   const [path, queryStr] = rawPath.split('?');
   const params = new URLSearchParams(queryStr || '');
   const method = (options.method || 'GET').toUpperCase();
