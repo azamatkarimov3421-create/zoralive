@@ -20,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWorld } from '../context/WorldContext';
 import { MILITARY_RANKS_10 } from '../lib/worldEcosystemData';
 import { Avatar } from '../components/Avatar';
+import { SkyDragonProfileCompanion } from '../components/SkyDragonProfileCompanion';
 import { VipCrest } from '../components/LuxuryBadges';
 import { MythicVaultSection } from '../components/MythicVaultSection';
 import { Lang } from '../types';
@@ -166,6 +167,7 @@ export const ProfilePage: React.FC = () => {
       <div className="flex flex-col items-center text-center pt-8 pb-3 border-b border-slate-100 relative">
         <div className="relative p-2 flex items-center justify-center">
           <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
+          <SkyDragonProfileCompanion vipLevel={user.vipLevel} />
         </div>
 
         <div className="mt-2.5 flex items-center justify-center gap-2">
