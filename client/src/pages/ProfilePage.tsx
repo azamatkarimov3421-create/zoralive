@@ -212,6 +212,10 @@ export const ProfilePage: React.FC = () => {
             <CinematicVideoDragon
               frameTopPx={40 * getFrameScale(user.activeFrame)}
               config={dragonConfig}
+              onDragPositionChange={(newX, newY) => {
+                setDragonConfig((prev) => ({ ...prev, offsetX: newX, offsetY: newY }));
+              }}
+              isTuning={dragonTunerOpen}
             />
           )}
         </div>
@@ -241,17 +245,28 @@ export const ProfilePage: React.FC = () => {
           <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
         </div>
 
-        {/* Toggle Dragon Adjuster Button */}
+        {/* Toggle Dragon Adjuster & Quick Save Buttons */}
         {hasDragon && (
-          <button
-            type="button"
-            onClick={() => setDragonTunerOpen((p) => !p)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-black mt-2.5 shadow-xs transition active:scale-95"
-            title="Ajdarni kattalashtirish, kichiklashtirish va joyini sozlash"
-          >
-            <Sliders className="w-3.5 h-3.5 text-amber-600" />
-            <span>⚙️ Ajdarni sozlash (O‘lcham & Joylashuv)</span>
-          </button>
+          <div className="flex items-center gap-2 mt-2.5">
+            <button
+              type="button"
+              onClick={() => setDragonTunerOpen((p) => !p)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-black shadow-xs transition active:scale-95"
+              title="Ajdarni kattalashtirish, kichiklashtirish va joyini sozlash"
+            >
+              <Sliders className="w-3.5 h-3.5 text-amber-600" />
+              <span>⚙️ Ajdarni sozlash (Slayderlar)</span>
+            </button>
+            <button
+              type="button"
+              onClick={saveDragonConfig}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black shadow-sm transition active:scale-95"
+              title="Qo‘l bilan surilgan holatni saqlash"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>SAQLASH</span>
+            </button>
+          </div>
         )}
 
         {/* Live Interactive Calibrator Tool */}
@@ -269,6 +284,14 @@ export const ProfilePage: React.FC = () => {
               >
                 <X className="w-3.5 h-3.5" />
               </button>
+            </div>
+
+            {/* Hand Drag Helper Notice */}
+            <div className="p-2.5 rounded-xl bg-amber-100/80 border border-amber-300/70 text-amber-950 text-[11px] font-semibold flex items-center gap-2">
+              <span className="text-base">🖐️</span>
+              <span>
+                <b>Qo‘l bilan surish yoqilgan:</b> Ekrandagi ajdarni barmog‘ingiz bilan to‘g‘ridan-to‘g‘ri ushlab xohlagan joyingizga surishingiz mumkin!
+              </span>
             </div>
 
             {/* 1. Umumiy Kattalik (Masshtab) */}
