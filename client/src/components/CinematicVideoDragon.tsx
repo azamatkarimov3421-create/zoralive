@@ -16,8 +16,8 @@ export const DEFAULT_DRAGON_CONFIG: DragonPositionConfig = {
   scaleY: 1.48,
   boxWidth: 440,
   boxHeight: 222,
-  offsetX: 18,
-  offsetY: 4,
+  offsetX: 38,
+  offsetY: 14,
 };
 
 interface CinematicVideoDragonProps {
@@ -105,8 +105,8 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({
     dragStartRef.current = {
       pointerX: e.clientX,
       pointerY: e.clientY,
-      initialOffsetX: activeConfig.offsetX ?? 18,
-      initialOffsetY: activeConfig.offsetY ?? 4,
+      initialOffsetX: activeConfig.offsetX ?? 38,
+      initialOffsetY: activeConfig.offsetY ?? 14,
     };
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -188,7 +188,7 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({
         height: `${currentBoxH}px`,
         left: '50%',
         top: '50%',
-        transform: `translate3d(${-feetXPx + (activeConfig.offsetX ?? 18)}px, ${-(feetYPx + frameTopPx - CLAW_GRIP_PX) + (activeConfig.offsetY ?? 4)}px, 0) scale(${finalScaleX}, ${finalScaleY})`,
+        transform: `translate3d(${-feetXPx + (activeConfig.offsetX ?? 38)}px, ${-(feetYPx + frameTopPx - CLAW_GRIP_PX) + (activeConfig.offsetY ?? 14)}px, 0) scale(${finalScaleX}, ${finalScaleY})`,
         transformOrigin: `${feetXPx}px ${feetYPx}px`,
         willChange: 'transform',
         touchAction: 'none',

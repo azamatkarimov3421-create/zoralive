@@ -170,8 +170,8 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="bg-white min-h-full px-3.5 pt-2 pb-8 space-y-3">
-      {/* Top Utility Bar */}
-      <div className="flex items-center justify-between pb-1">
+      {/* Top Utility Bar: Always foreground z-40 so admin, languages, and logout are never occluded */}
+      <div className="relative z-40 flex items-center justify-between pb-1 bg-white/95 backdrop-blur-xs">
         <div className="flex gap-0.5 bg-slate-100 rounded-full p-0.5">
           {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
             <button
@@ -188,7 +188,7 @@ export const ProfilePage: React.FC = () => {
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => navigate('/admin')}
-            className="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-[10.5px] font-black flex items-center gap-1 shadow-xs transition"
+            className="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-[10.5px] font-black flex items-center gap-1 shadow-xs transition active:scale-95 cursor-pointer"
             title="7-Rolli Boshqaruv Markazi (Ochiq)"
           >
             <Shield className="w-3.5 h-3.5 text-amber-400" />
@@ -196,7 +196,7 @@ export const ProfilePage: React.FC = () => {
           </button>
           <button
             onClick={logout}
-            className="p-2 rounded-full bg-slate-100 text-slate-600 hover:text-rose-600 transition"
+            className="p-2 rounded-full bg-slate-100 text-slate-600 hover:text-rose-600 transition active:scale-95 cursor-pointer"
             title="Chiqish"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -205,7 +205,7 @@ export const ProfilePage: React.FC = () => {
       </div>
 
       {/* Centered Hero Profile Section: Pure Clean White */}
-      <div className={`flex flex-col items-center text-center ${hasDragon ? 'pt-40' : 'pt-6'} pb-4 border-b border-slate-100 relative`}>
+      <div className={`flex flex-col items-center text-center ${hasDragon ? 'pt-44' : 'pt-6'} pb-4 border-b border-slate-100 relative`}>
         <div className="relative p-2 flex items-center justify-center">
           <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
           {hasDragon && (
