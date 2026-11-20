@@ -20,7 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWorld } from '../context/WorldContext';
 import { MILITARY_RANKS_10 } from '../lib/worldEcosystemData';
 import { Avatar } from '../components/Avatar';
-import { SkyDragonProfileCompanion } from '../components/SkyDragonProfileCompanion';
+import { CinematicVideoDragon } from '../components/CinematicVideoDragon';
 import { VipCrest } from '../components/LuxuryBadges';
 import { MythicVaultSection } from '../components/MythicVaultSection';
 import { Lang } from '../types';
@@ -163,11 +163,11 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Centered Hero Profile Section (Lowered with plenty of room for flying & perched dragon) */}
-      <div className="flex flex-col items-center text-center pt-8 pb-3 border-b border-slate-100 relative">
+      {/* Centered Hero Profile Section (Lowered by ~2.5-3cm with generous room for flying & perched dragon) */}
+      <div className="flex flex-col items-center text-center pt-24 pb-4 border-b border-slate-100 relative">
         <div className="relative p-2 flex items-center justify-center">
           <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
-          <SkyDragonProfileCompanion vipLevel={user.vipLevel} />
+          <CinematicVideoDragon />
         </div>
 
         <div className="mt-2.5 flex items-center justify-center gap-2">
