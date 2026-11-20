@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ThreeDragonViewer } from './ThreeDragonViewer';
 
 interface ProfileDragonEntranceProps {
   onAnimationComplete?: () => void;
@@ -30,8 +31,28 @@ const VIP_PERCH_CONFIG: Record<
 export const ProfileDragonEntrance: React.FC<ProfileDragonEntranceProps> = ({
   onAnimationComplete,
   vipLevel = 1,
+  activeFrame,
 }) => {
-  // Clamped VIP level (1 to 12)
+  const [hasWebGL] = useState(() => {
+    try {
+      const canvas = document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+    } catch {
+      return false;
+    }
+  });
+
+  // If WebGL is supported, render the interactive 3D Chinese Dragon with ethereal wings & favo rang scales!
+  if (hasWebGL) {
+    return (
+      <ThreeDragonViewer
+        vipLevel={vipLevel}
+        onAnimationComplete={onAnimationComplete}
+      />
+    );
+  }
+
+  // Clamped VIP level (1 to 12) Fallback for non-WebGL devices
   const currentVip = Math.min(12, Math.max(1, vipLevel || 1));
   const perch = VIP_PERCH_CONFIG[currentVip] || VIP_PERCH_CONFIG[1];
 
