@@ -1,7 +1,10 @@
 export type DragonThemeId =
+  | 'twin-ice-dragons'
+  | 'ice-blue'
+  | 'diamond-citadel'
+  | 'sapphire-aurora'
   | 'black-gold'
   | 'purple-neon'
-  | 'ice-blue'
   | 'fire-red'
   | 'emerald-green'
   | 'cosmic-galaxy';
@@ -22,9 +25,69 @@ export interface DragonThemeSpec {
   accentDot: string;
 }
 
-export const DEFAULT_DRAGON_THEME_ID: DragonThemeId = 'black-gold';
+export const DEFAULT_DRAGON_THEME_ID: DragonThemeId = 'twin-ice-dragons';
 
 export const DRAGON_THEMES: DragonThemeSpec[] = [
+  {
+    id: 'twin-ice-dragons',
+    emoji: '🐲',
+    nameUz: 'Qo‘sh Muz Ajdari',
+    shortUz: 'Qo‘sh Ajdar',
+    taglineUz: 'Ikkita ulug‘vor muz ajdari va billur spayrlar',
+    bgImage: '/assets/dragon-themes/twin-ice-dragons.jpg',
+    crownStroke: '#67e8f9',
+    crownGlow: 'rgba(6, 182, 212, 0.95)',
+    dragonGlow: 'rgba(34, 211, 238, 0.55)',
+    borderColor: 'rgba(34, 211, 238, 0.85)',
+    cardShadow: '0 10px 32px -6px rgba(6, 182, 212, 0.52), inset 0 0 24px rgba(34, 211, 238, 0.2)',
+    activePillClass: 'bg-cyan-500/30 border-cyan-300 text-cyan-100 shadow-[0_0_14px_rgba(6,182,212,0.6)]',
+    accentDot: '#06b6d4',
+  },
+  {
+    id: 'ice-blue',
+    emoji: '❄️',
+    nameUz: 'Muz Qasri',
+    shortUz: 'Muz Qasri',
+    taglineUz: 'Loyiha egasiga yoqqan asl billur ustunlar',
+    bgImage: '/assets/dragon-themes/ice-blue.jpg',
+    crownStroke: '#7dd3fc',
+    crownGlow: 'rgba(56, 189, 248, 0.95)',
+    dragonGlow: 'rgba(56, 189, 248, 0.45)',
+    borderColor: 'rgba(56, 189, 248, 0.78)',
+    cardShadow: '0 10px 32px -6px rgba(14, 165, 233, 0.48), inset 0 0 24px rgba(56, 189, 248, 0.18)',
+    activePillClass: 'bg-sky-400/25 border-sky-300 text-sky-100 shadow-[0_0_12px_rgba(56,189,248,0.55)]',
+    accentDot: '#0ea5e9',
+  },
+  {
+    id: 'diamond-citadel',
+    emoji: '💎',
+    nameUz: 'Olmos Qasr',
+    shortUz: 'Olmos Billur',
+    taglineUz: 'Yorqin olmos spayrlar va yulduzli arktika',
+    bgImage: '/assets/dragon-themes/diamond-citadel.jpg',
+    crownStroke: '#e0f2fe',
+    crownGlow: 'rgba(186, 230, 253, 0.95)',
+    dragonGlow: 'rgba(125, 211, 252, 0.45)',
+    borderColor: 'rgba(186, 230, 253, 0.82)',
+    cardShadow: '0 10px 32px -6px rgba(56, 189, 248, 0.48), inset 0 0 24px rgba(186, 230, 253, 0.22)',
+    activePillClass: 'bg-sky-300/30 border-white text-white shadow-[0_0_14px_rgba(224,242,254,0.65)]',
+    accentDot: '#38bdf8',
+  },
+  {
+    id: 'sapphire-aurora',
+    emoji: '🌌',
+    nameUz: 'Safir Qutb Yog‘dusi',
+    shortUz: 'Qutb Nuri',
+    taglineUz: 'Moviy-feruza qutb yog‘dusi va safir kristallari',
+    bgImage: '/assets/dragon-themes/sapphire-aurora.jpg',
+    crownStroke: '#38bdf8',
+    crownGlow: 'rgba(14, 165, 233, 0.95)',
+    dragonGlow: 'rgba(45, 212, 191, 0.5)',
+    borderColor: 'rgba(56, 189, 248, 0.8)',
+    cardShadow: '0 10px 32px -6px rgba(14, 165, 233, 0.52), inset 0 0 24px rgba(45, 212, 191, 0.2)',
+    activePillClass: 'bg-teal-500/30 border-teal-300 text-teal-100 shadow-[0_0_14px_rgba(20,184,166,0.6)]',
+    accentDot: '#14b8a6',
+  },
   {
     id: 'black-gold',
     emoji: '🟡',
@@ -54,21 +117,6 @@ export const DRAGON_THEMES: DragonThemeSpec[] = [
     cardShadow: '0 10px 32px -6px rgba(168, 85, 247, 0.48), inset 0 0 24px rgba(168, 85, 247, 0.18)',
     activePillClass: 'bg-purple-500/30 border-purple-300 text-purple-100 shadow-[0_0_12px_rgba(192,132,252,0.55)]',
     accentDot: '#a855f7',
-  },
-  {
-    id: 'ice-blue',
-    emoji: '🔵',
-    nameUz: 'Muz-ko‘k',
-    shortUz: 'Muz',
-    taglineUz: 'Sovuq va hashamatli',
-    bgImage: '/assets/dragon-themes/ice-blue.jpg',
-    crownStroke: '#7dd3fc',
-    crownGlow: 'rgba(56, 189, 248, 0.95)',
-    dragonGlow: 'rgba(56, 189, 248, 0.45)',
-    borderColor: 'rgba(56, 189, 248, 0.78)',
-    cardShadow: '0 10px 32px -6px rgba(14, 165, 233, 0.48), inset 0 0 24px rgba(56, 189, 248, 0.18)',
-    activePillClass: 'bg-sky-400/25 border-sky-300 text-sky-100 shadow-[0_0_12px_rgba(56,189,248,0.55)]',
-    accentDot: '#0ea5e9',
   },
   {
     id: 'fire-red',
@@ -102,7 +150,7 @@ export const DRAGON_THEMES: DragonThemeSpec[] = [
   },
   {
     id: 'cosmic-galaxy',
-    emoji: '🌌',
+    emoji: '🪐',
     nameUz: 'Kosmik',
     shortUz: 'Kosmik',
     taglineUz: 'Galaktika uslubi',
