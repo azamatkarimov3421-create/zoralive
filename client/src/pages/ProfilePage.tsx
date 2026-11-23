@@ -169,253 +169,301 @@ export const ProfilePage: React.FC = () => {
   const dragonTheme = getDragonTheme(dragonThemeId);
 
   return (
-    <div className="bg-white min-h-full px-3.5 pt-2 pb-8 space-y-3">
-      {/* Top Utility Bar: Always foreground z-40 so admin, languages, and logout are never occluded */}
-      <div className="relative z-40 flex items-center justify-between pb-1 bg-white/95 backdrop-blur-xs">
-        <div className="flex gap-0.5 bg-slate-100 rounded-full p-0.5">
-          {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
-            <button
-              key={l}
-              onClick={() => setLang(l)}
-              className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                lang === l ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
-              }`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => navigate('/admin')}
-            className="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-[10.5px] font-black flex items-center gap-1 shadow-xs transition active:scale-95 cursor-pointer"
-            title="7-Rolli Boshqaruv Markazi (Ochiq)"
-          >
-            <Shield className="w-3.5 h-3.5 text-amber-400" />
-            <span>7-Rolli Panel</span>
-          </button>
-          <button
-            onClick={logout}
-            className="p-2 rounded-full bg-slate-100 text-slate-600 hover:text-rose-600 transition active:scale-95 cursor-pointer"
-            title="Chiqish"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Hero Profile Card: Luxury 6-Theme VIP Dragon Stage for Dragon Owners, Clean Light for Others */}
-      {hasDragon ? (
-        <div
-          className="relative overflow-hidden rounded-[28px] border-[1.5px] flex flex-col items-center text-center pt-40 pb-4 px-3.5 transition-all duration-500"
-          style={{
-            backgroundColor: '#09090d',
-            borderColor: dragonTheme.borderColor,
-            boxShadow: dragonTheme.cardShadow,
-          }}
-        >
-          {/* Full-Bleed Custom HD Theme Artwork */}
-          <img
-            src={dragonTheme.bgImage}
-            alt={dragonTheme.nameUz}
-            className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-500"
-          />
-
-          {/* Balanced Contrast Scrim so Typography & Avatar Pop Vividly */}
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                'linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.18) 42%, rgba(0,0,0,0.62) 72%, rgba(0,0,0,0.72) 100%)',
-            }}
-          />
-
-          {/* Glowing Neon Royal Crown Floating Above the Dragon */}
-          <div
-            className="pointer-events-none select-none absolute top-3.5 left-1/2 -translate-x-1/2 z-10"
-            aria-hidden="true"
-          >
-            <svg
-              width="66"
-              height="44"
-              viewBox="0 0 66 44"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+    <div
+      className={
+        hasDragon
+          ? 'relative min-h-screen bg-[#07070c] overflow-x-clip pb-24'
+          : 'bg-white min-h-full px-3.5 pt-2 pb-8 space-y-3'
+      }
+    >
+      {/* Full-Page Edge-to-Edge VIP Dragon Background Artwork */}
+      {hasDragon && (
+        <div className="pointer-events-none select-none absolute inset-0 z-0 overflow-clip">
+          <div className="sticky top-0 w-full h-screen">
+            <img
+              src={dragonTheme.bgImage}
+              alt={dragonTheme.nameUz}
+              className="w-full h-full object-cover object-center transition-all duration-500"
+            />
+            {/* Balanced atmospheric scrim: vivid radiant top rays & dramatic bottom depth */}
+            <div
+              className="absolute inset-0"
               style={{
-                filter: `drop-shadow(0 0 6px ${dragonTheme.crownGlow}) drop-shadow(0 0 14px ${dragonTheme.crownGlow})`,
+                background:
+                  'linear-gradient(180deg, rgba(0,0,0,0.16) 0%, rgba(0,0,0,0.14) 30%, rgba(0,0,0,0.58) 64%, rgba(7,7,12,0.84) 100%)',
               }}
-            >
-              <path
-                d="M11 35L6 13L21 22L33 7L45 22L60 13L55 35H11Z"
-                stroke={dragonTheme.crownStroke}
-                strokeWidth="2.8"
-                strokeLinejoin="round"
-                fill="rgba(255,255,255,0.06)"
-              />
-              <circle cx="6" cy="11" r="2.8" fill={dragonTheme.crownStroke} />
-              <circle cx="33" cy="5" r="3.2" fill={dragonTheme.crownStroke} />
-              <circle cx="60" cy="11" r="2.8" fill={dragonTheme.crownStroke} />
-              <path
-                d="M13 39H53"
-                stroke={dragonTheme.crownStroke}
-                strokeWidth="2.4"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
-
-          {/* Avatar + VIP Frame + True-Alpha Cinematic Dragon */}
-          <div className="relative z-20 p-2 flex items-center justify-center">
-            <Avatar
-              src={user.avatar}
-              name={user.displayName}
-              size="xl"
-              frame={user.activeFrame}
-              vipLevel={user.vipLevel}
             />
-            <CinematicVideoDragon
-              frameTopPx={40 * getFrameScale(user.activeFrame)}
-              glowColor={dragonTheme.dragonGlow}
+            <div
+              className="absolute inset-0"
+              style={{
+                boxShadow: `inset 0 0 38px ${dragonTheme.dragonGlow}`,
+              }}
             />
-          </div>
-
-          {/* High-Contrast Luxury Profile Identity */}
-          <div className="relative z-30 mt-3 flex items-center justify-center gap-2">
-            <h2 className="text-[19px] font-black text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-              {user.displayName}
-            </h2>
-            {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
-            <button
-              onClick={openEditor}
-              className="p-1.5 rounded-full bg-black/50 hover:bg-black/75 border border-white/20 text-white/90 backdrop-blur-md transition active:scale-95 cursor-pointer"
-              title="Tahrirlash"
-            >
-              <Pencil className="w-3 h-3" />
-            </button>
-          </div>
-
-          <button
-            onClick={() => {
-              navigator.clipboard?.writeText(String(user.uid));
-              toast(`ID: ${user.uid}`, 'info');
-            }}
-            className="relative z-30 inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full bg-black/50 hover:bg-black/70 border border-white/15 backdrop-blur-md text-xs text-white/90 font-bold transition active:scale-95 cursor-pointer"
-          >
-            <span className="text-[11px] font-extrabold tracking-wide">ID {user.uid}</span>
-            <Copy className="w-3 h-3 text-white/70" />
-          </button>
-
-          <div className="relative z-30 inline-flex items-center justify-center gap-3.5 mt-2 px-4 py-1 rounded-full bg-black/45 border border-white/10 backdrop-blur-md text-xs text-white/85 font-semibold">
-            <span>
-              <b className="text-white font-black">{user.followersCount ?? 0}</b> obunachi
-            </span>
-            <span className="w-1 h-1 rounded-full bg-white/45" />
-            <span>
-              <b className="text-white font-black">{user.followingCount ?? 0}</b> obuna
-            </span>
-          </div>
-
-          {/* 6-Variant VIP Dragon Theme Selector Strip */}
-          <div className="relative z-30 w-full mt-3.5 pt-2.5 border-t border-white/15">
-            <div className="grid grid-cols-3 gap-1.5">
-              {DRAGON_THEMES.map((t) => {
-                const isActive = t.id === dragonTheme.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => selectDragonTheme(t.id)}
-                    className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl border text-[10.5px] font-extrabold backdrop-blur-md transition active:scale-95 cursor-pointer ${
-                      isActive
-                        ? t.activePillClass
-                        : 'bg-black/45 border-white/15 text-white/80 hover:bg-black/65 hover:border-white/30'
-                    }`}
-                    title={`${t.nameUz} — ${t.taglineUz}`}
-                  >
-                    <span className="text-xs leading-none">{t.emoji}</span>
-                    <span className="truncate">{t.shortUz}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center text-center pt-6 pb-4 border-b border-slate-100 relative">
-          <div className="relative p-2 flex items-center justify-center">
-            <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
-          </div>
-
-          <div className="mt-2.5 flex items-center justify-center gap-2">
-            <h2 className="text-lg font-black text-slate-900 tracking-tight">{user.displayName}</h2>
-            {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
-            <button onClick={openEditor} className="p-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="Tahrirlash">
-              <Pencil className="w-3 h-3" />
-            </button>
-          </div>
-
-          <button
-            onClick={() => {
-              navigator.clipboard?.writeText(String(user.uid));
-              toast(`ID: ${user.uid}`, 'info');
-            }}
-            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mt-1 font-semibold group"
-          >
-            <span className="px-2 py-0.5 rounded-md bg-slate-100 group-hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition">ID {user.uid}</span>
-            <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
-          </button>
-
-          <div className="flex items-center justify-center gap-4 mt-2 text-xs text-slate-500 font-medium">
-            <span><b className="text-slate-900">{user.followersCount ?? 0}</b> obunachi</span>
-            <span className="w-1 h-1 rounded-full bg-slate-300" />
-            <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
           </div>
         </div>
       )}
 
-      {/* Military Rank (1-10) & 7-Role Governance Portal */}
-      <div className="rounded-3xl p-3 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white border border-amber-400/35 flex items-center justify-between gap-2 shadow-sm">
-        <div className="min-w-0">
-          <div className="text-[10px] font-black text-amber-300">
-            HARBIY UNVON ({currentRank.level}/10) • 💎 {worldState.worldGems} WORLD GEM
+      <div className={hasDragon ? 'relative z-10 px-3.5 pt-2.5 space-y-3' : 'space-y-3'}>
+        {/* Top Utility Bar: Always foreground z-40 so admin, languages, and logout are never occluded */}
+        <div
+          className={`relative z-40 flex items-center justify-between pb-1 ${
+            hasDragon ? '' : 'bg-white/95 backdrop-blur-xs'
+          }`}
+        >
+          <div
+            className={`flex gap-0.5 rounded-full p-0.5 ${
+              hasDragon ? 'bg-black/50 border border-white/15 backdrop-blur-md' : 'bg-slate-100'
+            }`}
+          >
+            {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
+              <button
+                key={l}
+                onClick={() => setLang(l)}
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase transition cursor-pointer ${
+                  lang === l
+                    ? 'bg-white text-slate-950 shadow-xs'
+                    : hasDragon
+                    ? 'text-white/75 hover:text-white'
+                    : 'text-slate-500'
+                }`}
+              >
+                {l}
+              </button>
+            ))}
           </div>
-          <div className="text-xs font-black truncate mt-0.5">
-            {currentRank.badge} {currentRank.titleUz} — Turon Imperiyasi
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => navigate('/admin')}
+              className={`px-3 py-1.5 rounded-full text-white text-[10.5px] font-black flex items-center gap-1 shadow-xs transition active:scale-95 cursor-pointer ${
+                hasDragon
+                  ? 'bg-black/55 hover:bg-black/80 border border-amber-400/50 backdrop-blur-md'
+                  : 'bg-slate-900 hover:bg-slate-800'
+              }`}
+              title="7-Rolli Boshqaruv Markazi (Ochiq)"
+            >
+              <Shield className="w-3.5 h-3.5 text-amber-400" />
+              <span>7-Rolli Panel</span>
+            </button>
+            <button
+              onClick={logout}
+              className={`p-2 rounded-full transition active:scale-95 cursor-pointer ${
+                hasDragon
+                  ? 'bg-black/50 border border-white/15 text-white/85 hover:text-rose-400 backdrop-blur-md'
+                  : 'bg-slate-100 text-slate-600 hover:text-rose-600'
+              }`}
+              title="Chiqish"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
-        <button
-          onClick={() => navigate('/admin')}
-          className="px-3 py-2 rounded-full bg-amber-400 text-slate-950 text-[10.5px] font-black shrink-0 flex items-center gap-1 hover:bg-amber-300 transition"
-        >
-          <Shield className="w-3.5 h-3.5" />
-          <span>Owner & 7 Panel</span>
-        </button>
-      </div>
 
-      {/* 5 Compact Tabs */}
-      <div className="grid grid-cols-5 gap-1 bg-slate-100 p-1 rounded-full">
-        {[
-          { id: 'store', label: 'Sovg‘a/VIP', icon: ShoppingBag },
-          { id: 'wallet', label: 'Hamyon', icon: Wallet },
-          { id: 'clan', label: 'Klan', icon: Users },
-          { id: 'tasks', label: 'Vazifa', icon: CheckCircle2 },
-          { id: 'agency', label: 'Agent', icon: Briefcase },
-        ].map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setTab(item.id as any)}
-              className={`py-2 rounded-full text-[10px] font-extrabold flex flex-col items-center gap-0.5 transition ${
-                tab === item.id ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
-              }`}
+        {/* Hero Profile Stage: Seamless Full-Bleed VIP Dragon Experience for Dragon Owners */}
+        {hasDragon ? (
+          <div className="relative flex flex-col items-center text-center pt-36 pb-2">
+            {/* Glowing Neon Royal Crown Floating Above the Dragon */}
+            <div
+              className="pointer-events-none select-none absolute top-1 left-1/2 -translate-x-1/2 z-10"
+              aria-hidden="true"
             >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{item.label}</span>
+              <svg
+                width="68"
+                height="46"
+                viewBox="0 0 66 44"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{
+                  filter: `drop-shadow(0 0 6px ${dragonTheme.crownGlow}) drop-shadow(0 0 15px ${dragonTheme.crownGlow})`,
+                }}
+              >
+                <path
+                  d="M11 35L6 13L21 22L33 7L45 22L60 13L55 35H11Z"
+                  stroke={dragonTheme.crownStroke}
+                  strokeWidth="2.8"
+                  strokeLinejoin="round"
+                  fill="rgba(255,255,255,0.06)"
+                />
+                <circle cx="6" cy="11" r="2.8" fill={dragonTheme.crownStroke} />
+                <circle cx="33" cy="5" r="3.2" fill={dragonTheme.crownStroke} />
+                <circle cx="60" cy="11" r="2.8" fill={dragonTheme.crownStroke} />
+                <path
+                  d="M13 39H53"
+                  stroke={dragonTheme.crownStroke}
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+
+            {/* Avatar + VIP Frame + True-Alpha Cinematic Dragon */}
+            <div className="relative z-20 p-2 flex items-center justify-center">
+              <Avatar
+                src={user.avatar}
+                name={user.displayName}
+                size="xl"
+                frame={user.activeFrame}
+                vipLevel={user.vipLevel}
+              />
+              <CinematicVideoDragon
+                frameTopPx={40 * getFrameScale(user.activeFrame)}
+                glowColor={dragonTheme.dragonGlow}
+              />
+            </div>
+
+            {/* High-Contrast Luxury Profile Identity */}
+            <div className="relative z-30 mt-3 flex items-center justify-center gap-2">
+              <h2 className="text-[20px] font-black text-white tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
+                {user.displayName}
+              </h2>
+              {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
+              <button
+                onClick={openEditor}
+                className="p-1.5 rounded-full bg-black/50 hover:bg-black/75 border border-white/20 text-white/90 backdrop-blur-md transition active:scale-95 cursor-pointer"
+                title="Tahrirlash"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(String(user.uid));
+                toast(`ID: ${user.uid}`, 'info');
+              }}
+              className="relative z-30 inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full bg-black/50 hover:bg-black/70 border border-white/15 backdrop-blur-md text-xs text-white/90 font-bold transition active:scale-95 cursor-pointer"
+            >
+              <span className="text-[11px] font-extrabold tracking-wide">ID {user.uid}</span>
+              <Copy className="w-3 h-3 text-white/70" />
             </button>
-          );
-        })}
-      </div>
+
+            <div className="relative z-30 inline-flex items-center justify-center gap-3.5 mt-2 px-4 py-1 rounded-full bg-black/45 border border-white/10 backdrop-blur-md text-xs text-white/85 font-semibold">
+              <span>
+                <b className="text-white font-black">{user.followersCount ?? 0}</b> obunachi
+              </span>
+              <span className="w-1 h-1 rounded-full bg-white/45" />
+              <span>
+                <b className="text-white font-black">{user.followingCount ?? 0}</b> obuna
+              </span>
+            </div>
+
+            {/* 6-Variant VIP Dragon Theme Selector Strip */}
+            <div className="relative z-30 w-full mt-4">
+              <div className="grid grid-cols-3 gap-1.5">
+                {DRAGON_THEMES.map((t) => {
+                  const isActive = t.id === dragonTheme.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => selectDragonTheme(t.id)}
+                      className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl border text-[10.5px] font-extrabold backdrop-blur-md transition active:scale-95 cursor-pointer ${
+                        isActive
+                          ? t.activePillClass
+                          : 'bg-black/45 border-white/15 text-white/80 hover:bg-black/65 hover:border-white/30'
+                      }`}
+                      title={`${t.nameUz} — ${t.taglineUz}`}
+                    >
+                      <span className="text-xs leading-none">{t.emoji}</span>
+                      <span className="truncate">{t.shortUz}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center text-center pt-6 pb-4 border-b border-slate-100 relative">
+            <div className="relative p-2 flex items-center justify-center">
+              <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
+            </div>
+
+            <div className="mt-2.5 flex items-center justify-center gap-2">
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">{user.displayName}</h2>
+              {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
+              <button onClick={openEditor} className="p-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="Tahrirlash">
+                <Pencil className="w-3 h-3" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(String(user.uid));
+                toast(`ID: ${user.uid}`, 'info');
+              }}
+              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mt-1 font-semibold group"
+            >
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 group-hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition">ID {user.uid}</span>
+              <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
+            </button>
+
+            <div className="flex items-center justify-center gap-4 mt-2 text-xs text-slate-500 font-medium">
+              <span><b className="text-slate-900">{user.followersCount ?? 0}</b> obunachi</span>
+              <span className="w-1 h-1 rounded-full bg-slate-300" />
+              <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
+            </div>
+          </div>
+        )}
+
+        {/* Military Rank (1-10) & 7-Role Governance Portal */}
+        <div
+          className={`rounded-3xl p-3 text-white flex items-center justify-between gap-2 shadow-sm ${
+            hasDragon
+              ? 'bg-black/55 backdrop-blur-md border'
+              : 'bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 border border-amber-400/35'
+          }`}
+          style={hasDragon ? { borderColor: dragonTheme.borderColor } : undefined}
+        >
+          <div className="min-w-0">
+            <div className="text-[10px] font-black text-amber-300">
+              HARBIY UNVON ({currentRank.level}/10) • 💎 {worldState.worldGems} WORLD GEM
+            </div>
+            <div className="text-xs font-black truncate mt-0.5">
+              {currentRank.badge} {currentRank.titleUz} — Turon Imperiyasi
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/admin')}
+            className="px-3 py-2 rounded-full bg-amber-400 text-slate-950 text-[10.5px] font-black shrink-0 flex items-center gap-1 hover:bg-amber-300 transition cursor-pointer"
+          >
+            <Shield className="w-3.5 h-3.5" />
+            <span>Owner & 7 Panel</span>
+          </button>
+        </div>
+
+        {/* 5 Compact Tabs */}
+        <div
+          className={`grid grid-cols-5 gap-1 p-1 rounded-full ${
+            hasDragon
+              ? 'bg-black/55 border border-white/15 backdrop-blur-md'
+              : 'bg-slate-100'
+          }`}
+        >
+          {[
+            { id: 'store', label: 'Sovg‘a/VIP', icon: ShoppingBag },
+            { id: 'wallet', label: 'Hamyon', icon: Wallet },
+            { id: 'clan', label: 'Klan', icon: Users },
+            { id: 'tasks', label: 'Vazifa', icon: CheckCircle2 },
+            { id: 'agency', label: 'Agent', icon: Briefcase },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setTab(item.id as any)}
+                className={`py-2 rounded-full text-[10px] font-extrabold flex flex-col items-center gap-0.5 transition cursor-pointer ${
+                  tab === item.id
+                    ? 'bg-white text-slate-950 shadow-sm'
+                    : hasDragon
+                    ? 'text-white/75 hover:text-white'
+                    : 'text-slate-500'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
       {/* WALLET */}
       {tab === 'wallet' && (
@@ -577,6 +625,7 @@ export const ProfilePage: React.FC = () => {
           storeItems={storeItems}
           onReloadStore={() => loadTabData('store')}
           initialFilter={initialSub}
+          darkSurface={hasDragon}
         />
       )}
 
@@ -895,6 +944,7 @@ export const ProfilePage: React.FC = () => {
           </form>
         </div>
       )}
+      </div>
     </div>
   );
 };

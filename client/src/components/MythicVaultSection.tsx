@@ -16,6 +16,7 @@ interface MythicVaultSectionProps {
   storeItems: any[];
   onReloadStore: () => void;
   initialFilter?: 'FRAME' | 'DRAGON' | 'CRYSTAL' | 'VIP' | 'RIDE' | 'BUBBLE';
+  darkSurface?: boolean;
 }
 
 const CRYSTAL_KEY = 'zoralive_active_crystal';
@@ -25,6 +26,7 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
   storeItems,
   onReloadStore,
   initialFilter = 'VIP',
+  darkSurface = false,
 }) => {
   const { user, refreshUser, updateCoinsLocally, toast } = useAuth();
   const [filter, setFilter] = useState<'VIP' | 'DRAGON' | 'FRAME' | 'CRYSTAL' | 'RIDE' | 'BUBBLE'>(initialFilter);
@@ -98,7 +100,13 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
             key={k}
             onClick={() => setFilter(k)}
             className={`px-3 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition ${
-              filter === k ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              filter === k
+                ? darkSurface
+                  ? 'bg-amber-400 text-slate-950 shadow-[0_0_12px_rgba(251,191,36,0.45)]'
+                  : 'bg-slate-900 text-white shadow-xs'
+                : darkSurface
+                ? 'bg-black/50 border border-white/15 text-white/85 hover:bg-black/70 backdrop-blur-md'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
             {lbl}
