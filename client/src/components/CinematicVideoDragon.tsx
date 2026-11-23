@@ -27,6 +27,8 @@ interface CinematicVideoDragonProps {
   frameTopPx?: number;
   /** Dynamic positioning and scale configuration */
   config?: DragonPositionConfig;
+  /** Ambient theme glow color behind the transparent dragon */
+  glowColor?: string;
 }
 
 // Box & claw placement metrics on the final perched frame
@@ -41,6 +43,7 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({
   onEnded,
   frameTopPx = 50,
   config,
+  glowColor = 'rgba(245, 158, 11, 0.45)',
 }) => {
   const activeConfig = { ...DEFAULT_DRAGON_CONFIG, ...(config || {}) };
 
@@ -76,6 +79,7 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({
       })
       .catch(() => {
         isReplayingRef.current = false;
+        setIsEnded(true);
       });
   }, []);
 
@@ -87,8 +91,8 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({
     video.playsInline = true;
 
     const onTimeUpdate = () => {
-      // Calm perched cutoff: at t >= 9.5s, dragon is stably perched on frame crest
-      if (!isReplayingRef.current && video.currentTime >= 9.5 && !video.paused) {
+      // Calm perched cutoff: at t >= 9.45s, switch cleanly to crisp static perched PNG (0% GPU/CPU)
+      if (!isReplayingRef.current && video.currentTime >= 9.45 && !video.paused) {
         video.pause();
         setIsEnded(true);
         if (onEnded) onEnded();
@@ -100,21 +104,30 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({
       if (onEnded) onEnded();
     };
 
+    const onErrorHandler = () => {
+      setIsEnded(true);
+    };
+
     video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('ended', onEndedHandler);
+    video.addEventListener('error', onErrorHandler);
 
-    video.play().catch(() => {});
+    video.play().catch(() => {
+      setIsEnded(true);
+    });
 
     return () => {
       video.removeEventListener('timeupdate', onTimeUpdate);
       video.removeEventListener('ended', onEndedHandler);
+      video.removeEventListener('error', onErrorHandler);
     };
   }, [onEnded]);
 
+  const filterStyle = `drop-shadow(0 5px 10px rgba(0,0,0,0.68)) drop-shadow(0 0 12px ${glowColor})`;
+
   return (
     <div
-      onClick={handleReplay}
-      className={`select-none absolute z-0 flex items-center justify-center cursor-pointer group ${className}`}
+      className={`select-none pointer-events-none absolute z-25 flex items-center justify-center ${className}`}
       style={{
         width: `${currentBoxW}px`,
         height: `${currentBoxH}px`,
@@ -124,22 +137,40 @@ export const CinematicVideoDragon: React.FC<CinematicVideoDragonProps> = ({
         transformOrigin: `${feetXPx}px ${feetYPx}px`,
         willChange: 'transform',
       }}
-      title="Ajdarchani qayta uchirish uchun bosing!"
       aria-label="Kinematik Ajdarho (uchish, qo'nish va olov)"
     >
-      {/* 100% Native Hardware-Accelerated Video (Zero WebGL, Zero JS texture stalls) */}
+      {/* True Alpha-Channel VP9 WebM: 100% Native Compositor Transparency, Zero Lag on Dark Themes */}
       <video
         ref={videoRef}
-        src="/assets/dragon_cinematic_flight.mp4"
+        src="/assets/dragon_cinematic_alpha.webm"
         playsInline
         muted
         autoPlay
         preload="auto"
-        className="w-full h-full object-contain pointer-events-none"
-        style={{
-          mixBlendMode: 'multiply',
-          filter: 'contrast(1.02) brightness(1.01)',
-        }}
+        className={`w-full h-full object-contain pointer-events-none transition-opacity duration-150 ${
+          isEnded ? 'opacity-0' : 'opacity-100'
+        }`}
+        style={{ filter: filterStyle }}
+      />
+
+      {/* Crisp Zero-CPU Perched Transparent PNG once flight settles */}
+      <img
+        src="/assets/dragon_perched_alpha.png"
+        alt="VIP Ajdarho"
+        draggable={false}
+        className={`absolute inset-0 w-full h-full object-contain pointer-events-none transition-opacity duration-150 ${
+          isEnded ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{ filter: filterStyle }}
+      />
+
+      {/* Tight clickable hitbox right over dragon body for tap-to-replay without blocking surrounding UI */}
+      <button
+        type="button"
+        onClick={handleReplay}
+        title="Ajdarchani qayta uchirish uchun bosing!"
+        aria-label="Ajdarchani qayta uchirish"
+        className="pointer-events-auto absolute left-[28%] right-[20%] bottom-[6%] h-[42%] bg-transparent border-0 cursor-pointer rounded-full focus:outline-none"
       />
     </div>
   );

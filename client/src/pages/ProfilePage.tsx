@@ -14,19 +14,19 @@ import {
   Pencil,
   X,
   Camera,
-  Sliders,
-  Check,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useWorld } from '../context/WorldContext';
 import { MILITARY_RANKS_10 } from '../lib/worldEcosystemData';
 import { Avatar, getFrameScale } from '../components/Avatar';
+import { CinematicVideoDragon } from '../components/CinematicVideoDragon';
 import {
-  CinematicVideoDragon,
-  DragonPositionConfig,
-  DEFAULT_DRAGON_CONFIG,
-} from '../components/CinematicVideoDragon';
+  DRAGON_THEMES,
+  DEFAULT_DRAGON_THEME_ID,
+  DragonThemeId,
+  getDragonTheme,
+} from '../lib/dragonThemes';
 import { VipCrest } from '../components/LuxuryBadges';
 import { MythicVaultSection } from '../components/MythicVaultSection';
 import { Lang } from '../types';
@@ -107,6 +107,24 @@ export const ProfilePage: React.FC = () => {
     } catch {}
   }, []);
 
+  // 6 luxury dragon profile background themes (default: #1 Qora-oltin)
+  const [dragonThemeId, setDragonThemeId] = useState<DragonThemeId>(() => {
+    try {
+      const saved = localStorage.getItem('zoralive_dragon_theme') as DragonThemeId | null;
+      if (saved && DRAGON_THEMES.some((t) => t.id === saved)) return saved;
+    } catch {}
+    return DEFAULT_DRAGON_THEME_ID;
+  });
+
+  const selectDragonTheme = (id: DragonThemeId) => {
+    setDragonThemeId(id);
+    try {
+      localStorage.setItem('zoralive_dragon_theme', id);
+    } catch {}
+    const spec = getDragonTheme(id);
+    toast(`${spec.emoji} ${spec.nameUz} fon yoqildi`, 'success');
+  };
+
   const loadTabData = async (currentTab = tab) => {
     try {
       if (currentTab === 'wallet') setWalletData(await api('/wallet'));
@@ -148,6 +166,7 @@ export const ProfilePage: React.FC = () => {
   };
 
   const hasDragon = Boolean(user.activeRide?.includes('dragon') || (user.vipLevel && user.vipLevel >= 1));
+  const dragonTheme = getDragonTheme(dragonThemeId);
 
   return (
     <div className="bg-white min-h-full px-3.5 pt-2 pb-8 space-y-3">
@@ -185,42 +204,174 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Centered Hero Profile Section: Pure Clean White */}
-      <div className={`flex flex-col items-center text-center ${hasDragon ? 'pt-44' : 'pt-6'} pb-4 border-b border-slate-100 relative`}>
-        <div className="relative p-2 flex items-center justify-center">
-          <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
-          {hasDragon && (
+      {/* Hero Profile Card: Luxury 6-Theme VIP Dragon Stage for Dragon Owners, Clean Light for Others */}
+      {hasDragon ? (
+        <div
+          className="relative overflow-hidden rounded-[28px] border-[1.5px] flex flex-col items-center text-center pt-40 pb-4 px-3.5 transition-all duration-500"
+          style={{
+            backgroundColor: '#09090d',
+            borderColor: dragonTheme.borderColor,
+            boxShadow: dragonTheme.cardShadow,
+          }}
+        >
+          {/* Full-Bleed Custom HD Theme Artwork */}
+          <img
+            src={dragonTheme.bgImage}
+            alt={dragonTheme.nameUz}
+            className="pointer-events-none select-none absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-500"
+          />
+
+          {/* Balanced Contrast Scrim so Typography & Avatar Pop Vividly */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.18) 42%, rgba(0,0,0,0.62) 72%, rgba(0,0,0,0.72) 100%)',
+            }}
+          />
+
+          {/* Glowing Neon Royal Crown Floating Above the Dragon */}
+          <div
+            className="pointer-events-none select-none absolute top-3.5 left-1/2 -translate-x-1/2 z-10"
+            aria-hidden="true"
+          >
+            <svg
+              width="66"
+              height="44"
+              viewBox="0 0 66 44"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{
+                filter: `drop-shadow(0 0 6px ${dragonTheme.crownGlow}) drop-shadow(0 0 14px ${dragonTheme.crownGlow})`,
+              }}
+            >
+              <path
+                d="M11 35L6 13L21 22L33 7L45 22L60 13L55 35H11Z"
+                stroke={dragonTheme.crownStroke}
+                strokeWidth="2.8"
+                strokeLinejoin="round"
+                fill="rgba(255,255,255,0.06)"
+              />
+              <circle cx="6" cy="11" r="2.8" fill={dragonTheme.crownStroke} />
+              <circle cx="33" cy="5" r="3.2" fill={dragonTheme.crownStroke} />
+              <circle cx="60" cy="11" r="2.8" fill={dragonTheme.crownStroke} />
+              <path
+                d="M13 39H53"
+                stroke={dragonTheme.crownStroke}
+                strokeWidth="2.4"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          {/* Avatar + VIP Frame + True-Alpha Cinematic Dragon */}
+          <div className="relative z-20 p-2 flex items-center justify-center">
+            <Avatar
+              src={user.avatar}
+              name={user.displayName}
+              size="xl"
+              frame={user.activeFrame}
+              vipLevel={user.vipLevel}
+            />
             <CinematicVideoDragon
               frameTopPx={40 * getFrameScale(user.activeFrame)}
+              glowColor={dragonTheme.dragonGlow}
             />
-          )}
-        </div>
+          </div>
 
-        <div className="mt-2.5 flex items-center justify-center gap-2">
-          <h2 className="text-lg font-black text-slate-900 tracking-tight">{user.displayName}</h2>
-          {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
-          <button onClick={openEditor} className="p-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="Tahrirlash">
-            <Pencil className="w-3 h-3" />
+          {/* High-Contrast Luxury Profile Identity */}
+          <div className="relative z-30 mt-3 flex items-center justify-center gap-2">
+            <h2 className="text-[19px] font-black text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+              {user.displayName}
+            </h2>
+            {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
+            <button
+              onClick={openEditor}
+              className="p-1.5 rounded-full bg-black/50 hover:bg-black/75 border border-white/20 text-white/90 backdrop-blur-md transition active:scale-95 cursor-pointer"
+              title="Tahrirlash"
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+          </div>
+
+          <button
+            onClick={() => {
+              navigator.clipboard?.writeText(String(user.uid));
+              toast(`ID: ${user.uid}`, 'info');
+            }}
+            className="relative z-30 inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full bg-black/50 hover:bg-black/70 border border-white/15 backdrop-blur-md text-xs text-white/90 font-bold transition active:scale-95 cursor-pointer"
+          >
+            <span className="text-[11px] font-extrabold tracking-wide">ID {user.uid}</span>
+            <Copy className="w-3 h-3 text-white/70" />
           </button>
-        </div>
 
-        <button
-          onClick={() => {
-            navigator.clipboard?.writeText(String(user.uid));
-            toast(`ID: ${user.uid}`, 'info');
-          }}
-          className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mt-1 font-semibold group"
-        >
-          <span className="px-2 py-0.5 rounded-md bg-slate-100 group-hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition">ID {user.uid}</span>
-          <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
-        </button>
+          <div className="relative z-30 inline-flex items-center justify-center gap-3.5 mt-2 px-4 py-1 rounded-full bg-black/45 border border-white/10 backdrop-blur-md text-xs text-white/85 font-semibold">
+            <span>
+              <b className="text-white font-black">{user.followersCount ?? 0}</b> obunachi
+            </span>
+            <span className="w-1 h-1 rounded-full bg-white/45" />
+            <span>
+              <b className="text-white font-black">{user.followingCount ?? 0}</b> obuna
+            </span>
+          </div>
 
-        <div className="flex items-center justify-center gap-4 mt-2 text-xs text-slate-500 font-medium">
-          <span><b className="text-slate-900">{user.followersCount ?? 0}</b> obunachi</span>
-          <span className="w-1 h-1 rounded-full bg-slate-300" />
-          <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
+          {/* 6-Variant VIP Dragon Theme Selector Strip */}
+          <div className="relative z-30 w-full mt-3.5 pt-2.5 border-t border-white/15">
+            <div className="grid grid-cols-3 gap-1.5">
+              {DRAGON_THEMES.map((t) => {
+                const isActive = t.id === dragonTheme.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => selectDragonTheme(t.id)}
+                    className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl border text-[10.5px] font-extrabold backdrop-blur-md transition active:scale-95 cursor-pointer ${
+                      isActive
+                        ? t.activePillClass
+                        : 'bg-black/45 border-white/15 text-white/80 hover:bg-black/65 hover:border-white/30'
+                    }`}
+                    title={`${t.nameUz} — ${t.taglineUz}`}
+                  >
+                    <span className="text-xs leading-none">{t.emoji}</span>
+                    <span className="truncate">{t.shortUz}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col items-center text-center pt-6 pb-4 border-b border-slate-100 relative">
+          <div className="relative p-2 flex items-center justify-center">
+            <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
+          </div>
+
+          <div className="mt-2.5 flex items-center justify-center gap-2">
+            <h2 className="text-lg font-black text-slate-900 tracking-tight">{user.displayName}</h2>
+            {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
+            <button onClick={openEditor} className="p-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="Tahrirlash">
+              <Pencil className="w-3 h-3" />
+            </button>
+          </div>
+
+          <button
+            onClick={() => {
+              navigator.clipboard?.writeText(String(user.uid));
+              toast(`ID: ${user.uid}`, 'info');
+            }}
+            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mt-1 font-semibold group"
+          >
+            <span className="px-2 py-0.5 rounded-md bg-slate-100 group-hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition">ID {user.uid}</span>
+            <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
+          </button>
+
+          <div className="flex items-center justify-center gap-4 mt-2 text-xs text-slate-500 font-medium">
+            <span><b className="text-slate-900">{user.followersCount ?? 0}</b> obunachi</span>
+            <span className="w-1 h-1 rounded-full bg-slate-300" />
+            <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
+          </div>
+        </div>
+      )}
 
       {/* Military Rank (1-10) & 7-Role Governance Portal */}
       <div className="rounded-3xl p-3 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white border border-amber-400/35 flex items-center justify-between gap-2 shadow-sm">
