@@ -261,40 +261,6 @@ export const ProfilePage: React.FC = () => {
         {/* Hero Profile Stage: Seamless Full-Bleed VIP Dragon Experience for Dragon Owners */}
         {hasDragon ? (
           <div className="relative flex flex-col items-center text-center pt-36 pb-2">
-            {/* Glowing Neon Royal Crown Floating Above the Dragon */}
-            <div
-              className="pointer-events-none select-none absolute top-1 left-1/2 -translate-x-1/2 z-10"
-              aria-hidden="true"
-            >
-              <svg
-                width="68"
-                height="46"
-                viewBox="0 0 66 44"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                style={{
-                  filter: `drop-shadow(0 0 6px ${dragonTheme.crownGlow}) drop-shadow(0 0 15px ${dragonTheme.crownGlow})`,
-                }}
-              >
-                <path
-                  d="M11 35L6 13L21 22L33 7L45 22L60 13L55 35H11Z"
-                  stroke={dragonTheme.crownStroke}
-                  strokeWidth="2.8"
-                  strokeLinejoin="round"
-                  fill="rgba(255,255,255,0.06)"
-                />
-                <circle cx="6" cy="11" r="2.8" fill={dragonTheme.crownStroke} />
-                <circle cx="33" cy="5" r="3.2" fill={dragonTheme.crownStroke} />
-                <circle cx="60" cy="11" r="2.8" fill={dragonTheme.crownStroke} />
-                <path
-                  d="M13 39H53"
-                  stroke={dragonTheme.crownStroke}
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-
             {/* Avatar + VIP Frame + True-Alpha Cinematic Dragon */}
             <div className="relative z-20 p-2 flex items-center justify-center">
               <Avatar
