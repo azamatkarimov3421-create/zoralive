@@ -163,6 +163,7 @@ interface WorldContextValue {
   toggleMic: () => void;
   toggleVoiceConnection: () => void;
   joinVoiceRoomMeta: (id: string, title: string) => void;
+  leaveVoiceRoomMeta: () => void;
   // Gameplay actions
   travelToContinent: (continentId: string) => void;
   mineElement: (continentId: string) => void;
@@ -246,6 +247,12 @@ export const WorldProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setActiveVoiceRoomId(id);
     setActiveVoiceRoomTitle(title);
     setVoiceConnected(true);
+  };
+
+  const leaveVoiceRoomMeta = () => {
+    setVoiceConnected(false);
+    setActiveVoiceRoomId('');
+    setActiveVoiceRoomTitle('');
   };
 
   const travelToContinent = (continentId: string) => {
@@ -556,6 +563,7 @@ export const WorldProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toggleMic,
         toggleVoiceConnection,
         joinVoiceRoomMeta,
+        leaveVoiceRoomMeta,
         travelToContinent,
         mineElement,
         upgradeMine,

@@ -62,7 +62,7 @@ export const VoiceRoomPage: React.FC = () => {
   const { id: roomId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, updateCoinsLocally, toast } = useAuth();
-  const { joinVoiceRoomMeta } = useWorld();
+  const { joinVoiceRoomMeta, leaveVoiceRoomMeta } = useWorld();
 
   const [roomMeta, setRoomMeta] = useState<any>(null);
   const [theme, setTheme] = useState('light');
@@ -597,6 +597,7 @@ export const VoiceRoomPage: React.FC = () => {
             onClick={() => {
               if (roomId) getSocket().emit('room:leave', { roomId });
               stopAudio();
+              leaveVoiceRoomMeta();
               navigate('/');
             }}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-rose-500/15 border border-rose-300/70 text-rose-700 text-[11px] font-black hover:bg-rose-500/25 transition cursor-pointer"

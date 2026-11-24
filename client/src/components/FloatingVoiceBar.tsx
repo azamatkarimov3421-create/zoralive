@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Mic, MicOff, MessageCircle, Users, ChevronDown, ChevronUp, Radio } from 'lucide-react';
+import { Mic, MicOff, MessageCircle, Users, ChevronDown, ChevronUp, Radio, X } from 'lucide-react';
 import { useWorld } from '../context/WorldContext';
 import { useAuth } from '../context/AuthContext';
 import { fetchAllProfilesFromSupabase } from '../lib/supabaseSync';
+import { getSocket } from '../lib/socket';
 import { User } from '../types';
 import { LiveWaveBars } from './LuxuryBadges';
 import { Avatar } from './Avatar';
@@ -17,6 +18,7 @@ export const FloatingVoiceBar: React.FC = () => {
     activeVoiceRoomTitle,
     onlineVoiceCount,
     toggleMic,
+    leaveVoiceRoomMeta,
   } = useWorld();
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,6 +94,17 @@ export const FloatingVoiceBar: React.FC = () => {
           >
             <MessageCircle className="w-3 h-3 text-amber-300" />
             <span>Chatga qaytish</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (activeVoiceRoomId) getSocket().emit('room:leave', { roomId: activeVoiceRoomId });
+              leaveVoiceRoomMeta();
+            }}
+            title="Xonadan chiqish"
+            className="p-1.5 rounded-full bg-rose-500/15 border border-rose-300/70 text-rose-600 hover:bg-rose-500/25 transition cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
