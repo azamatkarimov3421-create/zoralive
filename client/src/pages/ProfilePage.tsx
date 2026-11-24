@@ -274,7 +274,7 @@ export const ProfilePage: React.FC = () => {
 
         {/* Hero Profile Stage: Seamless Full-Bleed VIP Dragon Experience for Dragon Owners */}
         {hasDragon ? (
-          <div className="relative flex flex-col items-center text-center pt-36 pb-2">
+          <div className="relative flex flex-col items-center text-center pt-44 pb-2">
             {/* Avatar + VIP Frame + True-Alpha Cinematic Dragon */}
             <div className="relative z-20 p-2 flex items-center justify-center">
               <Avatar
