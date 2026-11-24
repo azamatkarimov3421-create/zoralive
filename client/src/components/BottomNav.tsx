@@ -24,8 +24,8 @@ export const BottomNav: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => 
       <nav
         className={`pointer-events-auto rounded-3xl backdrop-blur-2xl border-2 px-2 py-1.5 flex items-center justify-around transition-all duration-300 ${
           isDarkDragonProfile
-            ? 'bg-black/45 border-white/25 shadow-[0_14px_36px_rgba(0,0,0,0.55),inset_0_1.5px_0_rgba(255,255,255,0.22)]'
-            : 'bg-white/65 border-white/90 shadow-[0_14px_36px_rgba(15,23,42,0.14),inset_0_1.5px_0_rgba(255,255,255,0.95)]'
+            ? 'bg-black/42 border-white/28 shadow-[0_14px_36px_rgba(0,0,0,0.55),inset_0_1.5px_0_rgba(255,255,255,0.25)]'
+            : 'bg-white/46 border-white/85 shadow-[0_14px_36px_rgba(15,23,42,0.14),inset_0_2px_0_rgba(255,255,255,0.95)]'
         }`}
       >
         {items.map((item) => {

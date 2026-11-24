@@ -52,13 +52,20 @@ const AppShell: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex justify-center relative overflow-x-hidden">
+    <div className="min-h-screen flex justify-center relative overflow-x-clip">
+      {/* Global Aurora Crystal Orbs sitting outside phone shell so sticky & fixed modals never break */}
+      <div className="pointer-events-none select-none fixed inset-0 overflow-hidden z-0">
+        <div className="absolute -top-24 left-1/2 -translate-x-[240px] w-80 h-80 rounded-full bg-rose-400/24 blur-3xl" />
+        <div className="absolute top-1/3 left-1/2 translate-x-[40px] w-80 h-80 rounded-full bg-sky-400/26 blur-3xl" />
+        <div className="absolute bottom-[-80px] left-1/2 -translate-x-[160px] w-80 h-80 rounded-full bg-violet-400/22 blur-3xl" />
+      </div>
+
       {/* Desktop Mobile/Wide Switch - Subtle desktop-only helper outside phone frame */}
       {!isAuthRoute && (
         <div className="hidden lg:flex fixed top-3 right-3 z-50 items-center">
           <button
             onClick={() => setWideMode((v) => !v)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/65 backdrop-blur-xl border-2 border-white/90 shadow-md text-[11px] font-black text-slate-800 hover:bg-white/85 active:scale-95 transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/55 backdrop-blur-xl border-2 border-white/90 shadow-md text-[11px] font-black text-slate-900 hover:bg-white/80 active:scale-95 transition cursor-pointer"
           >
             {wideMode ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
             <span>{wideMode ? 'Mobil' : 'Keng'}</span>
@@ -67,21 +74,14 @@ const AppShell: React.FC = () => {
       )}
 
       <div
-        className={`w-full min-h-screen bg-white/35 backdrop-blur-2xl flex flex-col relative shadow-[0_0_60px_rgba(15,23,42,0.12)] overflow-x-clip ${
-          wideMode ? 'max-w-3xl' : 'max-w-[430px] md:border-x-2 md:border-white/80'
+        className={`w-full min-h-screen bg-white/15 flex flex-col relative z-10 shadow-[0_0_60px_rgba(15,23,42,0.12)] ${
+          wideMode ? 'max-w-3xl' : 'max-w-[430px] md:border-x-2 md:border-white/75'
         }`}
       >
-        {/* Ambient Iridescent Crystal Orbs glowing subtly behind translucent UI */}
-        <div className="pointer-events-none select-none fixed inset-0 overflow-hidden z-0 max-w-[430px] mx-auto">
-          <div className="absolute -top-20 -left-16 w-64 h-64 rounded-full bg-rose-400/20 blur-3xl" />
-          <div className="absolute top-1/3 -right-20 w-72 h-72 rounded-full bg-sky-400/22 blur-3xl" />
-          <div className="absolute -bottom-24 left-1/4 w-72 h-72 rounded-full bg-violet-400/18 blur-3xl" />
-        </div>
-
         {/* Persistent Voice Room Bar across World / Jang / Market / Profile (Section 8) */}
         {!isAuthRoute && <FloatingVoiceBar />}
 
-        <main className="flex-1 relative z-10">
+        <main className="flex-1">
           <Routes>
             <Route path="/" element={<HomePage onGoLive={() => setCreateOpen(true)} />} />
             <Route path="/login" element={<AuthPage />} />

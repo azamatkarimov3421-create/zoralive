@@ -33,7 +33,7 @@ export const ShopPage: React.FC = () => {
   return (
     <div className="bg-transparent min-h-full px-3.5 pt-3 pb-24 space-y-4">
       {/* Translucent Crystal Header */}
-      <div className="rounded-3xl bg-white/58 backdrop-blur-2xl border-2 border-white/90 px-3.5 py-3 shadow-[0_10px_28px_-8px_rgba(15,23,42,0.12),inset_0_1.5px_0_rgba(255,255,255,0.95)] flex items-center justify-between gap-2">
+      <div className="rounded-3xl bg-white/44 backdrop-blur-2xl border-2 border-white/85 px-3.5 py-3 shadow-[0_12px_32px_-8px_rgba(15,23,42,0.14),inset_0_2px_0_rgba(255,255,255,0.95)] flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#ff2d68] to-amber-500 text-white flex items-center justify-center shadow-lg border-2 border-white/50 shrink-0">
             <ShoppingBag className="w-5 h-5 stroke-[2.4]" />

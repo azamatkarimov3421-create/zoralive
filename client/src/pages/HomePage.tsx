@@ -118,7 +118,7 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
   return (
     <div className="bg-transparent min-h-full pb-24">
       {/* Sticky Translucent Crystal Glass Top Header */}
-      <header className="sticky top-0 z-30 bg-white/55 backdrop-blur-2xl px-3.5 pt-3 pb-2.5 border-b-2 border-white/80 shadow-[0_6px_24px_rgba(15,23,42,0.06)] space-y-2">
+      <header className="sticky top-0 z-30 bg-white/46 backdrop-blur-2xl px-3.5 pt-3 pb-2.5 border-b-2 border-white/75 shadow-[0_6px_24px_rgba(15,23,42,0.08)] space-y-2">
         <div className="flex items-center justify-between gap-2">
           {/* Primary Ziigo-style Top Tabs */}
           <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
@@ -269,10 +269,10 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
                 <button
                   key={item.to}
                   onClick={() => navigate(item.to)}
-                  className="flex flex-col items-center justify-center gap-1 py-2 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-slate-100 active:scale-95 transition"
+                  className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-2xl bg-white/46 backdrop-blur-xl border-2 border-white/80 hover:bg-white/70 shadow-xs active:scale-95 transition cursor-pointer"
                 >
                   <span className="text-lg leading-none">{item.icon}</span>
-                  <span className="text-[10px] font-extrabold text-slate-700">{item.label}</span>
+                  <span className="text-[10px] font-black text-slate-800">{item.label}</span>
                 </button>
               ))}
             </div>
@@ -324,12 +324,12 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
         {loading && rooms.length === 0 ? (
           <div className="grid grid-cols-2 gap-2.5">
             {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="aspect-[4/5] rounded-2xl bg-slate-100 animate-pulse" />
+              <div key={n} className="aspect-[4/5] rounded-3xl bg-white/38 backdrop-blur-xl border-2 border-white/70 animate-pulse" />
             ))}
           </div>
         ) : rooms.length === 0 ? (
-          <div className="py-12 px-4 text-center space-y-3 rounded-3xl bg-slate-50 border border-slate-100">
-            <div className="text-sm font-extrabold text-slate-600">Hozircha jonli efir xonalari yo‘q</div>
+          <div className="py-12 px-4 text-center space-y-3 rounded-3xl bg-white/46 backdrop-blur-xl border-2 border-white/80 shadow-sm">
+            <div className="text-sm font-black text-slate-800">Hozircha jonli efir xonalari yo‘q</div>
             {onGoLive && (
               <button
                 onClick={onGoLive}
@@ -345,7 +345,7 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
               <button
                 key={r.id}
                 onClick={() => openRoom(r)}
-                className="group relative aspect-[4/5] rounded-2xl overflow-hidden text-left bg-slate-900 active:scale-[0.98] transition flex flex-col justify-between p-2.5 shadow-sm border border-slate-200/70"
+                className="group relative aspect-[4/5] rounded-3xl overflow-hidden text-left bg-slate-900 active:scale-[0.98] transition flex flex-col justify-between p-2.5 shadow-lg border-2 border-white/75"
               >
                 <img
                   src={r.hostAvatar || getStageWallpaper(r.theme)}
