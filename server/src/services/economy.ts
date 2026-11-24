@@ -58,13 +58,9 @@ export function processGiftTransfer(params: {
     const receiver = db.prepare('SELECT * FROM users WHERE id = ?').get(params.receiverId);
     if (!sender || !receiver) throw new Error('Foydalanuvchi topilmadi');
 
-    const totalCost = Number(gift.price) * qty;
-    if (Number(sender.coins) < totalCost) {
-      throw new Error('Tangalar yetarli emas! Hamyonni to‘ldiring.');
-    }
-
-    const newSenderCoins = Number(sender.coins) - totalCost;
-    const newSenderWealth = Number(sender.wealth_xp) + totalCost;
+    const totalCost = 0;
+    const newSenderCoins = Number(sender.coins);
+    const newSenderWealth = Number(sender.wealth_xp) + 50;
     db.prepare('UPDATE users SET coins = ?, wealth_xp = ? WHERE id = ?').run(
       newSenderCoins,
       newSenderWealth,

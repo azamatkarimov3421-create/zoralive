@@ -206,17 +206,13 @@ class MockSocket {
       } else if (event === 'room:gift') {
         const gift = MOCK_GIFTS.find((g) => g.id === data.giftId) || MOCK_GIFTS[0];
         const qty = Math.max(1, Number(data.quantity || 1));
-        const totalCost = gift.price * qty;
-        if (u.coins < totalCost) {
-          this.trigger('room:error', { message: 'Tangalar yetarli emas — Hamyondan to‘ldiring' });
-          return;
-        }
-        const nextCoins = u.coins - totalCost;
+        const totalCost = 0;
+        const nextCoins = u.coins || 0;
         setStoredUser({ ...u, coins: nextCoins });
         sendGiftInSupabase(
           u,
           data.receiverId || 'user_host_1',
-          { id: gift.id, nameUz: gift.name_uz, price: gift.price, diamondsAward: gift.price / 2 },
+          { id: gift.id, nameUz: gift.name_uz, price: 0, diamondsAward: 50 },
           qty,
           data.roomId || 'room_madina'
         );
@@ -275,11 +271,7 @@ class MockSocket {
         this.trigger('room:notice_changed', { notice: data.notice || '' });
       } else if (event === 'room:lucky_box_drop') {
         const totalCoins = Number(data.totalCoins || 500);
-        if (u.coins < totalCoins) {
-          this.trigger('room:error', { message: 'Tangalar yetarli emas' });
-          return;
-        }
-        const nextCoins = u.coins - totalCoins;
+        const nextCoins = u.coins || 0;
         setStoredUser({ ...u, coins: nextCoins });
         this.trigger('wallet:updated', { coins: nextCoins });
         this.activeBox = {

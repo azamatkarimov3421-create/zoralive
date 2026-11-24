@@ -432,7 +432,7 @@ export async function fetchGiftsFromSupabase(): Promise<GiftItem[] | null> {
       name_uz: g.name_uz,
       icon: g.icon_url,
       category: Number(g.price_coins) > 5000 ? 'LUXURY' : Number(g.price_coins) > 500 ? 'LUCKY' : 'BASIC',
-      price: Number(g.price_coins),
+      price: 0,
       effect_type:
         g.animation_type === 'fullscreen' || g.animation_type === 'dragon_3d' || g.animation_type === 'cinematic'
           ? 'fullscreen'

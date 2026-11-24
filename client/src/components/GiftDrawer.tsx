@@ -181,8 +181,8 @@ export const GiftDrawer: React.FC<GiftDrawerProps> = ({
                 <span className="text-[10px] font-extrabold text-slate-900 truncate w-full text-center leading-tight">
                   {drg ? drg.name : g.name_uz}
                 </span>
-                <span className="text-[10px] font-black text-amber-600 mt-0.5 leading-none">
-                  🪙 {g.price.toLocaleString()}
+                <span className="text-[10px] font-black text-emerald-600 mt-0.5 leading-none">
+                  {g.price === 0 ? '🎁 Tekin' : `🪙 ${g.price.toLocaleString()}`}
                 </span>
               </button>
             );

@@ -52,14 +52,9 @@ router.post('/wheel/spin', requireAuth, (req: AuthRequest, res) => {
     const userId = req.user!.id;
     const outcome = runTransaction(() => {
       const user = db.prepare('SELECT id, coins, display_name FROM users WHERE id = ?').get(userId)!;
-      if (Number(user.coins) < bet) {
-        throw new Error('Tangalar yetarli emas');
-      }
-
       const { index, sector } = pickWeightedSector();
       const winAmount = Math.floor(bet * sector.multiplier);
-      const afterBet = Number(user.coins) - bet;
-      const finalCoins = afterBet + winAmount;
+      const finalCoins = Number(user.coins) + winAmount;
       const now = new Date().toISOString();
       const spinId = uuid();
 
@@ -68,7 +63,7 @@ router.post('/wheel/spin', requireAuth, (req: AuthRequest, res) => {
       db.prepare(
         `INSERT INTO ledger (id, user_id, currency, amount, balance_after, tx_type, description, ref_id, created_at)
          VALUES (?, ?, 'COINS', ?, ?, 'GAME_BET', ?, ?, ?)`
-      ).run(uuid(), userId, -bet, afterBet, `Lucky Wheel tikish (${bet})`, spinId, now);
+      ).run(uuid(), userId, 0, Number(user.coins), `Lucky Wheel tekin aylanish (${bet})`, spinId, now);
 
       if (winAmount > 0) {
         db.prepare(

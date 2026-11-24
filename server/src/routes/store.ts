@@ -8,7 +8,7 @@ const router = Router();
 
 router.get('/gifts', requireAuth, (_req, res) => {
   const gifts = db.prepare('SELECT * FROM gifts WHERE is_active = 1 ORDER BY price ASC').all();
-  res.json({ gifts });
+  res.json({ gifts: gifts.map((g: any) => ({ ...g, price: 0 })) });
 });
 
 router.get('/items', requireAuth, (req: AuthRequest, res) => {
@@ -21,6 +21,7 @@ router.get('/items', requireAuth, (req: AuthRequest, res) => {
   res.json({
     items: items.map((it) => ({
       ...it,
+      price: 0,
       owned: ownedMap.has(it.code),
       expiresAt: ownedMap.get(it.code) || null,
     })),
@@ -29,20 +30,19 @@ router.get('/items', requireAuth, (req: AuthRequest, res) => {
 
 router.post('/buy', requireAuth, (req: AuthRequest, res) => {
   try {
-    const { itemId, code, itemType, price, nameUz, frameCode, bubbleCode } = req.body || {};
+    const { itemId, code, itemType, nameUz, frameCode, bubbleCode } = req.body || {};
     const userId = req.user!.id;
 
     const updatedUser = runTransaction(() => {
       let item = db.prepare('SELECT * FROM store_items WHERE id = ? OR code = ?').get(String(itemId || ''), String(code || ''));
       if (!item && code && itemType) {
-        const resolvedPrice = Math.max(0, Number(price) || 0);
         const vipTierNum = itemType === 'VIP' ? Number(String(code).replace('vip-', '')) || 1 : 0;
         item = {
           id: String(itemId || `dyn_${code}`),
           type: String(itemType),
           code: String(code),
           name_uz: String(nameUz || code),
-          price: resolvedPrice,
+          price: 0,
           duration_days: 30,
           vip_tier: vipTierNum,
         };
@@ -50,12 +50,8 @@ router.post('/buy', requireAuth, (req: AuthRequest, res) => {
       if (!item) throw new Error('Mahsulot topilmadi');
 
       const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId)!;
-      if (Number(user.coins) < Number(item.price)) {
-        throw new Error('Tangalar yetarli emas — Hamyondan yoki Ega Panelidan to‘ldiring');
-      }
-
-      const newCoins = Number(user.coins) - Number(item.price);
-      const newWealth = Number(user.wealth_xp) + Number(item.price);
+      const newCoins = Number(user.coins);
+      const newWealth = Number(user.wealth_xp) + 100;
       const expiresAt = new Date(Date.now() + Number(item.duration_days || 30) * 86400 * 1000).toISOString();
       const now = new Date().toISOString();
 
@@ -64,7 +60,7 @@ router.post('/buy', requireAuth, (req: AuthRequest, res) => {
       db.prepare(
         `INSERT INTO ledger (id, user_id, currency, amount, balance_after, tx_type, description, ref_id, created_at)
          VALUES (?, ?, 'COINS', ?, ?, 'STORE_BUY', ?, ?, ?)`
-      ).run(uuid(), userId, -Number(item.price), newCoins, `Do‘kon: ${item.name_uz}`, item.id, now);
+      ).run(uuid(), userId, 0, newCoins, `Do‘kon (Tekin): ${item.name_uz}`, item.id, now);
 
       db.prepare(
         `INSERT INTO user_inventory (id, user_id, item_id, item_type, item_code, expires_at, created_at)

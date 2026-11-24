@@ -174,26 +174,26 @@ function buildMockStoreItems() {
       vip_tier: f.vipTier || 0,
       owned: owned.has(f.code),
     })),
-    // Classic Rides + VIP 5-8 Riders + All 10 Dragon Rides
-    { id: 'st-rd-horse', type: 'RIDE', code: 'ride-horse', name_uz: '🐎 Zirhli Ritsar Oti (VIP 5)', price: 1800, vip_tier: 5, owned: owned.has('ride-horse'), image: '/assets/gift-crown.jpg' },
-    { id: 'st-rd-mecha', type: 'RIDE', code: 'ride-mecha', name_uz: '🦾 Mexa Ajdarho (VIP 6)', price: 2800, vip_tier: 6, owned: owned.has('ride-mecha'), image: '/assets/gift-dragon.jpg' },
-    { id: 'st-rd-lambo', type: 'RIDE', code: 'ride-lambo', name_uz: '🏎️ Lyuks Sport Avto (VIP 7)', price: 3500, vip_tier: 7, owned: owned.has('ride-lambo'), image: '/assets/gift-car.jpg' },
-    { id: 'st-rd-jet', type: 'RIDE', code: 'ride-jet', name_uz: '✈️ Shaxsiy Layner (VIP 8)', price: 4800, vip_tier: 8, owned: owned.has('ride-jet'), image: '/assets/gift-yacht.jpg' },
+    // Classic Rides + VIP 5-8 Riders + All 10 Dragon Rides (ALL FREE / OPEN)
+    { id: 'st-rd-horse', type: 'RIDE', code: 'ride-horse', name_uz: '🐎 Zirhli Ritsar Oti (VIP 5)', price: 0, vip_tier: 5, owned: owned.has('ride-horse'), image: '/assets/gift-crown.jpg' },
+    { id: 'st-rd-mecha', type: 'RIDE', code: 'ride-mecha', name_uz: '🦾 Mexa Ajdarho (VIP 6)', price: 0, vip_tier: 6, owned: owned.has('ride-mecha'), image: '/assets/gift-dragon.jpg' },
+    { id: 'st-rd-lambo', type: 'RIDE', code: 'ride-lambo', name_uz: '🏎️ Lyuks Sport Avto (VIP 7)', price: 0, vip_tier: 7, owned: owned.has('ride-lambo'), image: '/assets/gift-car.jpg' },
+    { id: 'st-rd-jet', type: 'RIDE', code: 'ride-jet', name_uz: '✈️ Shaxsiy Layner (VIP 8)', price: 0, vip_tier: 8, owned: owned.has('ride-jet'), image: '/assets/gift-yacht.jpg' },
     ...MYTHIC_DRAGONS.map((d) => ({
       id: `st-drg-${d.id}`,
       type: 'RIDE',
       code: d.rideCode,
       name_uz: `🐉 ${d.name} (${d.titleUz})`,
-      price: d.ridePrice,
+      price: 0,
       vip_tier: d.vipUnlock || 0,
       owned: owned.has(d.rideCode),
       image: d.image,
     })),
     // Chat Bubbles
-    { id: 'st-bb-neon', type: 'BUBBLE', code: 'bubble-neon', name_uz: 'Neon Chat Pufagi', price: 450, vip_tier: 1, owned: owned.has('bubble-neon') },
-    { id: 'st-bb-rose', type: 'BUBBLE', code: 'bubble-rose', name_uz: 'Pushti Chat Pufagi', price: 650, vip_tier: 3, owned: owned.has('bubble-rose') },
-    { id: 'st-bb-gold', type: 'BUBBLE', code: 'bubble-gold', name_uz: 'Oltin Animatsiyali Chat', price: 1200, vip_tier: 4, owned: owned.has('bubble-gold') },
-    { id: 'st-bb-cosmic', type: 'BUBBLE', code: 'bubble-cosmic', name_uz: 'Cheksiz Kosmik VIP Chat', price: 4500, vip_tier: 11, owned: owned.has('bubble-cosmic') },
+    { id: 'st-bb-neon', type: 'BUBBLE', code: 'bubble-neon', name_uz: 'Neon Chat Pufagi', price: 0, vip_tier: 1, owned: owned.has('bubble-neon') },
+    { id: 'st-bb-rose', type: 'BUBBLE', code: 'bubble-rose', name_uz: 'Pushti Chat Pufagi', price: 0, vip_tier: 3, owned: owned.has('bubble-rose') },
+    { id: 'st-bb-gold', type: 'BUBBLE', code: 'bubble-gold', name_uz: 'Oltin Animatsiyali Chat', price: 0, vip_tier: 4, owned: owned.has('bubble-gold') },
+    { id: 'st-bb-cosmic', type: 'BUBBLE', code: 'bubble-cosmic', name_uz: 'Cheksiz Kosmik VIP Chat', price: 0, vip_tier: 11, owned: owned.has('bubble-cosmic') },
     // VIP 1-12
     ...VIP_LEVELS_1_TO_12.map((v) => ({
       id: `st-vip-${v.level}`,
@@ -417,13 +417,13 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     return { rooms: list } as unknown as T;
   }
 
-  // 3. Store & Gifts
+  // 3. Store & Gifts (All open & free)
   if (path === '/store/gifts') {
     const liveGifts = await fetchGiftsFromSupabase();
     if (liveGifts && liveGifts.length > 0) {
-      return { gifts: liveGifts } as unknown as T;
+      return { gifts: liveGifts.map((g: any) => ({ ...g, price: 0 })) } as unknown as T;
     }
-    return { gifts: MOCK_GIFTS } as unknown as T;
+    return { gifts: MOCK_GIFTS.map((g) => ({ ...g, price: 0 })) } as unknown as T;
   }
 
   if (path === '/store/items') {
@@ -433,16 +433,11 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
   if (path === '/store/buy') {
     const items = buildMockStoreItems();
     const found = items.find((i) => i.id === body.itemId || i.code === body.code);
-    const price = Number(found?.price ?? body.price ?? 0);
+    const price = 0;
     const itemType = found?.type || body.itemType;
     const code = found?.code || body.code;
 
-    if (currentUser.coins < price) {
-      throw new Error('Tangalar yetarli emas — Hamyondan yoki Ega Panelidan to‘ldiring');
-    }
-
-    currentUser.coins -= price;
-    currentUser.wealthXp = (currentUser.wealthXp || 0) + price;
+    currentUser.wealthXp = (currentUser.wealthXp || 0) + 100;
 
     if (itemType === 'VIP') {
       const tierNum = Number(found?.vip_tier || String(code).replace('vip-', '') || 1);
@@ -493,12 +488,11 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
   }
 
   if (path === '/games/wheel/spin') {
-    const bet = Math.max(10, Number(body.bet || 50));
-    if (currentUser.coins < bet) throw new Error('Tangalar yetarli emas');
+    const bet = Math.max(0, Number(body.bet || 50));
     const sectorIndex = Math.floor(Math.random() * WHEEL_SECTORS.length);
     const sector = WHEEL_SECTORS[sectorIndex];
-    const winAmount = Math.round(bet * sector.multiplier);
-    currentUser.coins = currentUser.coins - bet + winAmount;
+    const winAmount = Math.round(Math.max(50, bet) * sector.multiplier);
+    currentUser.coins = (currentUser.coins || 0) + winAmount;
     setStoredUser(currentUser);
     mockWheelRecent.unshift({
       id: `w_${Date.now()}`,
@@ -634,13 +628,13 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     return { reward, coins: currentUser.coins } as unknown as T;
   }
 
-  // 8. Wallet
+  // 8. Wallet (All packs free for open testing)
   const TOPUP_PACKAGES = [
-    { id: 'pkg-1', coins: 500, bonus: 0, priceUsd: 0.99, priceUzs: 12900, badge: '' },
-    { id: 'pkg-2', coins: 1500, bonus: 150, priceUsd: 2.99, priceUzs: 38900, badge: 'Ommabop' },
-    { id: 'pkg-3', coins: 5000, bonus: 600, priceUsd: 9.99, priceUzs: 129000, badge: '+12% Bonus' },
-    { id: 'pkg-4', coins: 15000, bonus: 2500, priceUsd: 29.99, priceUzs: 385000, badge: 'VIP Tanlov' },
-    { id: 'pkg-5', coins: 50000, bonus: 10000, priceUsd: 99.99, priceUzs: 1280000, badge: 'Eng Foydali' },
+    { id: 'pkg-1', coins: 5000, bonus: 0, priceUsd: 0, priceUzs: 0, badge: 'Tekin' },
+    { id: 'pkg-2', coins: 15000, bonus: 1500, priceUsd: 0, priceUzs: 0, badge: 'Tekin' },
+    { id: 'pkg-3', coins: 50000, bonus: 5000, priceUsd: 0, priceUzs: 0, badge: 'Tekin' },
+    { id: 'pkg-4', coins: 150000, bonus: 25000, priceUsd: 0, priceUzs: 0, badge: 'VIP Tekin' },
+    { id: 'pkg-5', coins: 500000, bonus: 100000, priceUsd: 0, priceUzs: 0, badge: 'Cheksiz Tekin' },
   ];
 
   if (path === '/wallet') {

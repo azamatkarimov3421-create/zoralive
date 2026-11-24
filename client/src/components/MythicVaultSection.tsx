@@ -206,8 +206,8 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
                   </div>
 
                   <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-200/40">
-                    <span className={`text-[11px] font-extrabold ${isCosmic ? 'text-amber-300' : 'text-amber-600'}`}>
-                      🪙 {tier.price.toLocaleString()} tanga
+                    <span className={`text-[11px] font-extrabold ${isCosmic ? 'text-emerald-300' : 'text-emerald-600'}`}>
+                      {tier.price === 0 ? '🎁 Tekin (Ochiq)' : `🪙 ${tier.price.toLocaleString()} tanga`}
                     </span>
 
                     <button
@@ -311,7 +311,13 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
                         : 'btn-brand'
                     }`}
                   >
-                    {isEquipped ? '✓ Faol Ajdarho' : isOwned ? 'Taqish' : `🐉 Sotib olish (🪙 ${d.ridePrice.toLocaleString()})`}
+                    {isEquipped
+                      ? '✓ Faol Ajdarho'
+                      : isOwned
+                      ? 'Taqish'
+                      : d.ridePrice === 0
+                      ? '🐉 Tekin Olish'
+                      : `🐉 Sotib olish (🪙 ${d.ridePrice.toLocaleString()})`}
                   </button>
                 </div>
               </div>
@@ -405,6 +411,8 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
               >
                 {user.activeRide === inspectDragon.rideCode
                   ? '✓ Hozirgi kirish ajdarhosi'
+                  : inspectDragon.ridePrice === 0
+                  ? '🐉 Tekin olish va taqish'
                   : `🐉 Kirish ajdarhosi qilib olish (🪙 ${inspectDragon.ridePrice.toLocaleString()})`}
               </button>
             </div>

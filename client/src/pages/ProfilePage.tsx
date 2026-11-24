@@ -559,7 +559,9 @@ export const ProfilePage: React.FC = () => {
                   className="p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/70 text-left transition"
                 >
                   <div className="text-sm font-black text-amber-600">🪙 {pkg.coins.toLocaleString()}</div>
-                  <div className="text-xs font-extrabold text-slate-900 mt-1">{pkg.priceUzs.toLocaleString()} so‘m</div>
+                  <div className="text-xs font-extrabold text-emerald-600 mt-1">
+                    {pkg.priceUzs ? `${pkg.priceUzs.toLocaleString()} so‘m` : 'Tekin (Bepul)'}
+                  </div>
                 </button>
               ))}
             </div>

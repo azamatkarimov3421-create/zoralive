@@ -146,7 +146,7 @@ export const MarketPage: React.FC = () => {
                     onClick={() => buySellerItem(item.id)}
                     className="w-full py-1.5 rounded-full btn-brand text-[11px] font-black disabled:opacity-40"
                   >
-                    {item.stock > 0 ? `🪙 ${item.priceCoins.toLocaleString()}` : 'Tugadi'}
+                    {item.stock > 0 ? 'Tekin olish' : 'Tugadi'}
                   </button>
                 </div>
               </div>
@@ -221,7 +221,7 @@ export const MarketPage: React.FC = () => {
                       onClick={() => buySoldierGear(g.id, g.priceCoins, g.priceGems)}
                       className="w-full py-1.5 rounded-full btn-brand text-[10.5px] font-black"
                     >
-                      🪙 {g.priceCoins} + 💎 {g.priceGems}
+                      Tekin olish ⚔️
                     </button>
                   )}
                 </div>

@@ -11,11 +11,11 @@ import { config } from '../config';
 const router = Router();
 
 const TOPUP_PACKAGES = [
-  { id: 'pkg-1', coins: 500, bonus: 0, priceUsd: 0.99, priceUzs: 12900, badge: '' },
-  { id: 'pkg-2', coins: 1500, bonus: 150, priceUsd: 2.99, priceUzs: 38900, badge: 'Ommabop' },
-  { id: 'pkg-3', coins: 5000, bonus: 600, priceUsd: 9.99, priceUzs: 129000, badge: '+12% Bonus' },
-  { id: 'pkg-4', coins: 15000, bonus: 2500, priceUsd: 29.99, priceUzs: 385000, badge: 'VIP Tanlov' },
-  { id: 'pkg-5', coins: 50000, bonus: 10000, priceUsd: 99.99, priceUzs: 1280000, badge: 'Eng Foydali' },
+  { id: 'pkg-1', coins: 5000, bonus: 0, priceUsd: 0, priceUzs: 0, badge: 'Tekin' },
+  { id: 'pkg-2', coins: 15000, bonus: 1500, priceUsd: 0, priceUzs: 0, badge: 'Tekin' },
+  { id: 'pkg-3', coins: 50000, bonus: 5000, priceUsd: 0, priceUzs: 0, badge: 'Tekin' },
+  { id: 'pkg-4', coins: 150000, bonus: 25000, priceUsd: 0, priceUzs: 0, badge: 'VIP Tekin' },
+  { id: 'pkg-5', coins: 500000, bonus: 100000, priceUsd: 0, priceUzs: 0, badge: 'Cheksiz Tekin' },
 ];
 
 router.get('/', requireAuth, (req: AuthRequest, res) => {
