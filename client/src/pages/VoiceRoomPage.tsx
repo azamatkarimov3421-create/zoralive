@@ -594,10 +594,16 @@ export const VoiceRoomPage: React.FC = () => {
             <MoreHorizontal className="w-4 h-4" />
           </button>
           <button
-            onClick={() => navigate('/')}
-            className={`p-2 rounded-full ${isLight ? 'bg-white border border-slate-200/80 text-slate-700' : 'glass-dark text-white'}`}
+            onClick={() => {
+              if (roomId) getSocket().emit('room:leave', { roomId });
+              stopAudio();
+              navigate('/');
+            }}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-rose-500/15 border border-rose-300/70 text-rose-700 text-[11px] font-black hover:bg-rose-500/25 transition cursor-pointer"
+            title="Xonadan chiqish"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Chiqish</span>
           </button>
         </div>
       </header>

@@ -485,8 +485,17 @@ export const VideoRoomPage: React.FC = () => {
           <button onClick={toggleCamera} className="p-2 rounded-full bg-slate-100 text-slate-700">
             {cameraStream ? <Video className="w-4 h-4 text-emerald-600" /> : <VideoOff className="w-4 h-4" />}
           </button>
-          <button onClick={() => navigate('/')} className="p-2 rounded-full bg-slate-100 text-slate-700">
-            <ArrowLeft className="w-4 h-4" />
+          <button
+            onClick={() => {
+              if (roomId) getSocket().emit('room:leave', { roomId });
+              cameraStream?.getTracks().forEach((t) => t.stop());
+              navigate('/');
+            }}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-rose-500/15 border border-rose-300/70 text-rose-700 text-[11px] font-black hover:bg-rose-500/25 transition cursor-pointer"
+            title="Efirdan chiqish"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Chiqish</span>
           </button>
         </div>
       </header>

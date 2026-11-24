@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coins, Users, Shield, RefreshCw, Swords, Search, X, ChevronRight, Crown, Plus } from 'lucide-react';
+import { Coins, Users, Shield, RefreshCw, Swords, Search, X, Crown, Plus } from 'lucide-react';
 import { api } from '../lib/api';
 import { fetchRoomsFromSupabase } from '../lib/supabaseSync';
 import { useAuth } from '../context/AuthContext';
@@ -8,39 +8,6 @@ import { RoomSummary } from '../types';
 import { LiveWaveBars, VipCrest, getStageWallpaper } from '../components/LuxuryBadges';
 import { Avatar } from '../components/Avatar';
 import { MYTHIC_DRAGONS } from '../lib/mythicCatalog';
-
-const HERO_BANNERS = [
-  {
-    id: 'balcony-battle',
-    to: '/battle',
-    badge: 'ODAMLARSIZ • BALKON ARENASI',
-    title: 'Ajdarho vs Ajdarho Jangi 🔥',
-    subtitle: '1-Tomon vs 2-Tomon • Balkonga chiqib olov purkash • Evolyutsiya',
-    image: '/assets/balcony-dragon-poster.jpg',
-    gradient: 'from-slate-950/90 via-slate-900/55 to-transparent',
-    pillCls: 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950',
-  },
-  {
-    id: 'world-map',
-    to: '/world',
-    badge: '10 QIT’A • DAVLATLAR',
-    title: 'Umumiy Dunyo & Mayning',
-    subtitle: '10 ta Kristall koni, Davlatlar urushi, 20 ta Maxluqni do‘stlashtirish',
-    image: '/assets/dragons/xaldris.jpg',
-    gradient: 'from-purple-950/92 via-indigo-950/65 to-transparent',
-    pillCls: 'bg-emerald-400 text-slate-950',
-  },
-  {
-    id: 'dragons',
-    to: '/shop',
-    badge: 'VIP 1–12 • YAGONA AJDARHO',
-    title: 'VIP Panellar & Ajdarho',
-    subtitle: 'Xaldris afsonaviy ajdarhosi va VIP 1–12 imtiyozlar',
-    image: '/assets/dragons/xaldris.jpg',
-    gradient: 'from-slate-950/90 via-slate-900/60 to-transparent',
-    pillCls: 'bg-amber-400 text-slate-950',
-  },
-];
 
 export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
   const { user } = useAuth();
@@ -50,7 +17,6 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState('');
-  const [bannerIdx, setBannerIdx] = useState(0);
 
   // Preload dragon thumbnails cleanly in background so GiftDrawer opens instantaneously
   useEffect(() => {
@@ -58,14 +24,6 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
       const img = new Image();
       img.src = d.image;
     });
-  }, []);
-
-  // Auto-cycle hero promo banner like Ziigo / Bigo Live
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setBannerIdx((prev) => (prev + 1) % HERO_BANNERS.length);
-    }, 4500);
-    return () => window.clearInterval(id);
   }, []);
 
   const loadRooms = async (q = searchQ) => {
@@ -112,8 +70,6 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
     if (r.type === 'VIDEO') navigate(`/video/${r.id}`);
     else navigate(`/voice/${r.id}`);
   };
-
-  const activeBanner = HERO_BANNERS[bannerIdx];
 
   return (
     <div className="bg-transparent min-h-full pb-24">
@@ -212,70 +168,24 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
       </header>
 
       <div className="px-3.5 pt-3 space-y-4">
-        {/* Ziigo-style Hero Event Banner Carousel */}
+        {/* 4 Clean Compact Shortcut Pills */}
         {!searchOpen && (
-          <div className="space-y-2.5">
-            <button
-              onClick={() => navigate(activeBanner.to)}
-              className="relative w-full h-[116px] rounded-3xl overflow-hidden text-left shadow-lg border-2 border-white/80 block group"
-            >
-              <img
-                src={activeBanner.image}
-                alt={activeBanner.title}
-                loading="eager"
-                className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className={`absolute inset-0 bg-gradient-to-r ${activeBanner.gradient}`} />
-
-              <div className="relative z-10 h-full px-4 py-3 flex flex-col justify-between max-w-[82%]">
-                <span className={`w-fit px-2 py-0.5 rounded-full text-[9px] font-black tracking-wide ${activeBanner.pillCls}`}>
-                  {activeBanner.badge}
-                </span>
-                <div>
-                  <div className="text-[15px] font-black text-white leading-tight drop-shadow-xs">
-                    {activeBanner.title}
-                  </div>
-                  <div className="text-[11px] font-medium text-white/90 truncate mt-0.5">
-                    {activeBanner.subtitle}
-                  </div>
-                </div>
-              </div>
-
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center">
-                <ChevronRight className="w-4 h-4" />
-              </span>
-
-              {/* Slide Dots */}
-              <div className="absolute bottom-2 right-3 flex items-center gap-1 z-10">
-                {HERO_BANNERS.map((b, idx) => (
-                  <span
-                    key={b.id}
-                    className={`h-1.5 rounded-full transition-all ${
-                      idx === bannerIdx ? 'w-4 bg-white' : 'w-1.5 bg-white/45'
-                    }`}
-                  />
-                ))}
-              </div>
-            </button>
-
-            {/* 4 Clean Compact Shortcut Pills */}
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { to: '/battle', icon: '🔥', label: 'Balkon Jangi' },
-                { to: '/world', icon: '🗺️', label: '10 Qit’a' },
-                { to: '/market', icon: '🛍️', label: 'Market' },
-                { to: '/admin', icon: '👑', label: '7 Panel' },
-              ].map((item) => (
-                <button
-                  key={item.to}
-                  onClick={() => navigate(item.to)}
-                  className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-2xl bg-white/46 backdrop-blur-xl border-2 border-white/80 hover:bg-white/70 shadow-xs active:scale-95 transition cursor-pointer"
-                >
-                  <span className="text-lg leading-none">{item.icon}</span>
-                  <span className="text-[10px] font-black text-slate-800">{item.label}</span>
-                </button>
-              ))}
-            </div>
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { to: '/battle', icon: '🔥', label: 'Balkon Jangi' },
+              { to: '/world', icon: '🗺️', label: '10 Qit’a' },
+              { to: '/market', icon: '🛍️', label: 'Market' },
+              { to: '/admin', icon: '👑', label: '7 Panel' },
+            ].map((item) => (
+              <button
+                key={item.to}
+                onClick={() => navigate(item.to)}
+                className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-2xl bg-white/46 backdrop-blur-xl border-2 border-white/80 hover:bg-white/70 shadow-xs active:scale-95 transition cursor-pointer"
+              >
+                <span className="text-lg leading-none">{item.icon}</span>
+                <span className="text-[10px] font-black text-slate-800">{item.label}</span>
+              </button>
+            ))}
           </div>
         )}
 
