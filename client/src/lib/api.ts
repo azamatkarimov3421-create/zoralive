@@ -4,6 +4,7 @@ import {
   syncProfileToSupabase,
   fetchAllProfilesFromSupabase,
   fetchRoomsFromSupabase,
+  fetchRoomByIdFromSupabase,
   createRoomInSupabase,
   closeRoomInSupabase,
   fetchGiftsFromSupabase,
@@ -395,11 +396,12 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     const roomIdMatch = path.match(/^\/rooms\/([^/?]+)/);
     if (roomIdMatch) {
       const rId = roomIdMatch[1];
-      const found = mockRooms.find((r) => r.id === rId) || mockRooms[0];
+      const supaRoom = await fetchRoomByIdFromSupabase(rId);
+      const found = supaRoom || mockRooms.find((r) => r.id === rId) || mockRooms[0];
       return {
         room: {
           ...found,
-          notice: `Xush kelibsiz! ${found.title} — sovg‘alar va jonli suhbatlar 🐉✨`,
+          notice: `Xush kelibsiz! ${found.title} — jonli suhbatlar va sovg‘alar ✨`,
           isFollowing: mockFollows.has(found.hostId),
           host: {
             id: found.hostId,
@@ -623,10 +625,10 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
   // 7. Tasks
   if (path === '/tasks') {
     const baseTasks = [
-      { id: 't1', code: 'daily_checkin', title: 'Kundalik kirish bonusi', reward: 500, claimed: mockClaimedTasks.has('t1') },
-      { id: 't2', code: 'watch_5m', title: '5 daqiqa jonli efir ko‘rish', reward: 350, claimed: mockClaimedTasks.has('t2') },
-      { id: 't3', code: 'send_dragon', title: '1 ta Ajdarho sovg‘a yuborish', reward: 1000, claimed: mockClaimedTasks.has('t3') },
-      { id: 't4', code: 'play_ludo', title: 'Ludo yoki Wheel o‘ynash', reward: 400, claimed: mockClaimedTasks.has('t4') },
+      { id: 't1', code: 'daily_checkin', icon: '🎁', title: 'Kundalik kirish bonusi', reward: 500, claimed: mockClaimedTasks.has('t1') },
+      { id: 't2', code: 'watch_5m', icon: '📺', title: '5 daqiqa jonli efir ko‘rish', reward: 350, claimed: mockClaimedTasks.has('t2') },
+      { id: 't3', code: 'send_dragon', icon: '🐉', title: '1 ta Ajdarho sovg‘a yuborish', reward: 1000, claimed: mockClaimedTasks.has('t3') },
+      { id: 't4', code: 'play_ludo', icon: '🎲', title: 'Ludo yoki Wheel o‘ynash', reward: 400, claimed: mockClaimedTasks.has('t4') },
     ];
     return { tasks: baseTasks } as unknown as T;
   }
@@ -637,6 +639,7 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     const reward = 500;
     currentUser.coins += reward;
     setStoredUser(currentUser);
+    syncProfileToSupabase({ id: currentUser.id, coins: currentUser.coins });
     mockLedger.unshift({
       id: `tx_${Date.now()}`,
       currency: 'COINS',
@@ -648,24 +651,34 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
   }
 
   // 8. Wallet
+  const TOPUP_PACKAGES = [
+    { id: 'pkg-1', coins: 500, bonus: 0, priceUsd: 0.99, priceUzs: 12900, badge: '' },
+    { id: 'pkg-2', coins: 1500, bonus: 150, priceUsd: 2.99, priceUzs: 38900, badge: 'Ommabop' },
+    { id: 'pkg-3', coins: 5000, bonus: 600, priceUsd: 9.99, priceUzs: 129000, badge: '+12% Bonus' },
+    { id: 'pkg-4', coins: 15000, bonus: 2500, priceUsd: 29.99, priceUzs: 385000, badge: 'VIP Tanlov' },
+    { id: 'pkg-5', coins: 50000, bonus: 10000, priceUsd: 99.99, priceUzs: 1280000, badge: 'Eng Foydali' },
+  ];
+
   if (path === '/wallet') {
     return {
       coins: currentUser.coins,
       diamonds: currentUser.diamonds,
+      packages: TOPUP_PACKAGES,
       ledger: mockLedger,
     } as unknown as T;
   }
 
   if (path === '/wallet/topup') {
-    const added = Number(body.coins || body.amount || 5000);
+    const pkg = TOPUP_PACKAGES.find((p) => p.id === body.packageId);
+    const added = pkg ? pkg.coins + pkg.bonus : Number(body.coins || body.amount || 5000);
     currentUser.coins += added;
     setStoredUser(currentUser);
-    syncProfileToSupabase(currentUser);
+    syncProfileToSupabase({ id: currentUser.id, coins: currentUser.coins });
     mockLedger.unshift({
       id: `tx_${Date.now()}`,
       currency: 'COINS',
       amount: added,
-      description: `${body.provider || 'Click'} orqali to‘ldirish`,
+      description: `${body.provider || 'Click'} orqali to‘ldirish (+${added.toLocaleString()})`,
       created_at: new Date().toISOString(),
     });
     return { added, coins: currentUser.coins } as unknown as T;
@@ -769,27 +782,43 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
 
   // 11. Messages
   if (path === '/messages/conversations') {
+    const liveProfiles = await fetchAllProfilesFromSupabase();
+    const peers = (liveProfiles.length > 0 ? liveProfiles : Object.values(DEMO_USERS)).filter(
+      (u) => u.id !== currentUser.id
+    );
+    const dmStore: Record<string, any[]> = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('zoralive_dms_v1') || '{}');
+      } catch {
+        return {};
+      }
+    })();
     return {
-      conversations: [
-        { peer: DEMO_USERS.host, lastMessage: 'Salom! Kechki efirga kiring 🎤', updatedAt: new Date().toISOString() },
-        { peer: DEMO_USERS.admin, lastMessage: 'VIP 12 va Ajdarholar muborak! 🐉', updatedAt: new Date().toISOString() },
-      ],
+      conversations: peers.slice(0, 12).map((peer) => {
+        const key = [currentUser.id, peer.id].sort().join('__');
+        const thread = dmStore[key] || [];
+        const last = thread[thread.length - 1];
+        return {
+          peer,
+          lastMessage: last ? last.content : 'Suhbat boshlash uchun yozing...',
+          updatedAt: last ? last.created_at : new Date().toISOString(),
+        };
+      }),
     } as unknown as T;
   }
 
   const dmMatch = path.match(/^\/messages\/([^/]+)$/);
   if (dmMatch) {
-    return {
-      messages: [
-        {
-          id: 'dm1',
-          sender_id: dmMatch[1],
-          receiver_id: currentUser.id,
-          content: 'Assalomu alaykum! ZoraLive’ga xush kelibsiz 🐉✨',
-          created_at: new Date(Date.now() - 120000).toISOString(),
-        },
-      ],
-    } as unknown as T;
+    const peerId = dmMatch[1];
+    const key = [currentUser.id, peerId].sort().join('__');
+    let thread: any[] = [];
+    try {
+      const dmStore = JSON.parse(localStorage.getItem('zoralive_dms_v1') || '{}');
+      thread = dmStore[key] || [];
+    } catch {
+      thread = [];
+    }
+    return { messages: thread } as unknown as T;
   }
 
   // 12. Admin

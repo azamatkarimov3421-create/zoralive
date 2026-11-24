@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useWorld } from '../context/WorldContext';
 import { useAuth } from '../context/AuthContext';
+import { setStoredUser } from '../lib/api';
 import {
   fetchAllProfilesFromSupabase,
   syncProfileToSupabase,
@@ -88,18 +89,24 @@ export const GovernanceSuitePage: React.FC = () => {
   const updateMemberLive = async (target: User, patch: Partial<User>, actionDesc: string) => {
     const merged: User = { ...target, ...patch };
     await syncProfileToSupabase({ id: target.id, ...patch });
-    try {
-      const url = API_BASE ? `${API_BASE}/api/auth/sync` : '/api/auth/sync';
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(merged),
-      });
-    } catch {
-      // ignore if serverless
+    const isLocal =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    if (isLocal || API_BASE) {
+      try {
+        const url = API_BASE ? `${API_BASE}/api/auth/sync` : '/api/auth/sync';
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(merged),
+        });
+      } catch {
+        // ignore if serverless
+      }
     }
     setLiveUsers((prev) => prev.map((u) => (u.id === target.id ? merged : u)));
     if (currentUser?.id === target.id) {
+      setStoredUser(merged);
       await refreshUser();
     }
     addAuditLog(currentUser?.displayName || 'LOYIHA EGASI', 'OWNER', `${target.displayName}: ${actionDesc}`, true);

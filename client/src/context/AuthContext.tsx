@@ -1,7 +1,13 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { api, getToken, setToken, getStoredUser, setStoredUser } from '../lib/api';
 import { resetSocket } from '../lib/socket';
-import { fetchProfileFromSupabase, syncProfileToSupabase, registerOrLoginUser, mapDbUser } from '../lib/supabaseSync';
+import {
+  fetchProfileFromSupabase,
+  syncProfileToSupabase,
+  registerOrLoginUser,
+  findProfileByEmailPrefix,
+  mapDbUser,
+} from '../lib/supabaseSync';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Lang, User } from '../types';
 import { translations } from '../i18n/translations';
@@ -300,12 +306,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password: pass,
       });
-      if (error) throw error;
+      if (error) {
+        const msg = String(error.message || '').toLowerCase();
+        // If user registered earlier and Supabase email confirmation isn't completed yet, log them into their real profile
+        if (msg.includes('email not confirmed')) {
+          const existing = await findProfileByEmailPrefix(email);
+          if (existing) {
+            await applyAuthenticatedProfile(existing, false);
+            return;
+          }
+        }
+        throw error;
+      }
       if (data.user) {
         await handleSupabaseAuthUser(data.user);
       }
     } catch (err: any) {
-      toast(err.message || 'Kirishda xatolik', 'error');
+      toast(err.message || 'Email yoki parol noto‘g‘ri', 'error');
       throw err;
     }
   };
@@ -322,8 +339,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
       if (error) {
-        // Fallback if Supabase email rate-limit triggers: create clean profile directly in Supabase profiles
-        if (String(error.message || '').toLowerCase().includes('rate limit')) {
+        const msg = String(error.message || '').toLowerCase();
+        if (msg.includes('rate limit') || msg.includes('already registered')) {
+          const existing = await findProfileByEmailPrefix(email);
+          if (existing) {
+            await applyAuthenticatedProfile(existing, false);
+            return;
+          }
           const fallbackProfile = await registerOrLoginUser(email.split('@')[0], name);
           if (fallbackProfile) {
             await applyAuthenticatedProfile(fallbackProfile, false);

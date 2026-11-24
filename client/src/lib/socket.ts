@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { getStoredUser, getToken, setStoredUser } from './api';
 import { DEMO_USERS, MOCK_GIFTS, MOCK_ROOMS } from './mockData';
-import { sendRoomMessageToSupabase, sendGiftInSupabase } from './supabaseSync';
+import { fetchRoomByIdFromSupabase, sendGiftInSupabase } from './supabaseSync';
 import { LudoGameState, PkState, SeatState } from '../types';
 
 let socketInstance: Socket | null = null;
@@ -40,55 +40,38 @@ class MockSocket {
     const data = args[0] || {};
     const u = getStoredUser() || DEMO_USERS.user;
 
-    setTimeout(() => {
+    setTimeout(async () => {
       if (event === 'room:join') {
-        const room = MOCK_ROOMS.find((r) => r.id === data.roomId) || MOCK_ROOMS[0];
-        this.roomTotalGifts = room.totalGifts || 18400;
+        const supaRoom = data.roomId ? await fetchRoomByIdFromSupabase(data.roomId) : null;
+        const room = supaRoom || MOCK_ROOMS.find((r) => r.id === data.roomId) || {
+          id: data.roomId || 'room_live',
+          hostId: u.id,
+          hostName: u.displayName,
+          hostAvatar: u.avatar,
+          hostFrame: u.activeFrame || '',
+          hostVip: u.vipLevel || 0,
+          title: `${u.displayName} xonasi`,
+          seatCount: 8,
+          viewerCount: 1,
+          totalGifts: 0,
+          hasPk: false,
+        };
+        this.roomTotalGifts = room.totalGifts || 0;
         const seatCount = room.seatCount || 8;
         this.currentSeats = Array.from({ length: seatCount }, (_, idx) => {
           if (idx === 0) {
             return {
               index: 0,
               userId: room.hostId,
-              socketId: 'bot-host',
+              socketId: room.hostId === u.id ? 'local-me' : 'host-seat',
               displayName: room.hostName,
               avatar: room.hostAvatar,
-              frame: room.hostFrame || 'frame-gold-1',
-              vipLevel: room.hostVip || 10,
-              isMuted: false,
-              isLocked: false,
-              isSpeaking: true,
-              isDemoBot: true,
-            };
-          }
-          if (idx === 1) {
-            return {
-              index: 1,
-              userId: DEMO_USERS.laylo.id,
-              socketId: 'bot-1',
-              displayName: DEMO_USERS.laylo.displayName,
-              avatar: DEMO_USERS.laylo.avatar,
-              frame: DEMO_USERS.laylo.activeFrame,
-              vipLevel: DEMO_USERS.laylo.vipLevel,
+              frame: room.hostFrame || '',
+              vipLevel: room.hostVip || 0,
               isMuted: false,
               isLocked: false,
               isSpeaking: false,
-              isDemoBot: true,
-            };
-          }
-          if (idx === 2) {
-            return {
-              index: 2,
-              userId: DEMO_USERS.agency.id,
-              socketId: 'bot-2',
-              displayName: DEMO_USERS.agency.displayName,
-              avatar: DEMO_USERS.agency.avatar,
-              frame: DEMO_USERS.agency.activeFrame,
-              vipLevel: DEMO_USERS.agency.vipLevel,
-              isMuted: false,
-              isLocked: false,
-              isSpeaking: false,
-              isDemoBot: true,
+              isDemoBot: false,
             };
           }
           return {
@@ -111,11 +94,11 @@ class MockSocket {
               leftHostId: room.hostId,
               leftName: room.hostName,
               leftAvatar: room.hostAvatar,
-              leftScore: 4800,
+              leftScore: 0,
               rightHostId: DEMO_USERS.laylo.id,
               rightName: DEMO_USERS.laylo.displayName,
               rightAvatar: DEMO_USERS.laylo.avatar,
-              rightScore: 4250,
+              rightScore: 0,
               endsAt: Date.now() + 180 * 1000,
               durationSec: 180,
               winner: null,
@@ -124,24 +107,22 @@ class MockSocket {
 
         this.trigger('room:state', {
           seats: this.currentSeats,
-          viewerCount: room.viewerCount || 142,
-          viewers: Object.values(DEMO_USERS).map((x) => ({
-            id: x.id,
-            displayName: x.displayName,
-            avatar: x.avatar,
-            vipLevel: x.vipLevel,
-            frame: x.activeFrame,
-          })),
-          topGifters: [
-            { id: DEMO_USERS.admin.id, displayName: DEMO_USERS.admin.displayName, avatar: DEMO_USERS.admin.avatar, total: 19999 },
-            { id: u.id, displayName: u.displayName, avatar: u.avatar, total: 8888 },
-            { id: DEMO_USERS.agency.id, displayName: DEMO_USERS.agency.displayName, avatar: DEMO_USERS.agency.avatar, total: 5200 },
+          viewerCount: Math.max(1, room.viewerCount || 1),
+          viewers: [
+            {
+              id: u.id,
+              displayName: u.displayName,
+              avatar: u.avatar,
+              vipLevel: u.vipLevel || 0,
+              frame: u.activeFrame || '',
+            },
           ],
+          topGifters: [],
           messages: [
             {
               id: `sys_${Date.now()}`,
               type: 'SYSTEM',
-              text: `✨ ${u.displayName} xonaga kirdi! Ajdarholar va sovg‘alar tayyor 🐉`,
+              text: `✨ ${u.displayName} xonaga kirdi!`,
               createdAt: new Date().toISOString(),
             },
           ],
@@ -151,13 +132,13 @@ class MockSocket {
           pk: this.activePk,
         });
 
-        // Trigger equipped Dragon / VIP Entry Banner!
-        if (u.activeRide) {
+        // Trigger equipped Dragon / Ride Entry Banner ONLY if user actually owns an active ride!
+        if (u.activeRide && u.activeRide !== 'none') {
           setTimeout(() => {
             this.trigger('room:entry_ride', {
               displayName: u.displayName,
               avatar: u.avatar,
-              vipLevel: u.vipLevel || 4,
+              vipLevel: u.vipLevel || 0,
               rideCode: u.activeRide,
             });
           }, 350);
@@ -175,8 +156,8 @@ class MockSocket {
               socketId: 'local-me',
               displayName: u.displayName,
               avatar: u.avatar,
-              frame: u.activeFrame || 'frame-gold-1',
-              vipLevel: u.vipLevel || 4,
+              frame: u.activeFrame || '',
+              vipLevel: u.vipLevel || 0,
               isMuted: false,
               isSpeaking: true,
             };
@@ -209,7 +190,6 @@ class MockSocket {
         );
         this.trigger('room:seats', [...this.currentSeats]);
       } else if (event === 'room:chat') {
-        sendRoomMessageToSupabase(data.roomId || 'room_madina', u, String(data.text || ''));
         this.trigger('room:message', {
           id: `msg_${Date.now()}`,
           type: 'CHAT',
@@ -335,13 +315,20 @@ class MockSocket {
         };
         this.trigger('pk:update', { ...this.activePk });
       } else if (event === 'dm:send') {
-        this.trigger('dm:received', {
+        const dmPayload = {
           id: `dm_${Date.now()}`,
           sender_id: u.id,
           receiver_id: data.receiverId,
           content: String(data.content || ''),
           created_at: new Date().toISOString(),
-        });
+        };
+        try {
+          const key = [u.id, data.receiverId].sort().join('__');
+          const dmStore = JSON.parse(localStorage.getItem('zoralive_dms_v1') || '{}');
+          dmStore[key] = [...(dmStore[key] || []), dmPayload].slice(-60);
+          localStorage.setItem('zoralive_dms_v1', JSON.stringify(dmStore));
+        } catch {}
+        this.trigger('dm:received', dmPayload);
       } else if (event === 'ludo:create') {
         const fee = Number(data.entryFee || 100);
         const count = Number(data.playerCount || 4);

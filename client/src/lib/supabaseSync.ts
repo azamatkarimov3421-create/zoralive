@@ -69,15 +69,15 @@ export async function syncProfileToSupabase(profile: Partial<User> & { id: strin
 export async function registerOrLoginUser(username: string, displayName?: string): Promise<User | null> {
   if (!isSupabaseConfigured) return null;
   try {
-    const cleanUser = username.trim().toLowerCase();
-    const { data: existing } = await supabase
+    const cleanUser = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '') || `user_${Date.now().toString().slice(-5)}`;
+    const { data: existingList } = await supabase
       .from('profiles')
       .select('*')
-      .eq('username', cleanUser)
-      .maybeSingle();
+      .or(`username.eq.${cleanUser},username.ilike.${cleanUser}_%`)
+      .limit(1);
 
-    if (existing) {
-      return mapDbUser(existing);
+    if (existingList && existingList.length > 0) {
+      return mapDbUser(existingList[0]);
     }
 
     const newId = `user_${Date.now()}`;
@@ -109,6 +109,22 @@ export async function registerOrLoginUser(username: string, displayName?: string
     return mapDbUser(created);
   } catch (e) {
     console.warn('Failed to register/login in Supabase:', e);
+    return null;
+  }
+}
+
+export async function findProfileByEmailPrefix(email: string): Promise<User | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const prefix = email.split('@')[0].trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if (!prefix) return null;
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .or(`username.eq.${prefix},username.ilike.${prefix}_%`)
+      .limit(1);
+    return data && data.length > 0 ? mapDbUser(data[0]) : null;
+  } catch {
     return null;
   }
 }
@@ -260,6 +276,48 @@ export async function createRoomInSupabase(
     };
   } catch (e) {
     console.warn('Failed to create room in Supabase:', e);
+    return null;
+  }
+}
+
+export async function fetchRoomByIdFromSupabase(roomId: string): Promise<RoomSummary | null> {
+  if (!isSupabaseConfigured || !roomId) return null;
+  try {
+    const { data: r, error } = await supabase
+      .from('rooms')
+      .select('*, profiles:host_id(*)')
+      .eq('id', roomId)
+      .maybeSingle();
+
+    if (error || !r) return null;
+
+    const cat = String(r.category || '').toUpperCase();
+    const rType: 'VOICE' | 'VIDEO' | 'GAME' =
+      cat === 'VIDEO' ? 'VIDEO' : cat === 'GAME' ? 'GAME' : 'VOICE';
+
+    return {
+      id: r.id,
+      roomNumber: 8801,
+      title: r.title,
+      type: rType,
+      theme: 'light',
+      cover: r.cover_image || r.profiles?.avatar || '/assets/stage-palace.jpg',
+      country: r.profiles?.country || 'UZ',
+      hostId: r.host_id,
+      hostName: r.profiles?.display_name || 'Efir boshlovchisi',
+      hostAvatar: r.profiles?.avatar || '',
+      hostFrame: r.profiles?.active_frame ?? '',
+      hostVip: Number(r.profiles?.vip_level) || 0,
+      hostUid: Number(r.profiles?.uid) || 100222,
+      seatCount: rType === 'VIDEO' ? 4 : 8,
+      isLive: Boolean(r.is_live),
+      isFeatured: true,
+      totalGifts: Number(r.total_diamonds) || 0,
+      viewerCount: Math.max(1, Number(r.viewer_count) || 1),
+      hasPk: false,
+      occupiedSeats: 1,
+    };
+  } catch {
     return null;
   }
 }

@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock, User as UserIcon, Sparkles, Crown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { fetchProfileFromSupabase, fetchAllProfilesFromSupabase } from '../lib/supabaseSync';
-import { Avatar } from '../components/Avatar';
-import { Lang, User } from '../types';
+import { Lang } from '../types';
 
 export const AuthPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,7 +12,6 @@ export const AuthPage: React.FC = () => {
     loginWithEmail,
     registerWithEmail,
     loginWithUsername,
-    loginWithToken,
     lang,
     setLang,
     toast,
@@ -25,15 +22,8 @@ export const AuthPage: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
-  const [dbProfiles, setDbProfiles] = useState<User[]>([]);
 
   const isEmail = identifier.includes('@');
-
-  useEffect(() => {
-    fetchAllProfilesFromSupabase().then((list) => {
-      if (list && list.length > 0) setDbProfiles(list);
-    });
-  }, []);
 
   // Auto-redirect after OAuth callback completes
   useEffect(() => {
@@ -71,11 +61,7 @@ export const AuthPage: React.FC = () => {
         }
       } else {
         if (isEmail) {
-          try {
-            await loginWithEmail(cleanId, password);
-          } catch {
-            await loginWithUsername(cleanId.split('@')[0]);
-          }
+          await loginWithEmail(cleanId, password);
         } else {
           await loginWithUsername(cleanId);
         }
@@ -83,23 +69,6 @@ export const AuthPage: React.FC = () => {
       navigate('/profile', { replace: true });
     } catch {
       // toast shown in context
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const selectExistingDbProfile = async (id: string, name: string) => {
-    setBusy(true);
-    try {
-      const p = await fetchProfileFromSupabase(id);
-      if (p) {
-        await loginWithToken(p.id, p);
-        navigate('/profile', { replace: true });
-      } else {
-        toast(`${name} profili topilmadi`, 'error');
-      }
-    } catch {
-      toast('Akkauntga ulanishda xatolik', 'error');
     } finally {
       setBusy(false);
     }
@@ -272,38 +241,6 @@ export const AuthPage: React.FC = () => {
             {busy ? 'Kutilmoqda...' : mode === 'login' ? 'Tizimga kirish' : 'Hisob yaratish'}
           </button>
         </form>
-
-        {/* EXISTING SUPABASE PROFILES (FAST SWITCH) */}
-        {dbProfiles.length > 0 && (
-          <div className="pt-3 border-t border-white/10 space-y-2">
-            <p className="text-[11px] font-bold text-white/50 text-center uppercase tracking-wider">
-              Supabase Bazasidagi Mavjud Akkauntlar ({dbProfiles.length})
-            </p>
-            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto no-scrollbar">
-              {dbProfiles.map((p) => {
-                const hasDrg = Boolean(p.activeRide && p.activeRide.includes('dragon') && p.activeRide !== 'none');
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    disabled={busy}
-                    onClick={() => selectExistingDbProfile(p.id, p.displayName)}
-                    className="flex items-center gap-2 p-2 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-left transition active:scale-95 cursor-pointer"
-                  >
-                    <Avatar src={p.avatar} name={p.displayName} size="xs" hideVipBadge />
-                    <div className="overflow-hidden min-w-0">
-                      <span className="text-xs font-black text-white truncate block">{p.displayName}</span>
-                      <span className="text-[10px] text-amber-300 font-bold truncate block">
-                        {p.vipLevel > 0 ? `VIP ${p.vipLevel}` : 'Oddiy a’zo'}
-                        {hasDrg ? ' • 🐉' : ''}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
