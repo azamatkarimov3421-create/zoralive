@@ -31,6 +31,7 @@ import {
   sendRoomMessageToSupabase,
   fetchRoomMessagesFromSupabase,
   subscribeToRoomMessages,
+  closeRoomInSupabase,
 } from '../lib/supabaseSync';
 import { useAuth } from '../context/AuthContext';
 import { useWorld } from '../context/WorldContext';
@@ -128,6 +129,7 @@ export const VoiceRoomPage: React.FC = () => {
       if (rem === 0 && roomId) {
         localStorage.removeItem(`zoralive_room_close_${roomId}`);
         api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {});
+        closeRoomInSupabase(roomId).catch(() => {});
         stopAudio();
         leaveVoiceRoomMeta();
         toast('Xona taymeri tugadi va yopildi', 'info');
@@ -1235,7 +1237,10 @@ export const VoiceRoomPage: React.FC = () => {
           if (roomId) {
             localStorage.removeItem(`zoralive_room_close_${roomId}`);
             getSocket().emit('room:close_now', { roomId });
-            await api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {});
+            await Promise.all([
+              api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {}),
+              closeRoomInSupabase(roomId).catch(() => {}),
+            ]);
           }
           stopAudio();
           leaveVoiceRoomMeta();

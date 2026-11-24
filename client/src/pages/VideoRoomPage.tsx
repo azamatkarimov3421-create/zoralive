@@ -7,6 +7,7 @@ import {
   sendRoomMessageToSupabase,
   fetchRoomMessagesFromSupabase,
   subscribeToRoomMessages,
+  closeRoomInSupabase,
 } from '../lib/supabaseSync';
 import { useAuth } from '../context/AuthContext';
 import { GiftEvent, PkState, RoomChatMessage } from '../types';
@@ -88,6 +89,7 @@ export const VideoRoomPage: React.FC = () => {
       if (rem === 0 && roomId) {
         localStorage.removeItem(`zoralive_room_close_${roomId}`);
         api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {});
+        closeRoomInSupabase(roomId).catch(() => {});
         localStreamRef.current?.getTracks().forEach((t) => t.stop());
         localStreamRef.current = null;
         toast('Xona taymeri tugadi va yopildi', 'info');
@@ -761,7 +763,10 @@ export const VideoRoomPage: React.FC = () => {
           if (roomId) {
             localStorage.removeItem(`zoralive_room_close_${roomId}`);
             getSocket().emit('room:close_now', { roomId });
-            await api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {});
+            await Promise.all([
+              api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {}),
+              closeRoomInSupabase(roomId).catch(() => {}),
+            ]);
           }
           localStreamRef.current?.getTracks().forEach((t) => t.stop());
           localStreamRef.current = null;
