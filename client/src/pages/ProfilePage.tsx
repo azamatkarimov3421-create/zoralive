@@ -14,6 +14,9 @@ import {
   Pencil,
   X,
   Camera,
+  History,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { syncProfileToSupabase } from '../lib/supabaseSync';
@@ -74,6 +77,7 @@ export const ProfilePage: React.FC = () => {
   const currentRank = MILITARY_RANKS_10[worldState.rankLevel - 1] || MILITARY_RANKS_10[0];
 
   const [walletData, setWalletData] = useState<any>(null);
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
   const [payProvider, setPayProvider] = useState('Click');
   const [exchangeAmt, setExchangeAmt] = useState('100');
   const [withdrawDiamonds, setWithdrawDiamonds] = useState('500');
@@ -641,18 +645,43 @@ export const ProfilePage: React.FC = () => {
             </button>
           </form>
 
-          {walletData?.ledger?.length > 0 && (
-            <div className="card-white rounded-2xl divide-y divide-slate-100 overflow-hidden">
-              {walletData.ledger.slice(0, 10).map((tx: any) => (
-                <div key={tx.id} className="flex items-center justify-between text-xs px-3.5 py-2.5">
-                  <span className="font-semibold text-slate-700 truncate pr-2">{tx.description}</span>
-                  <span className={`font-extrabold shrink-0 ${tx.amount > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {tx.amount > 0 ? `+${tx.amount}` : tx.amount} {tx.currency === 'COINS' ? '🪙' : '💎'}
+          {(() => {
+            const paymentRows = (walletData?.ledger || []).filter(
+              (tx: any) => !String(tx.description || '').startsWith('Do‘kon')
+            );
+            if (paymentRows.length === 0) return null;
+            return (
+              <div className="card-white rounded-2xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentHistory((v) => !v)}
+                  className="w-full px-3.5 py-2.5 flex items-center justify-between text-xs font-extrabold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <History className="w-3.5 h-3.5 text-slate-500" />
+                    <span>To‘lovlar tarixi ({paymentRows.length})</span>
                   </span>
-                </div>
-              ))}
-            </div>
-          )}
+                  {showPaymentHistory ? (
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                  )}
+                </button>
+                {showPaymentHistory && (
+                  <div className="divide-y divide-slate-100 border-t border-slate-100">
+                    {paymentRows.slice(0, 12).map((tx: any) => (
+                      <div key={tx.id} className="flex items-center justify-between text-xs px-3.5 py-2.5">
+                        <span className="font-semibold text-slate-700 truncate pr-2">{tx.description}</span>
+                        <span className={`font-extrabold shrink-0 ${tx.amount > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {tx.amount > 0 ? `+${tx.amount}` : tx.amount} {tx.currency === 'COINS' ? '🪙' : '💎'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 
