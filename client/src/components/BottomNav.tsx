@@ -9,7 +9,7 @@ export const BottomNav: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => 
   const { t, user } = useAuth();
   const isDarkDragonProfile =
     location.pathname === '/profile' &&
-    Boolean(user?.activeRide?.includes('dragon') || (user?.vipLevel && user.vipLevel >= 1));
+    Boolean(user?.activeRide && user.activeRide.includes('dragon') && user.activeRide !== 'none');
 
   const items = [
     { path: '/', label: t('navLive'), icon: Compass },

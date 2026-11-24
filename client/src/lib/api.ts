@@ -1,5 +1,15 @@
 import { DEMO_USERS, MOCK_FAMILIES, MOCK_GIFTS, MOCK_MOMENTS, MOCK_ROOMS } from './mockData';
 import { ANIMATED_FRAMES, MYTHIC_DRAGONS, VIP_LEVELS_1_TO_12 } from './mythicCatalog';
+import {
+  syncProfileToSupabase,
+  fetchAllProfilesFromSupabase,
+  fetchRoomsFromSupabase,
+  createRoomInSupabase,
+  closeRoomInSupabase,
+  fetchGiftsFromSupabase,
+  fetchFamiliesFromSupabase,
+  createFamilyInSupabase,
+} from './supabaseSync';
 import { RoomSummary, User } from '../types';
 
 const TOKEN_KEY = 'zoralive_token';
@@ -34,37 +44,35 @@ export function setStoredUser(user: User | null): void {
 }
 
 function getOwnedCodes(): string[] {
+  const u = getStoredUser();
+  const key = u?.id ? `${OWNED_KEY}_${u.id}` : OWNED_KEY;
   try {
-    const raw = localStorage.getItem(OWNED_KEY);
-    if (raw) return JSON.parse(raw);
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const parsed: string[] = JSON.parse(raw);
+      const base = new Set(parsed);
+      if (u?.activeFrame) base.add(u.activeFrame);
+      if (u?.activeRide) base.add(u.activeRide);
+      if (u?.activeBubble) base.add(u.activeBubble);
+      return Array.from(base);
+    }
   } catch {
     // ignore
   }
-  return [
-    'frame-obsidian-gold',
-    'frame-crystal-violet',
-    'frame-palace-gold',
-    'frame-bronze-3',
-    'frame-frost-2',
-    'frame-inferno-1',
-    'frame-golden-wings',
-    'frame-emerald-crown',
-    'frame-amethyst-spark',
-    'frame-rose-3',
-    'frame-violet-2',
-    'frame-gold-1',
-    'ride-dragon-zepharion',
-    'ride-dragon-xaldris',
-    'ride-lambo',
-    'bubble-gold',
-    'bubble-cosmic',
-  ];
+  const initial = new Set<string>();
+  if (u?.activeFrame) initial.add(u.activeFrame);
+  if (u?.activeRide) initial.add(u.activeRide);
+  if (u?.activeBubble) initial.add(u.activeBubble);
+  return Array.from(initial);
 }
 
 function addOwnedCode(code: string): void {
+  if (!code) return;
+  const u = getStoredUser();
+  const key = u?.id ? `${OWNED_KEY}_${u.id}` : OWNED_KEY;
   const set = new Set(getOwnedCodes());
   set.add(code);
-  localStorage.setItem(OWNED_KEY, JSON.stringify(Array.from(set)));
+  localStorage.setItem(key, JSON.stringify(Array.from(set)));
 }
 
 const WHEEL_SECTORS = [
@@ -142,6 +150,25 @@ export function saveLocalDb() {
 
 if (typeof window !== 'undefined') {
   loadLocalDb();
+  // Live Supabase initialization: fetch live rooms and families
+  fetchRoomsFromSupabase().then((rooms) => {
+    if (rooms && rooms.length) mockRooms = rooms;
+  });
+  fetchFamiliesFromSupabase().then((fams) => {
+    if (fams && fams.length) {
+      mockFamilies = fams.map((f: any) => ({
+        id: f.id,
+        tag: f.tag,
+        name: f.name,
+        badge: f.badge || '👑',
+        level: Number(f.level) || 1,
+        member_count: Number(f.member_count) || 1,
+        honor_xp: 1000,
+        leader_name: f.profiles?.display_name || 'Lider',
+        members: [],
+      }));
+    }
+  });
 }
 
 function buildMockStoreItems() {
@@ -243,11 +270,11 @@ export async function api<T = any>(path: string, options: RequestInit = {}): Pro
     // Network error, 404/405/500, or timeout - proceed to mock
   }
 
-  return handleMockRequest<T>(cleanPath, options);
+  return await handleMockRequest<T>(cleanPath, options);
 }
 
-function handleMockRequest<T>(rawPath: string, options: RequestInit): T {
-  const result = executeMockRequest<T>(rawPath, options);
+async function handleMockRequest<T>(rawPath: string, options: RequestInit): Promise<T> {
+  const result = await executeMockRequest<T>(rawPath, options);
   const method = (options.method || 'GET').toUpperCase();
   if (method !== 'GET') {
     saveLocalDb();
@@ -255,7 +282,7 @@ function handleMockRequest<T>(rawPath: string, options: RequestInit): T {
   return result;
 }
 
-function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
+async function executeMockRequest<T>(rawPath: string, options: RequestInit): Promise<T> {
   const [path, queryStr] = rawPath.split('?');
   const params = new URLSearchParams(queryStr || '');
   const method = (options.method || 'GET').toUpperCase();
@@ -276,16 +303,42 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
   }
 
   if (path === '/auth/login' || path === '/auth/register') {
-    const username = body.username || 'mehmon';
+    const username = (body.username || 'foydalanuvchi').trim();
+    const uid = Math.floor(Math.random() * 800000) + 100000;
     const newUser: User = {
-      ...DEMO_USERS.user,
       id: `user_${Date.now()}`,
-      username,
-      displayName: body.displayName || username,
+      uid,
+      username: username.toLowerCase(),
+      displayName: (body.displayName || username).trim(),
+      avatar: '',
+      bio: 'ZoraLive a’zosi',
+      country: 'UZ',
+      gender: 'other',
+      role: 'USER',
+      coins: 5000,
+      diamonds: 0,
+      wealthXp: 200,
+      charmXp: 0,
+      wealthLevel: 1,
+      wealthProgress: 13,
+      wealthNextXp: 1500,
+      charmLevel: 1,
+      charmProgress: 0,
+      charmNextXp: 1200,
+      vipLevel: 0,
+      vipExpiresAt: null,
+      activeFrame: '',
+      activeRide: '',
+      activeBubble: '',
+      agencyId: null,
+      isBanned: false,
+      hostedMinutes: 0,
+      followersCount: 0,
+      followingCount: 0,
     };
     setStoredUser(newUser);
-    setToken(`demo_token_${Date.now()}`);
-    return { token: `demo_token_${Date.now()}`, user: newUser } as unknown as T;
+    setToken(newUser.id);
+    return { token: newUser.id, user: newUser } as unknown as T;
   }
 
   if (path === '/auth/demo') {
@@ -310,8 +363,8 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
         hostId: currentUser.id,
         hostName: currentUser.displayName,
         hostAvatar: currentUser.avatar,
-        hostFrame: currentUser.activeFrame || 'frame-gold-1',
-        hostVip: currentUser.vipLevel || 4,
+        hostFrame: currentUser.activeFrame || '',
+        hostVip: currentUser.vipLevel || 0,
         hostUid: currentUser.uid || 100888,
         seatCount: body.seatCount || 8,
         isLive: true,
@@ -322,10 +375,20 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
         occupiedSeats: 1,
       };
       mockRooms.unshift(newRoom);
+      createRoomInSupabase(currentUser, newRoom.title, newRoom.type, newRoom.id);
       return { room: newRoom } as unknown as T;
     }
 
-    if (path.endsWith('/report') || path.endsWith('/close')) {
+    if (path.endsWith('/close')) {
+      const m = path.match(/^\/rooms\/([^/?]+)\/close$/);
+      if (m?.[1]) {
+        mockRooms = mockRooms.filter((r) => r.id !== m[1]);
+        closeRoomInSupabase(m[1]);
+      }
+      return { ok: true } as unknown as T;
+    }
+
+    if (path.endsWith('/report')) {
       return { ok: true } as unknown as T;
     }
 
@@ -353,7 +416,8 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
     const q = (params.get('q') || '').toLowerCase().trim();
     const onlyFollowing = params.get('following') === '1';
 
-    let list = [...mockRooms];
+    const supaRooms = await fetchRoomsFromSupabase();
+    let list = supaRooms && supaRooms.length > 0 ? supaRooms : [...mockRooms];
     if (onlyFollowing) list = list.filter((r) => mockFollows.has(r.hostId));
     else if (typeFilter && typeFilter !== 'ALL') list = list.filter((r) => r.type === typeFilter);
     if (q) {
@@ -369,6 +433,10 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
 
   // 3. Store & Gifts
   if (path === '/store/gifts') {
+    const liveGifts = await fetchGiftsFromSupabase();
+    if (liveGifts && liveGifts.length > 0) {
+      return { gifts: liveGifts } as unknown as T;
+    }
     return { gifts: MOCK_GIFTS } as unknown as T;
   }
 
@@ -384,8 +452,7 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
     const code = found?.code || body.code;
 
     if (currentUser.coins < price) {
-      // Test rejimi: Foydalanuvchilar barcha narsani bemalol sinab ko'rishlari uchun tangalar avtomatik to'ldiriladi
-      currentUser.coins += price + 50000;
+      throw new Error('Tangalar yetarli emas — Hamyondan yoki Ega Panelidan to‘ldiring');
     }
 
     currentUser.coins -= price;
@@ -400,10 +467,6 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
         currentUser.activeBubble = vipMeta.bubbleCode;
         addOwnedCode(vipMeta.frameCode);
         addOwnedCode(vipMeta.bubbleCode);
-        if (vipMeta.rideCode) {
-          currentUser.activeRide = vipMeta.rideCode;
-          addOwnedCode(vipMeta.rideCode);
-        }
       }
     } else if (itemType === 'FRAME' && code) {
       currentUser.activeFrame = code;
@@ -424,6 +487,7 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
       created_at: new Date().toISOString(),
     });
     setStoredUser(currentUser);
+    syncProfileToSupabase(currentUser);
     return { ok: true, user: currentUser } as unknown as T;
   }
 
@@ -433,6 +497,7 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
     else if (itemType === 'RIDE') currentUser.activeRide = itemCode || '';
     else if (itemType === 'BUBBLE') currentUser.activeBubble = itemCode || '';
     setStoredUser(currentUser);
+    syncProfileToSupabase(currentUser);
     return { ok: true, user: currentUser } as unknown as T;
   }
 
@@ -537,6 +602,7 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
       };
       mockFamilies.unshift(clan);
       mockMyFamilyId = clan.id;
+      createFamilyInSupabase(clan.name, clan.tag, currentUser);
       return { family: clan } as unknown as T;
     }
     if (path === '/families/leave') {
@@ -548,8 +614,10 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
       mockMyFamilyId = joinMatch[1];
       return { ok: true } as unknown as T;
     }
-    const myFamily = mockFamilies.find((f) => f.id === mockMyFamilyId) || null;
-    return { families: mockFamilies, myFamily } as unknown as T;
+    const supaFamilies = await fetchFamiliesFromSupabase();
+    const familyList = supaFamilies && supaFamilies.length > 0 ? supaFamilies : mockFamilies;
+    const myFamily = familyList.find((f: any) => f.id === mockMyFamilyId) || null;
+    return { families: familyList, myFamily } as unknown as T;
   }
 
   // 7. Tasks
@@ -592,6 +660,7 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
     const added = Number(body.coins || body.amount || 5000);
     currentUser.coins += added;
     setStoredUser(currentUser);
+    syncProfileToSupabase(currentUser);
     mockLedger.unshift({
       id: `tx_${Date.now()}`,
       currency: 'COINS',
@@ -609,6 +678,7 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
     currentUser.diamonds -= diamonds;
     currentUser.coins += coinsGain;
     setStoredUser(currentUser);
+    syncProfileToSupabase(currentUser);
     mockLedger.unshift({
       id: `tx_${Date.now()}`,
       currency: 'COINS',
@@ -652,7 +722,9 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
         ],
       } as unknown as T;
     }
-    const users = Object.values(DEMO_USERS).sort((a, b) =>
+    const liveProfiles = await fetchAllProfilesFromSupabase();
+    const baseList = liveProfiles.length > 0 ? liveProfiles : Object.values(DEMO_USERS);
+    const users = [...baseList].sort((a, b) =>
       type === 'charm' ? b.charmXp - a.charmXp : b.wealthXp - a.wealthXp
     );
     return { users } as unknown as T;
@@ -660,7 +732,9 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
 
   if (path === '/users/directory') {
     const q = (params.get('q') || '').toLowerCase();
-    const list = Object.values(DEMO_USERS)
+    const liveProfiles = await fetchAllProfilesFromSupabase();
+    const baseList = liveProfiles.length > 0 ? liveProfiles : Object.values(DEMO_USERS);
+    const list = baseList
       .filter((u) => !q || u.displayName.toLowerCase().includes(q) || u.username.toLowerCase().includes(q))
       .map((u) => ({ ...u, isFollowing: mockFollows.has(u.id) }));
     return { users: list } as unknown as T;
@@ -684,6 +758,12 @@ function executeMockRequest<T>(rawPath: string, options: RequestInit): T {
       avatar: body.avatar || currentUser.avatar,
     });
     setStoredUser(currentUser);
+    syncProfileToSupabase({
+      id: currentUser.id,
+      displayName: currentUser.displayName,
+      bio: currentUser.bio,
+      avatar: currentUser.avatar,
+    });
     return { user: currentUser } as unknown as T;
   }
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Coins, Users, Shield, RefreshCw, Swords, Search, X, ChevronRight, Crown, Plus } from 'lucide-react';
 import { api } from '../lib/api';
+import { fetchRoomsFromSupabase } from '../lib/supabaseSync';
 import { useAuth } from '../context/AuthContext';
 import { RoomSummary } from '../types';
 import { LiveWaveBars, VipCrest, getStageWallpaper } from '../components/LuxuryBadges';
@@ -72,8 +73,29 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
     try {
       const base = filter === 'FOLLOWING' ? '?following=1' : `?type=${filter}`;
       const qs = q.trim() ? `${base}&q=${encodeURIComponent(q.trim())}` : base;
-      const res = await api<{ rooms: RoomSummary[] }>(`/rooms${qs}`);
-      setRooms(res.rooms || []);
+      const [res, supaRooms] = await Promise.all([
+        api<{ rooms: RoomSummary[] }>(`/rooms${qs}`).catch(() => ({ rooms: [] as RoomSummary[] })),
+        fetchRoomsFromSupabase().catch(() => null),
+      ]);
+      const combined: RoomSummary[] = [];
+      const seen = new Set<string>();
+      for (const r of [...(supaRooms || []), ...(res.rooms || [])]) {
+        if (seen.has(r.id)) continue;
+        if (filter !== 'ALL' && filter !== 'FOLLOWING' && r.type !== filter) continue;
+        if (q.trim()) {
+          const ql = q.trim().toLowerCase();
+          if (
+            !r.title.toLowerCase().includes(ql) &&
+            !r.hostName.toLowerCase().includes(ql) &&
+            !String(r.roomNumber).includes(ql)
+          ) {
+            continue;
+          }
+        }
+        seen.add(r.id);
+        combined.push(r);
+      }
+      setRooms(combined);
     } catch {
       // ignore
     } finally {

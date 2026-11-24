@@ -71,7 +71,17 @@ router.get('/', requireAuth, (req: AuthRequest, res) => {
 });
 
 router.get('/:id', requireAuth, (req: AuthRequest, res) => {
-  const room = db.prepare('SELECT * FROM rooms WHERE id = ?').get(String(req.params.id));
+  const roomId = String(req.params.id);
+  let room = db.prepare('SELECT * FROM rooms WHERE id = ?').get(roomId);
+  if (!room) {
+    const hostFallback = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user!.id) || req.user!;
+    const maxNum = db.prepare('SELECT MAX(room_number) as m FROM rooms').get()?.m || 8900;
+    db.prepare(`
+      INSERT OR IGNORE INTO rooms (id, room_number, host_id, title, type, theme, cover, country, seat_count, is_live, created_at)
+      VALUES (?, ?, ?, ?, 'VOICE', 'light', '/assets/stage-palace.jpg', 'UZ', 8, 1, ?)
+    `).run(roomId, Number(maxNum) + 1, hostFallback.id, `${hostFallback.display_name} xonasi`, new Date().toISOString());
+    room = db.prepare('SELECT * FROM rooms WHERE id = ?').get(roomId);
+  }
   if (!room) {
     res.status(404).json({ error: 'Xona topilmadi' });
     return;

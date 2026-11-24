@@ -139,4 +139,121 @@ router.get('/me', requireAuth, (req: AuthRequest, res) => {
   });
 });
 
+// Sync Supabase / Google / External profile into local SQLite & issue valid Socket/API JWT
+router.post('/sync', (req, res) => {
+  try {
+    const p = req.body || {};
+    const id = String(p.id || '').trim();
+    if (!id) {
+      res.status(400).json({ error: 'ID kiritilmagan' });
+      return;
+    }
+
+    const displayName = String(p.displayName || p.display_name || p.username || 'Foydalanuvchi').trim().slice(0, 48);
+    let baseUsername = String(p.username || id)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '')
+      .slice(0, 24) || `user_${Date.now().toString().slice(-5)}`;
+
+    const existingById = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    const conflictUsername = db
+      .prepare('SELECT id FROM users WHERE LOWER(username) = ? AND id != ?')
+      .get(baseUsername, id);
+    if (conflictUsername) {
+      baseUsername = `${baseUsername.slice(0, 18)}_${Math.floor(Math.random() * 900 + 100)}`;
+    }
+
+    let safeUid = Number(p.uid) || 100000 + Math.floor(Math.random() * 800000);
+    const conflictUid = db.prepare('SELECT id FROM users WHERE uid = ? AND id != ?').get(safeUid, id);
+    if (conflictUid) {
+      const maxUidRow = db.prepare('SELECT MAX(uid) as m FROM users').get();
+      safeUid = (Number(maxUidRow?.m) || 100000) + 1;
+    }
+
+    const avatar = String(p.avatar ?? '');
+    const bio = String(p.bio ?? '');
+    const country = String(p.country || 'UZ');
+    const gender = String(p.gender || 'other');
+    const role = String(p.role || 'USER');
+    const coins = p.coins !== undefined ? Number(p.coins) : existingById ? Number(existingById.coins) : 5000;
+    const diamonds = p.diamonds !== undefined ? Number(p.diamonds) : existingById ? Number(existingById.diamonds) : 0;
+    const vipLevel = p.vipLevel !== undefined ? Number(p.vipLevel) : existingById ? Number(existingById.vip_level) : 0;
+    const activeFrame = p.activeFrame !== undefined ? String(p.activeFrame) : existingById ? String(existingById.active_frame || '') : '';
+    const activeRide = p.activeRide !== undefined ? String(p.activeRide) : existingById ? String(existingById.active_ride || '') : '';
+    const activeBubble = p.activeBubble !== undefined ? String(p.activeBubble) : existingById ? String(existingById.active_bubble || '') : '';
+    const now = new Date().toISOString();
+
+    if (existingById) {
+      db.prepare(`
+        UPDATE users SET
+          display_name = ?,
+          avatar = ?,
+          bio = ?,
+          coins = ?,
+          diamonds = ?,
+          vip_level = ?,
+          active_frame = ?,
+          active_ride = ?,
+          active_bubble = ?,
+          role = ?
+        WHERE id = ?
+      `).run(displayName, avatar, bio, coins, diamonds, vipLevel, activeFrame, activeRide, activeBubble, role, id);
+    } else {
+      const dummyHash = bcrypt.hashSync('supabase_oauth_synced', 6);
+      db.prepare(`
+        INSERT INTO users (
+          id, uid, username, display_name, password_hash, avatar, bio, country, gender, role,
+          coins, diamonds, vip_level, active_frame, active_ride, active_bubble, is_demo, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+      `).run(
+        id,
+        safeUid,
+        baseUsername,
+        displayName,
+        dummyHash,
+        avatar,
+        bio,
+        country,
+        gender,
+        role,
+        coins,
+        diamonds,
+        vipLevel,
+        activeFrame,
+        activeRide,
+        activeBubble,
+        now
+      );
+    }
+
+    // Ensure currently equipped items exist in user_inventory so unequip/re-equip works cleanly
+    const expiresAt = new Date(Date.now() + 365 * 86400 * 1000).toISOString();
+    const equippedPairs: Array<[string, string]> = [
+      ['FRAME', activeFrame],
+      ['RIDE', activeRide],
+      ['BUBBLE', activeBubble],
+    ];
+    for (const [iType, iCode] of equippedPairs) {
+      if (iCode && iCode !== 'none') {
+        const hasInv = db
+          .prepare('SELECT 1 FROM user_inventory WHERE user_id = ? AND item_code = ?')
+          .get(id, iCode);
+        if (!hasInv) {
+          db.prepare(
+            `INSERT INTO user_inventory (id, user_id, item_id, item_type, item_code, expires_at, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`
+          ).run(uuid(), id, `sync_${iCode}`, iType, iCode, expiresAt, now);
+        }
+      }
+    }
+
+    const syncedUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id)!;
+    const token = signToken(id);
+    res.json({ token, user: sanitizeUser(syncedUser) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Sync error' });
+  }
+});
+
 export default router;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles, Check, Crown, Flame, Shield, Zap, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import { syncProfileToSupabase } from '../lib/supabaseSync';
 import {
   ANIMATED_FRAMES,
   CRYSTAL_ENERGIES,
@@ -46,18 +47,41 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
 
   const buyOrEquip = async (itemId: string, itemType: string, code: string, price: number, isOwned: boolean, isEquipped: boolean) => {
     try {
+      let res: any;
       if (isOwned && itemType !== 'VIP') {
-        await api('/store/equip', {
+        res = await api('/store/equip', {
           method: 'POST',
           body: JSON.stringify({ itemType, itemCode: isEquipped ? '' : code }),
         });
         toast(isEquipped ? 'Yechib qo‘yildi' : 'Faollashtirildi ✨', 'success');
       } else {
-        await api('/store/buy', {
+        const vipMeta =
+          itemType === 'VIP'
+            ? VIP_LEVELS_1_TO_12.find((v) => `vip-${v.level}` === code)
+            : null;
+        res = await api('/store/buy', {
           method: 'POST',
-          body: JSON.stringify({ itemId, code, itemType, price }),
+          body: JSON.stringify({
+            itemId,
+            code,
+            itemType,
+            price,
+            nameUz: vipMeta ? `VIP ${vipMeta.level} — ${vipMeta.tierName}` : code,
+            frameCode: vipMeta?.frameCode,
+            bubbleCode: vipMeta?.bubbleCode,
+          }),
         });
         toast('Muvaffaqiyatli faollashtirildi! 🎉', 'success');
+      }
+      if (res?.user) {
+        await syncProfileToSupabase({
+          id: user.id,
+          coins: res.user.coins,
+          vipLevel: res.user.vipLevel,
+          activeFrame: res.user.activeFrame,
+          activeRide: res.user.activeRide,
+          activeBubble: res.user.activeBubble,
+        });
       }
       await refreshUser();
       onReloadStore();
@@ -83,12 +107,12 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
   };
 
   const tabs: Array<[typeof filter, string]> = [
-    ['DRAGON', '🐉 Ajdarho (10)'],
-    ['VIP', '👑 VIP 1-12'],
+    ['VIP', '👑 VIP 1-12 Panellar'],
+    ['DRAGON', '🐉 Ajdarholar (10)'],
     ['FRAME', '🖼️ Siken / Ramka (12)'],
     ['CRYSTAL', '💎 Kristall (4)'],
     ['RIDE', '🏎️ Boshqa Ulovlar'],
-    ['BUBBLE', '💬 Chat'],
+    ['BUBBLE', '💬 Chat Pufak'],
   ];
 
   return (

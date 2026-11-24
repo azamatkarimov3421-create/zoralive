@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Mic, Video, Gamepad2 } from 'lucide-react';
 import { api } from '../lib/api';
+import { createRoomInSupabase } from '../lib/supabaseSync';
 import { useAuth } from '../context/AuthContext';
 
 interface CreateRoomModalProps {
@@ -24,16 +25,25 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ open, onClose,
   const [seatCount, setSeatCount] = useState(8);
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    if (open && user?.displayName) {
+      setTitle(`${user.displayName} xonasi`);
+    }
+  }, [open, user?.displayName]);
+
   if (!open) return null;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
-      const res = await api<{ room: { id: string; type: string } }>('/rooms', {
+      const res = await api<{ room: { id: string; type: string; title?: string } }>('/rooms', {
         method: 'POST',
         body: JSON.stringify({ title, type, theme, seatCount }),
       });
+      if (user && res.room?.id) {
+        await createRoomInSupabase(user, title || `${user.displayName} xonasi`, type, res.room.id);
+      }
       toast('Xona ochildi', 'success');
       onCreated(res.room);
       onClose();

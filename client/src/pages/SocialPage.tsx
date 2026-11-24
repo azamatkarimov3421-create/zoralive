@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Trophy, MessageCircle, Users, Send, ArrowLeft, Search, Heart, Image as ImageIcon, Flame } from 'lucide-react';
 import { api } from '../lib/api';
+import { fetchAllProfilesFromSupabase } from '../lib/supabaseSync';
 import { getSocket } from '../lib/socket';
 import { useAuth } from '../context/AuthContext';
 import { User } from '../types';
@@ -53,9 +54,23 @@ export const SocialPage: React.FC = () => {
   const dmEndRef = useRef<HTMLDivElement>(null);
 
   const loadRank = async () => {
-    const res = await api<any>(`/users/leaderboard?type=${rankType}`);
-    if (rankType === 'agency') setRankAgencies(res.agencies || []);
-    else setRankUsers(res.users || []);
+    if (rankType === 'agency') {
+      const res = await api<any>(`/users/leaderboard?type=agency`);
+      setRankAgencies(res.agencies || []);
+      return;
+    }
+    const [res, supaUsers] = await Promise.all([
+      api<any>(`/users/leaderboard?type=${rankType}`).catch(() => ({ users: [] })),
+      fetchAllProfilesFromSupabase().catch(() => [] as User[]),
+    ]);
+    const map = new Map<string, User>();
+    for (const u of [...supaUsers, ...(res.users || [])]) {
+      if (!map.has(u.id)) map.set(u.id, u);
+    }
+    const sorted = Array.from(map.values()).sort((a, b) =>
+      rankType === 'charm' ? b.charmXp - a.charmXp : b.wealthXp - a.wealthXp
+    );
+    setRankUsers(sorted);
   };
 
   const loadMoments = async () => {
@@ -64,8 +79,25 @@ export const SocialPage: React.FC = () => {
   };
 
   const loadPeople = async (q = '') => {
-    const res = await api<{ users: User[] }>(`/users/directory?q=${encodeURIComponent(q)}`);
-    setPeople(res.users.filter((u) => u.id !== user?.id));
+    const [res, supaUsers] = await Promise.all([
+      api<{ users: User[] }>(`/users/directory?q=${encodeURIComponent(q)}`).catch(() => ({ users: [] as User[] })),
+      fetchAllProfilesFromSupabase().catch(() => [] as User[]),
+    ]);
+    const ql = q.trim().toLowerCase();
+    const map = new Map<string, User>();
+    for (const u of [...supaUsers, ...(res.users || [])]) {
+      if (u.id === user?.id) continue;
+      if (
+        ql &&
+        !u.displayName.toLowerCase().includes(ql) &&
+        !u.username.toLowerCase().includes(ql) &&
+        !String(u.uid).includes(ql)
+      ) {
+        continue;
+      }
+      if (!map.has(u.id)) map.set(u.id, u);
+    }
+    setPeople(Array.from(map.values()));
   };
 
   const loadConversations = async () => {

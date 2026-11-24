@@ -1,9 +1,12 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { api, getToken, setToken, getStoredUser, setStoredUser } from '../lib/api';
 import { resetSocket } from '../lib/socket';
-import { DEMO_USERS } from '../lib/mockData';
+import { fetchProfileFromSupabase, syncProfileToSupabase, registerOrLoginUser, mapDbUser } from '../lib/supabaseSync';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Lang, User } from '../types';
 import { translations } from '../i18n/translations';
+
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 
 interface Toast {
   id: number;
@@ -17,26 +20,52 @@ interface AuthContextValue {
   lang: Lang;
   setLang: (l: Lang) => void;
   t: (key: string) => string;
-  loginWithToken: (token: string, u: User) => void;
+  loginWithToken: (token: string, u: User) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithEmail: (email: string, pass: string) => Promise<void>;
+  registerWithEmail: (email: string, pass: string, name: string) => Promise<void>;
+  loginWithUsername: (username: string, displayName?: string) => Promise<void>;
   refreshUser: () => Promise<void>;
   updateCoinsLocally: (coins: number) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   toast: (text: string, kind?: 'info' | 'success' | 'error') => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+async function syncBackendJwt(profile: User): Promise<string> {
+  try {
+    const isLocal =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    if (!API_BASE && !isLocal) return profile.id;
+
+    const url = API_BASE ? `${API_BASE}/api/auth/sync` : '/api/auth/sync';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.token) return data.token;
+    }
+  } catch {
+    // Offline or serverless deployment — fall back to profile ID token
+  }
+  return profile.id;
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User>(() => {
-    const stored = getStoredUser();
-    if (stored) return stored;
-    setStoredUser(DEMO_USERS.user);
-    setToken('demo_token_user');
-    return DEMO_USERS.user;
-  });
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(() => getStoredUser());
+  const [loading, setLoading] = useState(true);
   const [lang, setLangState] = useState<Lang>(() => (localStorage.getItem('zoralive_lang') as Lang) || 'uz');
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const syncingRef = useRef<string | null>(null);
 
   const toast = useCallback((text: string, kind: 'info' | 'success' | 'error' = 'info') => {
     const id = Date.now() + Math.random();
@@ -56,15 +85,147 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [lang]
   );
 
-  const refreshUser = useCallback(async () => {
-    if (!getToken()) {
-      return;
+  const applyAuthenticatedProfile = useCallback(async (profile: User, silent = false) => {
+    const jwt = await syncBackendJwt(profile);
+    setToken(jwt);
+    setStoredUser(profile);
+    resetSocket();
+    setUser(profile);
+    if (!silent) {
+      toast(`Xush kelibsiz, ${profile.displayName}!`, 'success');
     }
+  }, [toast]);
+
+  const handleSupabaseAuthUser = useCallback(
+    async (authUser: any, customDisplayName?: string, silent = false) => {
+      if (!authUser?.id) return;
+      if (syncingRef.current === authUser.id) return;
+      syncingRef.current = authUser.id;
+      try {
+        const existing = await fetchProfileFromSupabase(authUser.id);
+        if (existing) {
+          await applyAuthenticatedProfile(existing, silent);
+          return;
+        }
+
+        const email = String(authUser.email || '').trim();
+        const rawName = (
+          customDisplayName ||
+          authUser.user_metadata?.full_name ||
+          authUser.user_metadata?.name ||
+          (email ? email.split('@')[0] : 'Foydalanuvchi')
+        ).trim();
+        const avatar =
+          authUser.user_metadata?.avatar_url ||
+          authUser.user_metadata?.picture ||
+          '';
+        const uid = Math.floor(Math.random() * 800000) + 100000;
+        const baseUsername = (email ? email.split('@')[0] : rawName)
+          .toLowerCase()
+          .replace(/[^a-z0-9_]/g, '')
+          .slice(0, 18) || `user_${uid}`;
+        const uniqueUsername = `${baseUsername}_${String(uid).slice(-3)}`;
+
+        const newRow = {
+          id: authUser.id,
+          uid,
+          username: uniqueUsername,
+          display_name: rawName,
+          avatar,
+          bio: 'ZoraLive a’zosi',
+          coins: 5000,
+          diamonds: 0,
+          world_gem: 0,
+          vip_level: 0,
+          rank_level: 1,
+          active_frame: '',
+          active_ride: '',
+          active_bubble: '',
+          followers_count: 0,
+          following_count: 0,
+        };
+
+        await supabase.from('profiles').upsert(newRow, { onConflict: 'id' });
+
+        const mapped = (await fetchProfileFromSupabase(authUser.id)) || mapDbUser(newRow);
+        await applyAuthenticatedProfile(mapped, silent);
+      } catch (e: any) {
+        console.warn('handleSupabaseAuthUser error:', e);
+      } finally {
+        syncingRef.current = null;
+      }
+    },
+    [applyAuthenticatedProfile]
+  );
+
+  // Coordinated boot: check Supabase OAuth/session FIRST, then stored user (never hijack with demo user!)
+  useEffect(() => {
+    let mounted = true;
+
+    async function initAuth() {
+      try {
+        if (isSupabaseConfigured) {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (session?.user) {
+            await handleSupabaseAuthUser(session.user, undefined, true);
+            if (mounted) setLoading(false);
+            return;
+          }
+        }
+
+        const stored = getStoredUser();
+        if (stored?.id) {
+          const liveProfile = await fetchProfileFromSupabase(stored.id);
+          const resolved = liveProfile || stored;
+          await applyAuthenticatedProfile(resolved, true);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        // Keep stored user if offline
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    initAuth();
+
+    if (!isSupabaseConfigured) return;
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+        handleSupabaseAuthUser(session.user, undefined, event === 'TOKEN_REFRESHED');
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [handleSupabaseAuthUser, applyAuthenticatedProfile]);
+
+  const refreshUser = useCallback(async () => {
     try {
-      const data = await api<{ user: User }>('/auth/me');
-      if (data?.user) {
-        setUser(data.user);
-        setStoredUser(data.user);
+      const current = getStoredUser();
+      if (!current?.id) return;
+
+      const liveProfile = await fetchProfileFromSupabase(current.id);
+      if (liveProfile) {
+        await syncBackendJwt(liveProfile);
+        setUser(liveProfile);
+        setStoredUser(liveProfile);
+        return;
+      }
+      if (getToken()) {
+        const data = await api<{ user: User }>('/auth/me');
+        if (data?.user && data.user.id === current.id) {
+          setUser(data.user);
+          setStoredUser(data.user);
+        }
       }
     } catch {
       // Keep existing stored user on minor errors
@@ -73,16 +234,99 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  useEffect(() => {
-    refreshUser();
-  }, [refreshUser]);
+  const loginWithToken = async (_token: string, u: User) => {
+    await applyAuthenticatedProfile(u, false);
+  };
 
-  const loginWithToken = (token: string, u: User) => {
-    setToken(token);
-    setStoredUser(u);
-    resetSocket();
-    setUser(u);
-    toast(`${u.displayName} sifatida faol!`, 'success');
+  const loginWithGoogle = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: {
+            prompt: 'select_account',
+            access_type: 'offline',
+          },
+        },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        try {
+          if (window.self !== window.top) {
+            window.open(data.url, '_blank');
+          } else {
+            window.location.assign(data.url);
+          }
+        } catch {
+          window.location.assign(data.url);
+        }
+      }
+    } catch (err: any) {
+      toast(err.message || 'Google bilan ulanishda xatolik', 'error');
+      throw err;
+    }
+  };
+
+  const loginWithEmail = async (email: string, pass: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: pass,
+      });
+      if (error) throw error;
+      if (data.user) {
+        await handleSupabaseAuthUser(data.user);
+      }
+    } catch (err: any) {
+      toast(err.message || 'Kirishda xatolik', 'error');
+      throw err;
+    }
+  };
+
+  const registerWithEmail = async (email: string, pass: string, name: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: pass,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
+      });
+      if (error) {
+        // Fallback if Supabase email rate-limit triggers: create clean profile directly in Supabase profiles
+        if (String(error.message || '').toLowerCase().includes('rate limit')) {
+          const fallbackProfile = await registerOrLoginUser(email.split('@')[0], name);
+          if (fallbackProfile) {
+            await applyAuthenticatedProfile(fallbackProfile, false);
+            return;
+          }
+        }
+        throw error;
+      }
+      if (data.user) {
+        await handleSupabaseAuthUser(data.user, name);
+      }
+    } catch (err: any) {
+      toast(err.message || 'Ro‘yxatdan o‘tishda xatolik', 'error');
+      throw err;
+    }
+  };
+
+  const loginWithUsername = async (username: string, displayName?: string) => {
+    try {
+      const profile = await registerOrLoginUser(username, displayName);
+      if (profile) {
+        await applyAuthenticatedProfile(profile, false);
+      } else {
+        throw new Error('Foydalanuvchi topilmadi');
+      }
+    } catch (err: any) {
+      toast(err.message || 'Foydalanuvchini yuklashda xatolik', 'error');
+      throw err;
+    }
   };
 
   const updateCoinsLocally = (coins: number) => {
@@ -90,16 +334,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!prev) return prev;
       const updated = { ...prev, coins };
       setStoredUser(updated);
+      syncProfileToSupabase({ id: updated.id, coins });
       return updated;
     });
   };
 
-  const logout = () => {
-    setToken('demo_token_user');
-    setStoredUser(DEMO_USERS.user);
+  const logout = async () => {
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.auth.signOut();
+      }
+    } catch {}
+    setToken(null);
+    setStoredUser(null);
     resetSocket();
-    setUser(DEMO_USERS.user);
-    toast('Mehmon rejimiga o‘tildi', 'info');
+    setUser(null);
+    toast('Hisobdan muvaffaqiyatli chiqildi', 'info');
   };
 
   return (
@@ -111,6 +361,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLang,
         t,
         loginWithToken,
+        loginWithGoogle,
+        loginWithEmail,
+        registerWithEmail,
+        loginWithUsername,
         refreshUser,
         updateCoinsLocally,
         logout,
@@ -139,8 +393,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-export function useAuth() {
+export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
   return ctx;
-}
+};

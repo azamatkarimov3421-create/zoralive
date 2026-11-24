@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Briefcase,
   Shield,
+  Crown,
   LogOut,
   Coins,
   Gem,
@@ -16,6 +17,7 @@ import {
   Camera,
 } from 'lucide-react';
 import { api } from '../lib/api';
+import { syncProfileToSupabase } from '../lib/supabaseSync';
 import { useAuth } from '../context/AuthContext';
 import { useWorld } from '../context/WorldContext';
 import { MILITARY_RANKS_10 } from '../lib/worldEcosystemData';
@@ -153,10 +155,17 @@ export const ProfilePage: React.FC = () => {
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const cleanName = editName.trim() || user.displayName;
+      await syncProfileToSupabase({
+        id: user.id,
+        displayName: cleanName,
+        bio: editBio,
+        avatar: editAvatar,
+      });
       await api('/users/profile', {
         method: 'PUT',
-        body: JSON.stringify({ displayName: editName, bio: editBio, avatar: editAvatar }),
-      });
+        body: JSON.stringify({ displayName: cleanName, bio: editBio, avatar: editAvatar }),
+      }).catch(() => {});
       await refreshUser();
       setEditOpen(false);
       toast('Profil saqlandi', 'success');
@@ -165,7 +174,8 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const hasDragon = Boolean(user.activeRide?.includes('dragon') || (user.vipLevel && user.vipLevel >= 1));
+  // Dragon only displays for users who actually have an active dragon ride equipped
+  const hasDragon = Boolean(user?.activeRide && user.activeRide.includes('dragon') && user.activeRide !== 'none');
   const dragonTheme = getDragonTheme(dragonThemeId);
 
   return (
@@ -245,7 +255,21 @@ export const ProfilePage: React.FC = () => {
               <span>7-Rolli Panel</span>
             </button>
             <button
-              onClick={logout}
+              onClick={() => navigate('/login')}
+              className={`px-2.5 py-1.5 rounded-full text-[10.5px] font-black flex items-center gap-1 shadow-xs transition active:scale-95 cursor-pointer ${
+                hasDragon
+                  ? 'bg-black/55 hover:bg-black/80 border border-cyan-400/50 text-cyan-300 backdrop-blur-md'
+                  : 'bg-cyan-50 border border-cyan-200 text-cyan-700 hover:bg-cyan-100'
+              }`}
+              title="Hisob almashtirish / Kirish"
+            >
+              <span>Kirish</span>
+            </button>
+            <button
+              onClick={async () => {
+                await logout();
+                navigate('/login');
+              }}
               className={`p-2 rounded-full transition active:scale-95 cursor-pointer ${
                 hasDragon
                   ? 'bg-black/50 border border-white/15 text-white/85 hover:text-rose-400 backdrop-blur-md'
@@ -370,6 +394,25 @@ export const ProfilePage: React.FC = () => {
           </div>
         )}
 
+        {/* Dragon Shop Prompt (Only shown if user does not own/equip a dragon) */}
+        {!hasDragon && (
+          <div
+            onClick={() => setTab('store')}
+            className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-purple-500/10 border border-amber-300/40 flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-500/15 transition active:scale-98"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="text-2xl">🐉</span>
+              <div>
+                <div className="text-xs font-black text-slate-900">Sizda hali Ajdarho yo‘q</div>
+                <div className="text-[10.5px] font-semibold text-slate-500">Do‘kondan afsonaviy ajdarho xarid qiling va profilingizga o‘rnating</div>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-slate-900 text-amber-300 text-[10px] font-black shrink-0">
+              Do‘konga o‘tish →
+            </span>
+          </div>
+        )}
+
         {/* Military Rank (1-10) & 7-Role Governance Portal */}
         <div
           className={`rounded-3xl p-3 text-white flex items-center justify-between gap-2 shadow-sm ${
@@ -389,10 +432,10 @@ export const ProfilePage: React.FC = () => {
           </div>
           <button
             onClick={() => navigate('/admin')}
-            className="px-3 py-2 rounded-full bg-amber-400 text-slate-950 text-[10.5px] font-black shrink-0 flex items-center gap-1 hover:bg-amber-300 transition cursor-pointer"
+            className="px-3.5 py-2 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 text-[11px] font-black shrink-0 flex items-center gap-1.5 hover:brightness-110 shadow-md transition cursor-pointer"
           >
-            <Shield className="w-3.5 h-3.5" />
-            <span>Owner & 7 Panel</span>
+            <Crown className="w-3.5 h-3.5 fill-current" />
+            <span>Ega Paneli</span>
           </button>
         </div>
 
@@ -473,10 +516,12 @@ export const ProfilePage: React.FC = () => {
                   key={pkg.id}
                   onClick={async () => {
                     try {
-                      const res = await api<{ added: number }>('/wallet/topup', {
+                      const res = await api<{ added: number; coins?: number }>('/wallet/topup', {
                         method: 'POST',
-                        body: JSON.stringify({ packageId: pkg.id, provider: payProvider }),
+                        body: JSON.stringify({ packageId: pkg.id, coins: pkg.coins, provider: payProvider }),
                       });
+                      const nextCoins = res.coins !== undefined ? res.coins : (user.coins || 0) + res.added;
+                      await syncProfileToSupabase({ id: user.id, coins: nextCoins });
                       toast(`+${res.added.toLocaleString()} 🪙`, 'success');
                       await refreshUser();
                       loadTabData('wallet');

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -17,9 +17,24 @@ import {
   FileText,
   Ban,
   Calendar,
+  Coins,
+  Gem,
+  RefreshCw,
+  Search,
+  Send,
 } from 'lucide-react';
 import { useWorld } from '../context/WorldContext';
 import { useAuth } from '../context/AuthContext';
+import {
+  fetchAllProfilesFromSupabase,
+  syncProfileToSupabase,
+  fetchRoomsFromSupabase,
+  closeRoomInSupabase,
+  sendRoomMessageToSupabase,
+} from '../lib/supabaseSync';
+import { MYTHIC_DRAGONS, VIP_LEVELS_1_TO_12 } from '../lib/mythicCatalog';
+import { Avatar } from '../components/Avatar';
+import { RoomSummary, User } from '../types';
 import {
   APP_GOVERNANCE_ROLES,
   CONTINENTS_10,
@@ -28,11 +43,13 @@ import {
   TECH_STACK_SPECS,
 } from '../lib/worldEcosystemData';
 
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+
 type PanelRole = 'OWNER' | 'MANAGER' | 'SUPER_ADMIN' | 'ADMIN' | 'AGENT' | 'HOST' | 'BOSHLOVCHI';
 
 export const GovernanceSuitePage: React.FC = () => {
   const navigate = useNavigate();
-  const { toast } = useAuth();
+  const { user: currentUser, refreshUser, toast } = useAuth();
   const {
     state,
     worldCoins,
@@ -44,6 +61,99 @@ export const GovernanceSuitePage: React.FC = () => {
 
   const [roleTab, setRoleTab] = useState<PanelRole>('OWNER');
   const [twoFaCode, setTwoFaCode] = useState('');
+  const [liveUsers, setLiveUsers] = useState<User[]>([]);
+  const [liveRooms, setLiveRooms] = useState<RoomSummary[]>([]);
+  const [userSearch, setUserSearch] = useState('');
+  const [broadcastText, setBroadcastText] = useState('');
+  const [loadingLive, setLoadingLive] = useState(false);
+
+  const loadLiveSupabaseData = async () => {
+    setLoadingLive(true);
+    try {
+      const [profiles, rooms] = await Promise.all([
+        fetchAllProfilesFromSupabase(),
+        fetchRoomsFromSupabase(),
+      ]);
+      setLiveUsers(profiles || []);
+      setLiveRooms(rooms || []);
+    } finally {
+      setLoadingLive(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLiveSupabaseData();
+  }, []);
+
+  const updateMemberLive = async (target: User, patch: Partial<User>, actionDesc: string) => {
+    const merged: User = { ...target, ...patch };
+    await syncProfileToSupabase({ id: target.id, ...patch });
+    try {
+      const url = API_BASE ? `${API_BASE}/api/auth/sync` : '/api/auth/sync';
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(merged),
+      });
+    } catch {
+      // ignore if serverless
+    }
+    setLiveUsers((prev) => prev.map((u) => (u.id === target.id ? merged : u)));
+    if (currentUser?.id === target.id) {
+      await refreshUser();
+    }
+    addAuditLog(currentUser?.displayName || 'LOYIHA EGASI', 'OWNER', `${target.displayName}: ${actionDesc}`, true);
+    toast(`✅ ${target.displayName}: ${actionDesc}`, 'success');
+  };
+
+  const handleBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const msg = broadcastText.trim();
+    if (!msg) return;
+    setBroadcastText('');
+    const sender: User =
+      currentUser || {
+        id: 'owner_sys',
+        uid: 100000,
+        username: 'owner',
+        displayName: '👑 Ega Boshqaruvi',
+        avatar: '',
+        bio: '',
+        country: 'UZ',
+        gender: 'other',
+        role: 'ADMIN',
+        coins: 0,
+        diamonds: 0,
+        wealthXp: 0,
+        charmXp: 0,
+        wealthLevel: 1,
+        wealthProgress: 0,
+        wealthNextXp: 1500,
+        charmLevel: 1,
+        charmProgress: 0,
+        charmNextXp: 1200,
+        vipLevel: 12,
+        vipExpiresAt: null,
+        activeFrame: '',
+        activeRide: '',
+        activeBubble: '',
+        agencyId: null,
+        isBanned: false,
+        hostedMinutes: 0,
+      };
+    for (const r of liveRooms) {
+      await sendRoomMessageToSupabase(r.id, sender, `📢 EGA E’LONI: ${msg}`, 'SYSTEM');
+    }
+    addAuditLog(sender.displayName, 'OWNER', `Umumiy e’lon yuborildi: ${msg}`, true);
+    toast('📢 Umumiy e’lon barcha jonli xonalarga yuborildi!', 'success');
+  };
+
+  const handleCloseLiveRoom = async (r: RoomSummary) => {
+    await closeRoomInSupabase(r.id);
+    setLiveRooms((prev) => prev.filter((x) => x.id !== r.id));
+    addAuditLog(currentUser?.displayName || 'LOYIHA EGASI', 'OWNER', `Xona yopildi: ${r.title}`, true);
+    toast(`Xona yopildi: ${r.title}`, 'info');
+  };
   const [staffList, setStaffList] = useState([
     { id: 'st-1', name: 'Ulug‘bek M.', role: 'MANAGER', status: 'FAOL' },
     { id: 'st-2', name: 'Azizbek T.', role: 'SUPER_ADMIN', status: 'FAOL' },
@@ -144,19 +254,268 @@ export const GovernanceSuitePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Balance Audit Summary */}
-              <div className="grid grid-cols-3 gap-2 pt-1">
+              {/* Live Supabase Counters */}
+              <div className="grid grid-cols-4 gap-2 pt-1">
                 <div className="bg-white/10 rounded-2xl p-2.5 border border-white/10">
-                  <div className="text-[10px] text-amber-200 font-bold">WORLD COIN Audit</div>
-                  <div className="text-base font-black">{worldCoins.toLocaleString()}</div>
+                  <div className="text-[10px] text-amber-200 font-bold">Jami A’zolar</div>
+                  <div className="text-base font-black">{liveUsers.length}</div>
                 </div>
                 <div className="bg-white/10 rounded-2xl p-2.5 border border-white/10">
-                  <div className="text-[10px] text-purple-200 font-bold">WORLD GEM Audit</div>
-                  <div className="text-base font-black">{state.worldGems.toLocaleString()}</div>
+                  <div className="text-[10px] text-emerald-200 font-bold">Jonli Xonalar</div>
+                  <div className="text-base font-black">{liveRooms.length}</div>
                 </div>
                 <div className="bg-white/10 rounded-2xl p-2.5 border border-white/10">
-                  <div className="text-[10px] text-cyan-200 font-bold">10 Qit’a Elementlari</div>
-                  <div className="text-base font-black">{totalElements.toLocaleString()}</div>
+                  <div className="text-[10px] text-purple-200 font-bold">Ajdarho Egalari</div>
+                  <div className="text-base font-black">
+                    {liveUsers.filter((u) => u.activeRide && u.activeRide.includes('dragon') && u.activeRide !== 'none').length}
+                  </div>
+                </div>
+                <div className="bg-white/10 rounded-2xl p-2.5 border border-white/10">
+                  <div className="text-[10px] text-cyan-200 font-bold">VIP A’zolar</div>
+                  <div className="text-base font-black">{liveUsers.filter((u) => u.vipLevel > 0).length}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* LIVE SUPABASE USERS MANAGEMENT (COINS, VIP, DRAGONS, ROLES) */}
+            <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-amber-500" />
+                    <span>Jonli Foydalanuvchilar Boshqaruvi (Supabase Baza)</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Har bir foydalanuvchining haqiqiy ismi, tangasi, VIP darajasi va ajdarhosini shu yerdan boshqaring
+                  </p>
+                </div>
+                <button
+                  onClick={loadLiveSupabaseData}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingLive ? 'animate-spin' : ''}`} />
+                  <span>Yangilash</span>
+                </button>
+              </div>
+
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  placeholder="Ism, username yoki ID orqali qidirish..."
+                  className="w-full pl-9 pr-4 py-2 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-0.5">
+                {liveUsers
+                  .filter((u) => {
+                    const q = userSearch.trim().toLowerCase();
+                    if (!q) return true;
+                    return (
+                      u.displayName.toLowerCase().includes(q) ||
+                      u.username.toLowerCase().includes(q) ||
+                      String(u.uid).includes(q)
+                    );
+                  })
+                  .map((u) => {
+                    const hasDrg = Boolean(u.activeRide && u.activeRide.includes('dragon') && u.activeRide !== 'none');
+                    return (
+                      <div
+                        key={u.id}
+                        className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5"
+                      >
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Avatar src={u.avatar} name={u.displayName} size="sm" frame={u.activeFrame} vipLevel={u.vipLevel} />
+                            <div className="min-w-0">
+                              <div className="text-xs font-black text-slate-900 truncate flex items-center gap-1.5">
+                                <span>{u.displayName}</span>
+                                {currentUser?.id === u.id && (
+                                  <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-black">
+                                    SIZ
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10.5px] font-bold text-slate-500">
+                                ID {u.uid} • @{u.username} • 🪙 {u.coins.toLocaleString()} • 💎 {u.diamonds.toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <button
+                              onClick={() =>
+                                updateMemberLive(
+                                  u,
+                                  { coins: (u.coins || 0) + 10000 },
+                                  '+10,000 tanga berildi'
+                                )
+                              }
+                              className="px-2.5 py-1 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-[10.5px] font-black cursor-pointer"
+                            >
+                              +10K 🪙
+                            </button>
+                            <button
+                              onClick={() =>
+                                updateMemberLive(
+                                  u,
+                                  { coins: (u.coins || 0) + 100000 },
+                                  '+100,000 tanga berildi'
+                                )
+                              }
+                              className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[10.5px] font-black cursor-pointer"
+                            >
+                              +100K 🪙
+                            </button>
+                            <button
+                              onClick={() =>
+                                updateMemberLive(
+                                  u,
+                                  { diamonds: (u.diamonds || 0) + 1000 },
+                                  '+1,000 olmos berildi'
+                                )
+                              }
+                              className="px-2.5 py-1 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-800 text-[10.5px] font-black cursor-pointer"
+                            >
+                              +1K 💎
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* VIP, Dragon & Role Selectors */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1.5 border-t border-slate-200/70">
+                          <label className="text-[10px] font-extrabold text-slate-600 flex flex-col gap-1">
+                            <span>👑 VIP Darajasi:</span>
+                            <select
+                              value={u.vipLevel || 0}
+                              onChange={(e) => {
+                                const lvl = Number(e.target.value);
+                                const vipMeta = lvl > 0 ? VIP_LEVELS_1_TO_12[lvl - 1] : null;
+                                updateMemberLive(
+                                  u,
+                                  {
+                                    vipLevel: lvl,
+                                    activeFrame: vipMeta ? vipMeta.frameCode : '',
+                                    activeBubble: vipMeta ? vipMeta.bubbleCode : '',
+                                  },
+                                  lvl > 0 ? `VIP ${lvl} berildi` : 'VIP olib tashlandi'
+                                );
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-900"
+                            >
+                              <option value={0}>VIP yo‘q (Oddiy)</option>
+                              {VIP_LEVELS_1_TO_12.map((v) => (
+                                <option key={v.level} value={v.level}>
+                                  VIP {v.level} — {v.tierName}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+
+                          <label className="text-[10px] font-extrabold text-slate-600 flex flex-col gap-1">
+                            <span>🐉 Ajdarho ({hasDrg ? 'Bor' : 'Yo‘q'}):</span>
+                            <select
+                              value={hasDrg ? u.activeRide : ''}
+                              onChange={(e) => {
+                                const code = e.target.value;
+                                updateMemberLive(
+                                  u,
+                                  { activeRide: code },
+                                  code ? `Ajdarho berildi (${code.replace('ride-dragon-', '')})` : 'Ajdarho olib tashlandi'
+                                );
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-900"
+                            >
+                              <option value="">Yo‘q (Ajdarhosiz)</option>
+                              {MYTHIC_DRAGONS.map((d) => (
+                                <option key={d.rideCode} value={d.rideCode}>
+                                  🐉 {d.name} ({d.titleUz})
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+
+                          <label className="text-[10px] font-extrabold text-slate-600 flex flex-col gap-1">
+                            <span>🛡️ Tizim Roli:</span>
+                            <select
+                              value={u.role || 'USER'}
+                              onChange={(e) => {
+                                const nextRole = e.target.value as any;
+                                updateMemberLive(u, { role: nextRole }, `Roli ${nextRole} etib belgilandi`);
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-900"
+                            >
+                              <option value="USER">Oddiy Foydalanuvchi</option>
+                              <option value="HOST">Host (Efir Boshlovchisi)</option>
+                              <option value="AGENT">Agent</option>
+                              <option value="ADMIN">Admin</option>
+                              <option value="SUPER_ADMIN">Super Admin</option>
+                              <option value="MANAGER">Manager</option>
+                              <option value="OWNER">Owner (Ega)</option>
+                            </select>
+                          </label>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* LIVE ROOMS & GLOBAL BROADCAST */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-white rounded-3xl p-4 border border-slate-200 space-y-2.5">
+                <div className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                  <Megaphone className="w-4 h-4 text-amber-500" />
+                  <span>Umumiy Ega E’loni (Barcha Jonli Xonalar Chatiga)</span>
+                </div>
+                <form onSubmit={handleBroadcast} className="flex gap-2">
+                  <input
+                    value={broadcastText}
+                    onChange={(e) => setBroadcastText(e.target.value)}
+                    placeholder="Barcha foydalanuvchilarga e’lon yozing..."
+                    className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3.5 py-2 rounded-xl bg-slate-900 text-amber-300 text-xs font-black flex items-center gap-1 cursor-pointer"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Yuborish</span>
+                  </button>
+                </form>
+              </div>
+
+              <div className="bg-white rounded-3xl p-4 border border-slate-200 space-y-2">
+                <div className="text-xs font-black text-slate-900">Faol Jonli Xonalar ({liveRooms.length}):</div>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                  {liveRooms.length === 0 ? (
+                    <div className="text-xs text-slate-400 font-semibold py-2">Hozircha jonli xonalar yo‘q</div>
+                  ) : (
+                    liveRooms.map((r) => (
+                      <div key={r.id} className="flex items-center justify-between gap-2 bg-slate-50 px-3 py-2 rounded-xl text-xs">
+                        <div className="min-w-0">
+                          <div className="font-black text-slate-900 truncate">{r.title}</div>
+                          <div className="text-[10px] text-slate-500 font-bold">Boshlovchi: {r.hostName}</div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => navigate(r.type === 'VIDEO' ? `/video/${r.id}` : `/voice/${r.id}`)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-500 text-white text-[10px] font-black cursor-pointer"
+                          >
+                            Kirish
+                          </button>
+                          <button
+                            onClick={() => handleCloseLiveRoom(r)}
+                            className="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-[10px] font-black cursor-pointer"
+                          >
+                            Yopish
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

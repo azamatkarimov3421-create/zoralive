@@ -165,12 +165,25 @@ function buildInitialSeats(roomRow: Record<string, any>): SeatState[] {
   return seats;
 }
 
-function getOrCreateRoomState(roomId: string): LiveRoomState | null {
+function getOrCreateRoomState(roomId: string, fallbackHostId?: string): LiveRoomState | null {
   const existing = roomsMap.get(roomId);
   if (existing) return existing;
 
-  const row = db.prepare('SELECT * FROM rooms WHERE id = ?').get(roomId);
-  if (!row) return null;
+  let row = db.prepare('SELECT * FROM rooms WHERE id = ?').get(roomId);
+  if (!row) {
+    // Support joining rooms stored in Supabase that aren't yet in local SQLite
+    const hostUser =
+      (fallbackHostId && db.prepare('SELECT * FROM users WHERE id = ?').get(fallbackHostId)) ||
+      db.prepare('SELECT * FROM users LIMIT 1').get();
+    if (!hostUser) return null;
+    const maxNum = db.prepare('SELECT MAX(room_number) as m FROM rooms').get()?.m || 8900;
+    db.prepare(`
+      INSERT OR IGNORE INTO rooms (id, room_number, host_id, title, type, theme, cover, country, seat_count, is_live, created_at)
+      VALUES (?, ?, ?, ?, 'VOICE', 'light', '/assets/stage-palace.jpg', 'UZ', 8, 1, ?)
+    `).run(roomId, Number(maxNum) + 1, hostUser.id, `${hostUser.display_name} xonasi`, new Date().toISOString());
+    row = db.prepare('SELECT * FROM rooms WHERE id = ?').get(roomId);
+    if (!row) return null;
+  }
 
   const state: LiveRoomState = {
     roomId,

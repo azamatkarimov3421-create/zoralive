@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Smartphone, Monitor, Shield } from 'lucide-react';
+import { Smartphone, Monitor, Shield, Crown } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorldProvider } from './context/WorldContext';
 import { AuthPage } from './pages/AuthPage';
@@ -20,7 +20,7 @@ import { FloatingVoiceBar } from './components/FloatingVoiceBar';
 import { CreateRoomModal } from './components/CreateRoomModal';
 
 const AppShell: React.FC = () => {
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
@@ -35,6 +35,7 @@ const AppShell: React.FC = () => {
   }
 
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isAuthRoute = location.pathname === '/login' || location.pathname === '/auth';
   const isRoomRoute = location.pathname.startsWith('/voice/') || location.pathname.startsWith('/video/');
 
   if (isAdminRoute) {
@@ -46,23 +47,28 @@ const AppShell: React.FC = () => {
     );
   }
 
+  if (!user && !isAuthRoute) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-[#eef1f6] flex justify-center relative">
-      {/* Desktop Controls: 7-Role Governance Panel + Mobile/Wide Switch */}
-      <div className="hidden md:flex fixed top-3 right-3 z-40 items-center gap-2">
+      {/* 7-Role Governance Panel (Ega Paneli) + Mobile/Wide Switch - Always visible to all */}
+      <div className="fixed top-2.5 right-2.5 z-50 flex items-center gap-1.5">
         <button
           onClick={() => navigate('/admin')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-amber-300 shadow-sm text-[11px] font-black hover:bg-slate-800"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 text-slate-950 shadow-lg border border-amber-300 text-[11px] font-black hover:brightness-110 active:scale-95 transition cursor-pointer"
+          title="Barcha 7 ta boshqaruv roli: Ega, Menejer, Super Admin, Admin, Agent, Xost, Boshlovchi"
         >
-          <Shield className="w-3.5 h-3.5" />
-          <span>Owner & 7 Panel</span>
+          <Crown className="w-3.5 h-3.5 fill-current" />
+          <span>Ega Paneli</span>
         </button>
 
         <button
           onClick={() => setWideMode((v) => !v)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm text-[11px] font-bold text-slate-700 hover:bg-slate-50"
+          className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 shadow-sm text-[11px] font-bold text-slate-700 hover:bg-white active:scale-95 transition cursor-pointer"
         >
-          {wideMode ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
+          {wideMode ? <Smartphone className="w-3 h-3" /> : <Monitor className="w-3 h-3" />}
           <span>{wideMode ? 'Mobil' : 'Keng'}</span>
         </button>
       </div>
@@ -79,6 +85,7 @@ const AppShell: React.FC = () => {
           <Routes>
             <Route path="/" element={<HomePage onGoLive={() => setCreateOpen(true)} />} />
             <Route path="/login" element={<AuthPage />} />
+            <Route path="/auth" element={<AuthPage />} />
             <Route path="/voice/:id" element={<VoiceRoomPage />} />
             <Route path="/video/:id" element={<VideoRoomPage />} />
             <Route path="/games" element={<GamesPage />} />

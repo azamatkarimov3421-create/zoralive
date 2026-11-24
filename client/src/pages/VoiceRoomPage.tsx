@@ -28,6 +28,11 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { getSocket } from '../lib/socket';
+import {
+  sendRoomMessageToSupabase,
+  fetchRoomMessagesFromSupabase,
+  subscribeToRoomMessages,
+} from '../lib/supabaseSync';
 import { useAuth } from '../context/AuthContext';
 import { useWorld } from '../context/WorldContext';
 import { GiftEvent, RoomChatMessage, SeatState } from '../types';
@@ -197,6 +202,60 @@ export const VoiceRoomPage: React.FC = () => {
         navigate('/');
       });
 
+    // Load persistent chat history & subscribe to live Supabase Realtime messages
+    fetchRoomMessagesFromSupabase(roomId).then((rows) => {
+      if (!rows || rows.length === 0) return;
+      const mapped: RoomChatMessage[] = rows.map((r: any) => ({
+        id: String(r.id),
+        type: r.message_type === 'GIFT' ? 'GIFT' : r.message_type === 'SYSTEM' ? 'SYSTEM' : 'CHAT',
+        userId: r.user_id,
+        displayName: r.user_name || 'Foydalanuvchi',
+        avatar: r.user_avatar || '',
+        vipLevel: Number(r.vip_level) || 0,
+        text: r.content || '',
+        createdAt: r.created_at || new Date().toISOString(),
+      }));
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((x) => x.id));
+        const combined = [...prev];
+        for (const m of mapped) {
+          const isDup = combined.some(
+            (x) =>
+              existingIds.has(m.id) ||
+              (x.userId === m.userId &&
+                x.text === m.text &&
+                Math.abs(Date.parse(x.createdAt || '') - Date.parse(m.createdAt || '')) < 4000)
+          );
+          if (!isDup) combined.push(m);
+        }
+        return combined.slice(-55);
+      });
+    });
+
+    const unsubSupaChat = subscribeToRoomMessages(roomId, (r: any) => {
+      const incoming: RoomChatMessage = {
+        id: String(r.id),
+        type: r.message_type === 'GIFT' ? 'GIFT' : r.message_type === 'SYSTEM' ? 'SYSTEM' : 'CHAT',
+        userId: r.user_id,
+        displayName: r.user_name || 'Foydalanuvchi',
+        avatar: r.user_avatar || '',
+        vipLevel: Number(r.vip_level) || 0,
+        text: r.content || '',
+        createdAt: r.created_at || new Date().toISOString(),
+      };
+      setMessages((prev) =>
+        prev.some(
+          (m) =>
+            m.id === incoming.id ||
+            (m.userId === incoming.userId &&
+              m.text === incoming.text &&
+              Math.abs(Date.parse(m.createdAt || '') - Date.parse(incoming.createdAt || '')) < 4000)
+        )
+          ? prev
+          : [...prev.slice(-55), incoming]
+      );
+    });
+
     const socket = getSocket();
     socket.emit('room:join', { roomId });
 
@@ -205,7 +264,25 @@ export const VoiceRoomPage: React.FC = () => {
       setViewerCount(s.viewerCount || 0);
       setViewersList(s.viewers || []);
       setTopGifters(s.topGifters || []);
-      setMessages(s.messages || []);
+      setMessages((prev) => {
+        const serverMsgs: RoomChatMessage[] = s.messages || [];
+        if (prev.length === 0) return serverMsgs;
+        const merged = [...serverMsgs];
+        for (const p of prev) {
+          if (
+            !merged.some(
+              (x) =>
+                x.id === p.id ||
+                (x.userId === p.userId &&
+                  x.text === p.text &&
+                  Math.abs(Date.parse(x.createdAt || '') - Date.parse(p.createdAt || '')) < 4000)
+            )
+          ) {
+            merged.push(p);
+          }
+        }
+        return merged.slice(-55);
+      });
       setTotalGifts(s.totalGifts || 0);
       if (s.notice !== undefined) {
         setNotice(s.notice);
@@ -220,7 +297,17 @@ export const VoiceRoomPage: React.FC = () => {
     };
     const onTopGifters = (list: any[]) => setTopGifters(list || []);
     const onMsg = (msg: RoomChatMessage) =>
-      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev.slice(-50), msg]));
+      setMessages((prev) =>
+        prev.some(
+          (m) =>
+            m.id === msg.id ||
+            (m.userId === msg.userId &&
+              m.text === msg.text &&
+              Math.abs(Date.parse(m.createdAt || '') - Date.parse(msg.createdAt || '')) < 4000)
+        )
+          ? prev
+          : [...prev.slice(-50), msg]
+      );
     const onTheme = ({ theme: nextT }: { theme: string }) => setTheme(nextT);
     const onNotice = ({ notice: n }: { notice: string }) => {
       setNotice(n);
@@ -328,6 +415,7 @@ export const VoiceRoomPage: React.FC = () => {
       socket.off('rtc:answer', onAnswer);
       socket.off('rtc:ice', onIce);
       socket.off('rtc:peer_left', onPeerLeft);
+      unsubSupaChat();
       stopAudio();
     };
   }, [roomId]);
@@ -379,9 +467,29 @@ export const VoiceRoomPage: React.FC = () => {
 
   const sendChat = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatText.trim() || !roomId) return;
-    getSocket().emit('room:chat', { roomId, text: chatText });
+    const text = chatText.trim();
+    if (!text || !roomId) return;
     setChatText('');
+
+    // Optimistic instantaneous message with user's real name and status
+    const optimisticMsg: RoomChatMessage = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      type: 'CHAT',
+      userId: user?.id || 'guest',
+      displayName: user?.displayName || user?.username || 'Mehmon',
+      avatar: user?.avatar || '/assets/avatar-jasur.jpg',
+      wealthLevel: user?.wealthLevel || 1,
+      vipLevel: user?.vipLevel || 0,
+      bubble: user?.activeBubble || '',
+      text,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev.slice(-50), optimisticMsg]);
+
+    getSocket().emit('room:chat', { roomId, text });
+    if (user) {
+      sendRoomMessageToSupabase(roomId, user, text).catch(() => {});
+    }
   };
 
   const toggleFollow = async () => {
@@ -687,6 +795,11 @@ export const VoiceRoomPage: React.FC = () => {
                   m.bubble ? m.bubble : isLight ? 'bg-white border border-slate-200/70 text-slate-800' : 'bg-black/45 text-white'
                 }`}
               >
+                {m.vipLevel && m.vipLevel > 0 ? (
+                  <span className="inline-block mr-1 px-1.5 py-0.2 rounded-md bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-[9px] font-black shadow-xs">
+                    V{m.vipLevel}
+                  </span>
+                ) : null}
                 <span className="font-extrabold text-[#ff3366] mr-1.5">{m.displayName}:</span>
                 <span>{m.text}</span>
               </div>

@@ -72,7 +72,7 @@ export const ShopPage: React.FC = () => {
         <MythicVaultSection
           storeItems={storeItems}
           onReloadStore={loadStore}
-          initialFilter="DRAGON"
+          initialFilter="VIP"
         />
       )}
     </div>

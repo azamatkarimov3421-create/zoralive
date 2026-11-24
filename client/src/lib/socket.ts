@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { getStoredUser, getToken, setStoredUser } from './api';
 import { DEMO_USERS, MOCK_GIFTS, MOCK_ROOMS } from './mockData';
+import { sendRoomMessageToSupabase, sendGiftInSupabase } from './supabaseSync';
 import { LudoGameState, PkState, SeatState } from '../types';
 
 let socketInstance: Socket | null = null;
@@ -208,6 +209,7 @@ class MockSocket {
         );
         this.trigger('room:seats', [...this.currentSeats]);
       } else if (event === 'room:chat') {
+        sendRoomMessageToSupabase(data.roomId || 'room_madina', u, String(data.text || ''));
         this.trigger('room:message', {
           id: `msg_${Date.now()}`,
           type: 'CHAT',
@@ -230,6 +232,13 @@ class MockSocket {
         }
         const nextCoins = u.coins - totalCost;
         setStoredUser({ ...u, coins: nextCoins });
+        sendGiftInSupabase(
+          u,
+          data.receiverId || 'user_host_1',
+          { id: gift.id, nameUz: gift.name_uz, price: gift.price, diamondsAward: gift.price / 2 },
+          qty,
+          data.roomId || 'room_madina'
+        );
         this.roomTotalGifts += totalCost;
 
         const targetSeat = this.currentSeats.find((s) => s.userId === data.receiverId);

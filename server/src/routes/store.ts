@@ -29,35 +29,49 @@ router.get('/items', requireAuth, (req: AuthRequest, res) => {
 
 router.post('/buy', requireAuth, (req: AuthRequest, res) => {
   try {
-    const { itemId } = req.body || {};
+    const { itemId, code, itemType, price, nameUz, frameCode, bubbleCode } = req.body || {};
     const userId = req.user!.id;
 
     const updatedUser = runTransaction(() => {
-      const item = db.prepare('SELECT * FROM store_items WHERE id = ?').get(String(itemId));
+      let item = db.prepare('SELECT * FROM store_items WHERE id = ? OR code = ?').get(String(itemId || ''), String(code || ''));
+      if (!item && code && itemType) {
+        const resolvedPrice = Math.max(0, Number(price) || 0);
+        const vipTierNum = itemType === 'VIP' ? Number(String(code).replace('vip-', '')) || 1 : 0;
+        item = {
+          id: String(itemId || `dyn_${code}`),
+          type: String(itemType),
+          code: String(code),
+          name_uz: String(nameUz || code),
+          price: resolvedPrice,
+          duration_days: 30,
+          vip_tier: vipTierNum,
+        };
+      }
       if (!item) throw new Error('Mahsulot topilmadi');
 
       const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId)!;
       if (Number(user.coins) < Number(item.price)) {
-        throw new Error('Tangalar yetarli emas');
+        throw new Error('Tangalar yetarli emas — Hamyondan yoki Ega Panelidan to‘ldiring');
       }
 
       const newCoins = Number(user.coins) - Number(item.price);
       const newWealth = Number(user.wealth_xp) + Number(item.price);
-      const expiresAt = new Date(Date.now() + Number(item.duration_days) * 86400 * 1000).toISOString();
+      const expiresAt = new Date(Date.now() + Number(item.duration_days || 30) * 86400 * 1000).toISOString();
+      const now = new Date().toISOString();
 
       db.prepare('UPDATE users SET coins = ?, wealth_xp = ? WHERE id = ?').run(newCoins, newWealth, userId);
 
       db.prepare(
         `INSERT INTO ledger (id, user_id, currency, amount, balance_after, tx_type, description, ref_id, created_at)
          VALUES (?, ?, 'COINS', ?, ?, 'STORE_BUY', ?, ?, ?)`
-      ).run(uuid(), userId, -Number(item.price), newCoins, `Do‘kon: ${item.name_uz}`, item.id, new Date().toISOString());
+      ).run(uuid(), userId, -Number(item.price), newCoins, `Do‘kon: ${item.name_uz}`, item.id, now);
 
       db.prepare(
         `INSERT INTO user_inventory (id, user_id, item_id, item_type, item_code, expires_at, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?)`
-      ).run(uuid(), userId, item.id, item.type, item.code, expiresAt, new Date().toISOString());
+      ).run(uuid(), userId, item.id, item.type, item.code, expiresAt, now);
 
-      // Auto-equip bought item
+      // Auto-equip bought item (Dragons ONLY equip when RIDE is bought — VIP never forces a dragon!)
       if (item.type === 'FRAME') {
         db.prepare('UPDATE users SET active_frame = ? WHERE id = ?').run(item.code, userId);
       } else if (item.type === 'RIDE') {
@@ -65,8 +79,22 @@ router.post('/buy', requireAuth, (req: AuthRequest, res) => {
       } else if (item.type === 'BUBBLE') {
         db.prepare('UPDATE users SET active_bubble = ? WHERE id = ?').run(item.code, userId);
       } else if (item.type === 'VIP') {
-        const nextVip = Math.max(Number(user.vip_level || 0), Number(item.vip_tier || 1));
+        const nextVip = Number(item.vip_tier || String(item.code).replace('vip-', '') || 1);
         db.prepare('UPDATE users SET vip_level = ?, vip_expires_at = ? WHERE id = ?').run(nextVip, expiresAt, userId);
+        if (frameCode) {
+          db.prepare('UPDATE users SET active_frame = ? WHERE id = ?').run(String(frameCode), userId);
+          db.prepare(
+            `INSERT INTO user_inventory (id, user_id, item_id, item_type, item_code, expires_at, created_at)
+             VALUES (?, ?, ?, 'FRAME', ?, ?, ?)`
+          ).run(uuid(), userId, `vip_fr_${frameCode}`, String(frameCode), expiresAt, now);
+        }
+        if (bubbleCode) {
+          db.prepare('UPDATE users SET active_bubble = ? WHERE id = ?').run(String(bubbleCode), userId);
+          db.prepare(
+            `INSERT INTO user_inventory (id, user_id, item_id, item_type, item_code, expires_at, created_at)
+             VALUES (?, ?, ?, 'BUBBLE', ?, ?, ?)`
+          ).run(uuid(), userId, `vip_bb_${bubbleCode}`, String(bubbleCode), expiresAt, now);
+        }
       }
 
       return db.prepare('SELECT * FROM users WHERE id = ?').get(userId)!;
