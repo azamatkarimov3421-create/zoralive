@@ -57,8 +57,8 @@ export const ShopPage: React.FC = () => {
           </div>
         </div>
         <div className="text-right shrink-0">
-          <span className="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black shadow">
-            100% Onlayn
+          <span className="px-2.5 py-1 rounded-full bg-emerald-400 text-slate-950 text-[10px] font-black shadow">
+            100% Tekin
           </span>
         </div>
       </div>

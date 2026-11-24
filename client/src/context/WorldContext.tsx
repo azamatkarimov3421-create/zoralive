@@ -449,23 +449,17 @@ export const WorldProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
-  const buySoldierGear = (gearId: string, priceCoins: number, priceGems: number) => {
+  const buySoldierGear = (gearId: string, _priceCoins: number, _priceGems: number) => {
     if (state.ownedGearIds.includes(gearId)) {
       toast('Bu qurol/jihoz inventaringizda mavjud!', 'info');
       return;
     }
-    if (worldCoins < priceCoins || state.worldGems < priceGems) {
-      toast(`Yetarli balans yo‘q (${priceCoins} Coin va ${priceGems} Gem kerak)`, 'error');
-      return;
-    }
-    updateCoinsLocally(worldCoins - priceCoins);
     setState((prev) => ({
       ...prev,
-      worldGems: prev.worldGems - priceGems,
       ownedGearIds: [...prev.ownedGearIds, gearId],
       equippedGearIds: [...prev.equippedGearIds, gearId],
     }));
-    toast('Virtual harbiy buyum sotib olindi va taqildi! ⚔️🛡️', 'success');
+    toast('Harbiy buyum tekinga ochildi va taqildi! ⚔️🛡️', 'success');
   };
 
   const toggleEquipGear = (gearId: string) => {
@@ -483,18 +477,13 @@ export const WorldProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const buySellerItem = (itemId: string) => {
     const item = state.sellerProducts.find((p) => p.id === itemId);
     if (!item || item.stock <= 0) return;
-    if (worldCoins < item.priceCoins) {
-      toast('WORLD COIN yetarli emas', 'error');
-      return;
-    }
-    updateCoinsLocally(worldCoins - item.priceCoins);
     setState((prev) => ({
       ...prev,
       sellerProducts: prev.sellerProducts.map((p) =>
         p.id === itemId ? { ...p, stock: p.stock - 1, soldCount: p.soldCount + 1 } : p
       ),
     }));
-    toast(`${item.nameUz} Seller do‘konidan xarid qilindi! 🛍️`, 'success');
+    toast(`${item.nameUz} tekinga olindi! 🛍️`, 'success');
   };
 
   const listNewSellerItem = (
