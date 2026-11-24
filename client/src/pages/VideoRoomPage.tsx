@@ -19,6 +19,7 @@ import { GiftOverlay } from '../components/GiftOverlay';
 import { EntryBanner, EntryRideEvent } from '../components/EntryBanner';
 import { HostExitModal, HostCandidate } from '../components/HostExitModal';
 import { RoomLockModal } from '../components/RoomLockModal';
+import { BG_THEMES, ThemeOrbDial } from '../components/ThemeOrbDial';
 import { PkVsCrest } from '../components/LuxuryBadges';
 import { sfx } from '../lib/sound';
 
@@ -46,6 +47,7 @@ export const VideoRoomPage: React.FC = () => {
 
   const [giftDrawerOpen, setGiftDrawerOpen] = useState(false);
   const [hostExitOpen, setHostExitOpen] = useState(false);
+  const [roomTheme, setRoomTheme] = useState<string>('light');
   const [lockModalOpen, setLockModalOpen] = useState(false);
   const [roomSettings, setRoomSettings] = useState<RoomAccessSettings>(() =>
     getRoomSettings(roomId || '') || { maxCapacity: 8, isLocked: false, password: '' }
@@ -255,6 +257,7 @@ export const VideoRoomPage: React.FC = () => {
       setTimeout(() => setEntryRide((c) => (c?.id === id ? null : c)), 3700);
     };
     const onWallet = ({ coins }: { coins: number }) => updateCoinsLocally(coins);
+    const onTheme = ({ theme: nextT }: { theme: string }) => setRoomTheme(nextT);
     const onErr = ({ message }: { message: string }) => toast(message, 'error');
     const onScheduleClose = ({ closesAt: ts }: { closesAt: number }) => {
       if (ts > Date.now() && roomId) {
@@ -371,6 +374,7 @@ export const VideoRoomPage: React.FC = () => {
     socket.on('room:gift_received', onGift);
     socket.on('room:entry_ride', onRide);
     socket.on('wallet:updated', onWallet);
+    socket.on('room:theme_changed', onTheme);
     socket.on('room:error', onErr);
     socket.on('room:schedule_close', onScheduleClose);
     socket.on('room:closed', onRoomClosed);
@@ -394,6 +398,7 @@ export const VideoRoomPage: React.FC = () => {
       socket.off('room:gift_received', onGift);
       socket.off('room:entry_ride', onRide);
       socket.off('wallet:updated', onWallet);
+      socket.off('room:theme_changed', onTheme);
       socket.off('room:error', onErr);
       socket.off('room:schedule_close', onScheduleClose);
       socket.off('room:closed', onRoomClosed);
@@ -534,8 +539,16 @@ export const VideoRoomPage: React.FC = () => {
     ? [{ id: roomMeta.host.id, name: roomMeta.host.displayName, avatar: roomMeta.host.avatar }]
     : [];
 
+  const activeThemeBg = BG_THEMES.find((t) => t.id === roomTheme)?.image;
+
   return (
     <div className="min-h-screen flex flex-col bg-transparent relative overflow-hidden">
+      {activeThemeBg && (
+        <div className="pointer-events-none select-none fixed inset-0 z-0">
+          <img src={activeThemeBg} alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-slate-950/35" />
+        </div>
+      )}
       <EntryBanner event={entryRide} />
       <GiftOverlay gift={activeGiftAnim} />
 
@@ -832,6 +845,16 @@ export const VideoRoomPage: React.FC = () => {
           toast(next.isLocked ? 'Xona qulflandi 🔒' : 'Xona ochildi 🔓', 'success');
         }}
       />
+
+      {(user?.vipLevel || 0) > 0 && (
+        <ThemeOrbDial
+          activeTheme={roomTheme}
+          onSelect={(nextTheme) => {
+            setRoomTheme(nextTheme);
+            if (roomId) getSocket().emit('room:theme', { roomId, theme: nextTheme });
+          }}
+        />
+      )}
     </div>
   );
 };

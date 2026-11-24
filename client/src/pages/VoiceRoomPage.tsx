@@ -43,6 +43,7 @@ import { GiftOverlay } from '../components/GiftOverlay';
 import { EntryBanner, EntryRideEvent } from '../components/EntryBanner';
 import { HostExitModal, HostCandidate } from '../components/HostExitModal';
 import { RoomLockModal } from '../components/RoomLockModal';
+import { ThemeOrbDial } from '../components/ThemeOrbDial';
 import { LiveWaveBars, getStageWallpaper } from '../components/LuxuryBadges';
 import { ANIMATED_FRAMES, getAnimatedFrameUrl } from '../lib/mythicCatalog';
 import { sfx } from '../lib/sound';
@@ -1306,6 +1307,16 @@ export const VoiceRoomPage: React.FC = () => {
           toast(next.isLocked ? 'Xona qulflandi 🔒' : 'Xona ochildi 🔓', 'success');
         }}
       />
+
+      {(user?.vipLevel || 0) > 0 && (
+        <ThemeOrbDial
+          activeTheme={theme}
+          onSelect={(nextTheme) => {
+            setTheme(nextTheme);
+            if (roomId) getSocket().emit('room:theme', { roomId, theme: nextTheme });
+          }}
+        />
+      )}
     </div>
   );
 };
