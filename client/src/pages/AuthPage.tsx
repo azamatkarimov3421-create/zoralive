@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Lock, User as UserIcon, Sparkles, Crown } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User as UserIcon, Sparkles, Crown, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Lang } from '../types';
 
@@ -17,7 +17,8 @@ export const AuthPage: React.FC = () => {
     toast,
   } = useAuth();
 
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'quick' | 'login' | 'register'>('quick');
+  const [quickName, setQuickName] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +29,7 @@ export const AuthPage: React.FC = () => {
   // Auto-redirect after OAuth callback completes
   useEffect(() => {
     if (user && window.location.hash.includes('access_token')) {
-      navigate('/profile', { replace: true });
+      navigate('/', { replace: true });
     }
   }, [user, navigate]);
 
@@ -36,6 +37,29 @@ export const AuthPage: React.FC = () => {
     setBusy(true);
     try {
       await loginWithGoogle();
+    } catch {
+      // toast shown in context
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleQuickNameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = quickName.trim();
+    if (clean.length < 2) {
+      toast('Ismingizni kamida 2 ta harf bilan yozing', 'error');
+      return;
+    }
+    setBusy(true);
+    try {
+      const uname =
+        clean
+          .toLowerCase()
+          .replace(/[^a-z0-9_]/g, '')
+          .slice(0, 16) || `user_${Date.now().toString().slice(-4)}`;
+      await loginWithUsername(uname, clean);
+      navigate('/', { replace: true });
     } catch {
       // toast shown in context
     } finally {
@@ -66,7 +90,7 @@ export const AuthPage: React.FC = () => {
           await loginWithUsername(cleanId);
         }
       }
-      navigate('/profile', { replace: true });
+      navigate('/', { replace: true });
     } catch {
       // toast shown in context
     } finally {
@@ -171,76 +195,110 @@ export const AuthPage: React.FC = () => {
           <div className="flex-1 h-px bg-white/15" />
         </div>
 
-        {/* MODE SWITCHER TABS: KIRISH / RO'YXATDAN O'TISH */}
-        <div className="grid grid-cols-2 gap-1 bg-white/10 p-1 rounded-2xl border border-white/10">
+        {/* MODE SWITCHER TABS: TEZ KIRISH / GMAIL KIRISH / RO'YXATDAN O'TISH */}
+        <div className="grid grid-cols-3 gap-1 bg-white/10 p-1 rounded-2xl border border-white/10">
+          <button
+            type="button"
+            onClick={() => setMode('quick')}
+            className={`py-2 rounded-xl text-[11px] font-black transition cursor-pointer flex items-center justify-center gap-1 ${
+              mode === 'quick' ? 'bg-amber-400 text-slate-950 shadow-md' : 'text-white/75 hover:text-white'
+            }`}
+          >
+            <Zap className="w-3 h-3 fill-current" />
+            <span>Tez kirish</span>
+          </button>
           <button
             type="button"
             onClick={() => setMode('login')}
-            className={`py-2 rounded-xl text-xs font-black transition cursor-pointer ${
-              mode === 'login' ? 'bg-white text-slate-950 shadow-md' : 'text-white/70 hover:text-white'
+            className={`py-2 rounded-xl text-[11px] font-black transition cursor-pointer ${
+              mode === 'login' ? 'bg-white text-slate-950 shadow-md' : 'text-white/75 hover:text-white'
             }`}
           >
-            Kirish
+            Gmail kirish
           </button>
           <button
             type="button"
             onClick={() => setMode('register')}
-            className={`py-2 rounded-xl text-xs font-black transition cursor-pointer ${
-              mode === 'register' ? 'bg-white text-slate-950 shadow-md' : 'text-white/70 hover:text-white'
+            className={`py-2 rounded-xl text-[11px] font-black transition cursor-pointer ${
+              mode === 'register' ? 'bg-white text-slate-950 shadow-md' : 'text-white/75 hover:text-white'
             }`}
           >
             Ro‘yxatdan o‘tish
           </button>
         </div>
 
-        {/* INPUT FORM */}
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {/* Identifier: Email / Gmail or Username */}
-          <div className="relative">
-            <Mail className="w-4 h-4 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              required
-              placeholder={mode === 'register' ? 'Gmail manzilingiz (masalan: misol@gmail.com)' : 'Gmail yoki Username'}
-              className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-cyan-400 focus:bg-white/15 transition"
-            />
-          </div>
-
-          {/* Display Name (Only in Register mode) */}
-          {mode === 'register' && (
+        {mode === 'quick' ? (
+          <form onSubmit={handleQuickNameSubmit} className="space-y-3">
             <div className="relative">
               <UserIcon className="w-4 h-4 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Ismingiz (Display Name)"
+                value={quickName}
+                onChange={(e) => setQuickName(e.target.value)}
+                required
+                placeholder="Ismingizni yozing (masalan: Azamat)"
+                className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white/10 border border-white/20 text-sm text-white placeholder:text-white/45 focus:outline-none focus:border-amber-400 focus:bg-white/15 transition"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:brightness-110 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/20 active:scale-98 transition disabled:opacity-60 cursor-pointer"
+            >
+              {busy ? 'Kirilmoqda...' : 'Tez kirish (1 soniyada) →'}
+            </button>
+            <p className="text-[11px] text-center text-white/50">
+              Parolsiz va muammosiz — faqat ismingiz bilan o‘z profilingiz ochiladi
+            </p>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Identifier: Email / Gmail or Username */}
+            <div className="relative">
+              <Mail className="w-4 h-4 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
+              <input
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                required
+                placeholder={mode === 'register' ? 'Gmail manzilingiz (masalan: misol@gmail.com)' : 'Gmail yoki Username'}
                 className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-cyan-400 focus:bg-white/15 transition"
               />
             </div>
-          )}
 
-          {/* Password */}
-          <div className="relative">
-            <Lock className="w-4 h-4 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Parol"
-              className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-cyan-400 focus:bg-white/15 transition"
-            />
-          </div>
+            {/* Display Name (Only in Register mode) */}
+            {mode === 'register' && (
+              <div className="relative">
+                <UserIcon className="w-4 h-4 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
+                <input
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Ismingiz (ko‘rinadigan ism)"
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-cyan-400 focus:bg-white/15 transition"
+                />
+              </div>
+            )}
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-sm shadow-xl shadow-cyan-500/25 active:scale-98 transition disabled:opacity-60 cursor-pointer"
-          >
-            {busy ? 'Kutilmoqda...' : mode === 'login' ? 'Tizimga kirish' : 'Hisob yaratish'}
-          </button>
-        </form>
+            {/* Password */}
+            <div className="relative">
+              <Lock className="w-4 h-4 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="Parol"
+                className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-cyan-400 focus:bg-white/15 transition"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-sm shadow-xl shadow-cyan-500/25 active:scale-98 transition disabled:opacity-60 cursor-pointer"
+            >
+              {busy ? 'Kutilmoqda...' : mode === 'login' ? 'Tizimga kirish' : 'Hisob yaratish'}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

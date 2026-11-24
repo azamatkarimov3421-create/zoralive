@@ -328,7 +328,17 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
             ))}
           </div>
         ) : rooms.length === 0 ? (
-          <div className="py-16 text-center text-sm font-semibold text-slate-400">Xonalar topilmadi</div>
+          <div className="py-12 px-4 text-center space-y-3 rounded-3xl bg-slate-50 border border-slate-100">
+            <div className="text-sm font-extrabold text-slate-600">Hozircha jonli efir xonalari yo‘q</div>
+            {onGoLive && (
+              <button
+                onClick={onGoLive}
+                className="px-5 py-2.5 rounded-full btn-brand text-xs font-black shadow-md active:scale-95 transition cursor-pointer"
+              >
+                🎙️ Birinchi Jonli Efirni Ochish
+              </button>
+            )}
+          </div>
         ) : (
           <div className="grid grid-cols-2 gap-2.5">
             {rooms.map((r) => (

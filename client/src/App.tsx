@@ -53,25 +53,27 @@ const AppShell: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#eef1f6] flex justify-center relative">
-      {/* 7-Role Governance Panel (Ega Paneli) + Mobile/Wide Switch - Always visible to all */}
-      <div className="fixed top-2.5 right-2.5 z-50 flex items-center gap-1.5">
-        <button
-          onClick={() => navigate('/admin')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 text-slate-950 shadow-lg border border-amber-300 text-[11px] font-black hover:brightness-110 active:scale-95 transition cursor-pointer"
-          title="Barcha 7 ta boshqaruv roli: Ega, Menejer, Super Admin, Admin, Agent, Xost, Boshlovchi"
-        >
-          <Crown className="w-3.5 h-3.5 fill-current" />
-          <span>Ega Paneli</span>
-        </button>
+      {/* 7-Role Governance Panel (Ega Paneli) + Mobile/Wide Switch - Always visible in main app */}
+      {!isAuthRoute && (
+        <div className="fixed top-2.5 right-2.5 z-50 flex items-center gap-1.5">
+          <button
+            onClick={() => navigate('/admin')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 text-slate-950 shadow-lg border border-amber-300 text-[11px] font-black hover:brightness-110 active:scale-95 transition cursor-pointer"
+            title="Barcha 7 ta boshqaruv roli: Ega, Menejer, Super Admin, Admin, Agent, Xost, Boshlovchi"
+          >
+            <Crown className="w-3.5 h-3.5 fill-current" />
+            <span>Ega Paneli</span>
+          </button>
 
-        <button
-          onClick={() => setWideMode((v) => !v)}
-          className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 shadow-sm text-[11px] font-bold text-slate-700 hover:bg-white active:scale-95 transition cursor-pointer"
-        >
-          {wideMode ? <Smartphone className="w-3 h-3" /> : <Monitor className="w-3 h-3" />}
-          <span>{wideMode ? 'Mobil' : 'Keng'}</span>
-        </button>
-      </div>
+          <button
+            onClick={() => setWideMode((v) => !v)}
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 shadow-sm text-[11px] font-bold text-slate-700 hover:bg-white active:scale-95 transition cursor-pointer"
+          >
+            {wideMode ? <Smartphone className="w-3 h-3" /> : <Monitor className="w-3 h-3" />}
+            <span>{wideMode ? 'Mobil' : 'Keng'}</span>
+          </button>
+        </div>
+      )}
 
       <div
         className={`w-full min-h-screen bg-white flex flex-col relative shadow-[0_0_50px_rgba(15,23,42,0.08)] ${
@@ -79,7 +81,7 @@ const AppShell: React.FC = () => {
         }`}
       >
         {/* Persistent Voice Room Bar across World / Jang / Market / Profile (Section 8) */}
-        <FloatingVoiceBar />
+        {!isAuthRoute && <FloatingVoiceBar />}
 
         <main className="flex-1">
           <Routes>
@@ -99,7 +101,7 @@ const AppShell: React.FC = () => {
           </Routes>
         </main>
 
-        {!isRoomRoute && <BottomNav onGoLive={() => setCreateOpen(true)} />}
+        {!isRoomRoute && !isAuthRoute && Boolean(user) && <BottomNav onGoLive={() => setCreateOpen(true)} />}
 
         <CreateRoomModal
           open={createOpen}

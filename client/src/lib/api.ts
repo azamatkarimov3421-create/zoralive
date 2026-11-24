@@ -1,4 +1,4 @@
-import { DEMO_USERS, MOCK_FAMILIES, MOCK_GIFTS, MOCK_MOMENTS, MOCK_ROOMS } from './mockData';
+import { MOCK_GIFTS } from './mockData';
 import { ANIMATED_FRAMES, MYTHIC_DRAGONS, VIP_LEVELS_1_TO_12 } from './mythicCatalog';
 import {
   syncProfileToSupabase,
@@ -87,30 +87,18 @@ const WHEEL_SECTORS = [
   { id: 's8', label: '10x', icon: '🐉', multiplier: 10, color: '#ff3366' },
 ];
 
-// In-memory state for client mock & local offline database
-const LOCAL_DB_KEY = 'zoralive_local_database_v2';
+// In-memory state synced with Supabase + localStorage
+const LOCAL_DB_KEY = 'zoralive_local_database_v3';
 
-let mockRooms: RoomSummary[] = [...MOCK_ROOMS];
-let mockMoments = [...MOCK_MOMENTS];
-let mockFamilies = [...MOCK_FAMILIES];
-let mockMyFamilyId: string | null = 'clan_sherlar';
-let mockLedger: Array<{ id: string; currency: string; amount: number; description: string; created_at: string }> = [
-  { id: 'tx1', currency: 'COINS', amount: 50000, description: 'VIP Start Balansi', created_at: new Date().toISOString() },
-  { id: 'tx2', currency: 'COINS', amount: -2500, description: 'Sovg‘a: Zepharion', created_at: new Date().toISOString() },
-];
-let mockClaimedTasks = new Set<string>(['t4']);
-let mockWheelRecent = [
-  { id: 'w1', display_name: 'Laylo 🌙', bet_amount: 100, sector_label: '5x', multiplier: 5, win_amount: 500 },
-  { id: 'w2', display_name: 'Sardor Prime', bet_amount: 500, sector_label: '10x', multiplier: 10, win_amount: 5000 },
-];
-let mockFollows = new Set<string>(['user_host_1', 'user_admin_1']);
-let mockComments: Record<string, any[]> = {
-  m1: [
-    { id: 'c1', display_name: 'Laylo 🌙', content: 'Valtor olov effekti dahshat chiqdi! 🔥🐉' },
-    { id: 'c2', display_name: 'Sardor Prime', content: 'Zo‘r efir bo‘ldi!' },
-  ],
-  m2: [{ id: 'c3', display_name: 'Madina 🎵', content: 'VIP 12 muborak bo‘lsin! 👑✨' }],
-};
+let mockRooms: RoomSummary[] = [];
+let mockMoments: any[] = [];
+let mockFamilies: any[] = [];
+let mockMyFamilyId: string | null = null;
+let mockLedger: Array<{ id: string; currency: string; amount: number; description: string; created_at: string }> = [];
+let mockClaimedTasks = new Set<string>();
+let mockWheelRecent: Array<{ id: string; display_name: string; bet_amount: number; sector_label: string; multiplier: number; win_amount: number }> = [];
+let mockFollows = new Set<string>();
+let mockComments: Record<string, any[]> = {};
 
 export function loadLocalDb() {
   try {
@@ -296,7 +284,11 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     }
   }
 
-  const currentUser: User = getStoredUser() || { ...DEMO_USERS.user };
+  const storedUser = getStoredUser();
+  if (!storedUser && path !== '/auth/login' && path !== '/auth/register' && path !== '/store/gifts') {
+    throw new Error('Avtorizatsiya talab qilinadi');
+  }
+  const currentUser: User = storedUser as User;
 
   // 1. Auth routes
   if (path === '/auth/me') {
@@ -340,14 +332,6 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     setStoredUser(newUser);
     setToken(newUser.id);
     return { token: newUser.id, user: newUser } as unknown as T;
-  }
-
-  if (path === '/auth/demo') {
-    const preset = (body.preset || 'user') as keyof typeof DEMO_USERS;
-    const selected = { ...(DEMO_USERS[preset] || DEMO_USERS.user) };
-    setStoredUser(selected);
-    setToken(`demo_token_${preset}`);
-    return { token: `demo_token_${preset}`, user: selected } as unknown as T;
   }
 
   // 2. Rooms
@@ -712,14 +696,15 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
 
   // 9. Agency
   if (path.startsWith('/agency')) {
+    const liveProfiles = await fetchAllProfilesFromSupabase();
     return {
       agency: {
-        id: 'agency_tashkent',
-        name: 'Tashkent Stars',
+        id: 'agency_zoralive',
+        name: 'ZoraLive Yulduzlari',
         code: 'ZORA77',
         commission_rate: 0.1,
-        total_earned: 14800,
-        members: Object.values(DEMO_USERS).slice(0, 4),
+        total_earned: liveProfiles.reduce((s, u) => s + (u.diamonds || 0), 0),
+        members: liveProfiles.slice(0, 8),
       },
     } as unknown as T;
   }
@@ -730,14 +715,12 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     if (type === 'agency') {
       return {
         agencies: [
-          { id: 'ag1', name: 'Zora Star Agency', code: 'ZORA77', total_earned: 148000, member_count: 24 },
-          { id: 'ag2', name: 'Toshkent Prime', code: 'TASH01', total_earned: 96500, member_count: 18 },
+          { id: 'ag1', name: 'ZoraLive Yulduzlari', code: 'ZORA77', total_earned: 0, member_count: 1 },
         ],
       } as unknown as T;
     }
     const liveProfiles = await fetchAllProfilesFromSupabase();
-    const baseList = liveProfiles.length > 0 ? liveProfiles : Object.values(DEMO_USERS);
-    const users = [...baseList].sort((a, b) =>
+    const users = [...liveProfiles].sort((a, b) =>
       type === 'charm' ? b.charmXp - a.charmXp : b.wealthXp - a.wealthXp
     );
     return { users } as unknown as T;
@@ -746,8 +729,7 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
   if (path === '/users/directory') {
     const q = (params.get('q') || '').toLowerCase();
     const liveProfiles = await fetchAllProfilesFromSupabase();
-    const baseList = liveProfiles.length > 0 ? liveProfiles : Object.values(DEMO_USERS);
-    const list = baseList
+    const list = liveProfiles
       .filter((u) => !q || u.displayName.toLowerCase().includes(q) || u.username.toLowerCase().includes(q))
       .map((u) => ({ ...u, isFollowing: mockFollows.has(u.id) }));
     return { users: list } as unknown as T;
@@ -783,9 +765,7 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
   // 11. Messages
   if (path === '/messages/conversations') {
     const liveProfiles = await fetchAllProfilesFromSupabase();
-    const peers = (liveProfiles.length > 0 ? liveProfiles : Object.values(DEMO_USERS)).filter(
-      (u) => u.id !== currentUser.id
-    );
+    const peers = liveProfiles.filter((u) => u.id !== currentUser.id);
     const dmStore: Record<string, any[]> = (() => {
       try {
         return JSON.parse(localStorage.getItem('zoralive_dms_v1') || '{}');
@@ -823,22 +803,22 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
 
   // 12. Admin
   if (path.startsWith('/admin')) {
+    const [liveProfiles, liveRooms] = await Promise.all([
+      fetchAllProfilesFromSupabase(),
+      fetchRoomsFromSupabase(),
+    ]);
     return {
       stats: {
-        users: 1420,
-        liveRooms: mockRooms.length,
-        totalGifts: 284000,
-        pendingPayouts: 1,
-        openReports: 1,
+        users: liveProfiles.length,
+        liveRooms: (liveRooms || mockRooms).length,
+        totalGifts: 0,
+        pendingPayouts: 0,
+        openReports: 0,
       },
-      users: Object.values(DEMO_USERS),
-      rooms: mockRooms,
-      payouts: [
-        { id: 'p1', display_name: 'Madina 🎵', usd_amount: 150, diamonds_amount: 15000, method: 'USDT_TRC20', status: 'PENDING' },
-      ],
-      reports: [
-        { id: 'rep1', reporter_name: 'Laylo 🌙', reason: 'Spam xabar', status: 'PENDING' },
-      ],
+      users: liveProfiles,
+      rooms: liveRooms || mockRooms,
+      payouts: [],
+      reports: [],
     } as unknown as T;
   }
 

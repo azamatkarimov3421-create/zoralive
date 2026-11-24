@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { getStoredUser, getToken, setStoredUser } from './api';
-import { DEMO_USERS, MOCK_GIFTS, MOCK_ROOMS } from './mockData';
+import { MOCK_GIFTS } from './mockData';
 import { fetchRoomByIdFromSupabase, sendGiftInSupabase } from './supabaseSync';
 import { LudoGameState, PkState, SeatState } from '../types';
 
@@ -38,12 +38,13 @@ class MockSocket {
 
   emit(event: string, ...args: any[]) {
     const data = args[0] || {};
-    const u = getStoredUser() || DEMO_USERS.user;
+    const u = getStoredUser();
+    if (!u) return;
 
     setTimeout(async () => {
       if (event === 'room:join') {
         const supaRoom = data.roomId ? await fetchRoomByIdFromSupabase(data.roomId) : null;
-        const room = supaRoom || MOCK_ROOMS.find((r) => r.id === data.roomId) || {
+        const room = supaRoom || {
           id: data.roomId || 'room_live',
           hostId: u.id,
           hostName: u.displayName,
@@ -95,9 +96,9 @@ class MockSocket {
               leftName: room.hostName,
               leftAvatar: room.hostAvatar,
               leftScore: 0,
-              rightHostId: DEMO_USERS.laylo.id,
-              rightName: DEMO_USERS.laylo.displayName,
-              rightAvatar: DEMO_USERS.laylo.avatar,
+              rightHostId: 'arena_rival',
+              rightName: 'Arena Raqibi',
+              rightAvatar: '',
               rightScore: 0,
               endsAt: Date.now() + 180 * 1000,
               durationSec: 180,
@@ -305,9 +306,9 @@ class MockSocket {
           leftName: u.displayName,
           leftAvatar: u.avatar,
           leftScore: 0,
-          rightHostId: DEMO_USERS.host.id,
-          rightName: DEMO_USERS.host.displayName,
-          rightAvatar: DEMO_USERS.host.avatar,
+          rightHostId: 'arena_rival',
+          rightName: 'Arena Raqibi',
+          rightAvatar: '',
           rightScore: 0,
           endsAt: Date.now() + 180 * 1000,
           durationSec: 180,
@@ -333,7 +334,11 @@ class MockSocket {
         const fee = Number(data.entryFee || 100);
         const count = Number(data.playerCount || 4);
         const colors: Array<'red' | 'green' | 'yellow' | 'blue'> = ['red', 'green', 'yellow', 'blue'];
-        const bots = [DEMO_USERS.host, DEMO_USERS.laylo, DEMO_USERS.agency];
+        const bots = [
+          { id: 'bot_1', displayName: 'O‘yinchi 2', avatar: '' },
+          { id: 'bot_2', displayName: 'O‘yinchi 3', avatar: '' },
+          { id: 'bot_3', displayName: 'O‘yinchi 4', avatar: '' },
+        ];
         this.ludoGame = {
           gameId: `ludo_${Date.now()}`,
           roomId: data.roomId,
