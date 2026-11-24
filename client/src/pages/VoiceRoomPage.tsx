@@ -663,18 +663,6 @@ export const VoiceRoomPage: React.FC = () => {
             </button>
           )}
           <button
-            onClick={() => setThemePickerOpen((v) => !v)}
-            className={`p-2 rounded-full ${isLight ? 'bg-white border border-slate-200/80 text-slate-600' : 'glass-dark text-white'}`}
-          >
-            <Palette className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setToolsOpen(true)}
-            className={`p-2 rounded-full ${isLight ? 'bg-white border border-slate-200/80 text-slate-600' : 'glass-dark text-white'}`}
-          >
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
-          <button
             onClick={() => {
               if (roomMeta?.hostId === user?.id) {
                 setHostExitOpen(true);
