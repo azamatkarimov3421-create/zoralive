@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Wallet,
-  ShoppingBag,
   CheckCircle2,
   Briefcase,
   Shield,
@@ -30,7 +29,6 @@ import {
   getDragonTheme,
 } from '../lib/dragonThemes';
 import { VipCrest } from '../components/LuxuryBadges';
-import { MythicVaultSection } from '../components/MythicVaultSection';
 import { Lang } from '../types';
 
 function resizeAvatar(file: File): Promise<string> {
@@ -69,7 +67,10 @@ export const ProfilePage: React.FC = () => {
   const { state: worldState } = useWorld();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [tab, setTab] = useState<'wallet' | 'store' | 'clan' | 'tasks' | 'agency'>((searchParams.get('tab') as any) || 'store');
+  const rawTab = searchParams.get('tab');
+  const [tab, setTab] = useState<'wallet' | 'clan' | 'tasks' | 'agency'>(
+    rawTab === 'clan' || rawTab === 'tasks' || rawTab === 'agency' ? rawTab : 'wallet'
+  );
   const currentRank = MILITARY_RANKS_10[worldState.rankLevel - 1] || MILITARY_RANKS_10[0];
 
   const [walletData, setWalletData] = useState<any>(null);
@@ -80,8 +81,6 @@ export const ProfilePage: React.FC = () => {
   const [withdrawDest, setWithdrawDest] = useState('');
   const [kycName, setKycName] = useState('');
 
-  const [storeItems, setStoreItems] = useState<any[]>([]);
-  const initialSub = (searchParams.get('sub') as 'VIP' | 'DRAGON' | 'FRAME' | 'CRYSTAL' | 'RIDE' | 'BUBBLE') || 'VIP';
   const [tasks, setTasks] = useState<any[]>([]);
 
   // Family / Clan state
@@ -130,7 +129,6 @@ export const ProfilePage: React.FC = () => {
   const loadTabData = async (currentTab = tab) => {
     try {
       if (currentTab === 'wallet') setWalletData(await api('/wallet'));
-      else if (currentTab === 'store') setStoreItems((await api('/store/items')).items || []);
       else if (currentTab === 'clan') setFamilyData(await api('/families'));
       else if (currentTab === 'tasks') setTasks((await api('/tasks')).tasks || []);
       else if (currentTab === 'agency') setAgencyData(await api('/agency/me'));
@@ -464,16 +462,15 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* 5 Compact Tabs */}
+        {/* 4 Compact Profile Tabs (VIP Panels live strictly in Savdo/Shop) */}
         <div
-          className={`grid grid-cols-5 gap-1 p-1 rounded-2xl border ${
+          className={`grid grid-cols-4 gap-1 p-1 rounded-2xl border ${
             hasDragon
               ? 'bg-black/55 border-white/15 backdrop-blur-md'
               : 'bg-white border-slate-200/80 shadow-2xs'
           }`}
         >
           {[
-            { id: 'store', label: 'VIP', icon: ShoppingBag },
             { id: 'wallet', label: 'Hamyon', icon: Wallet },
             { id: 'clan', label: 'Klan', icon: Users },
             { id: 'tasks', label: 'Vazifa', icon: CheckCircle2 },
@@ -657,16 +654,6 @@ export const ProfilePage: React.FC = () => {
             </div>
           )}
         </div>
-      )}
-
-      {/* STORE — VIP 1-12, 10 MYTHIC DRAGONS, 12 ANIMATED FRAMES & 4 CRYSTAL ENERGIES */}
-      {tab === 'store' && (
-        <MythicVaultSection
-          storeItems={storeItems}
-          onReloadStore={() => loadTabData('store')}
-          initialFilter={initialSub}
-          darkSurface={hasDragon}
-        />
       )}
 
       {/* FAMILY / CLAN */}
