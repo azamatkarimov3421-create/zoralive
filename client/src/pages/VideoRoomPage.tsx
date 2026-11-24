@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Users, Swords, Gift, Send, Video, VideoOff, Heart, Trophy } from 'lucide-react';
 import { api } from '../lib/api';
-import { getSocket } from '../lib/socket';
+import { getSocket, getMyPeerId } from '../lib/socket';
 import {
   sendRoomMessageToSupabase,
   fetchRoomMessagesFromSupabase,
@@ -17,6 +17,8 @@ import { GiftOverlay } from '../components/GiftOverlay';
 import { EntryBanner, EntryRideEvent } from '../components/EntryBanner';
 import { PkVsCrest } from '../components/LuxuryBadges';
 import { sfx } from '../lib/sound';
+
+const MAX_DIRECT_WEBRTC_PEERS = 8;
 
 export const VideoRoomPage: React.FC = () => {
   const { id: roomId } = useParams<{ id: string }>();
@@ -33,10 +35,35 @@ export const VideoRoomPage: React.FC = () => {
   const [isFollowing, setIsFollowing] = useState(false);
 
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [remoteLeftStream, setRemoteLeftStream] = useState<MediaStream | null>(null);
+  const [remoteRightStream, setRemoteRightStream] = useState<MediaStream | null>(null);
+  const [leftRelayFrame, setLeftRelayFrame] = useState<string | null>(null);
+  const [rightRelayFrame, setRightRelayFrame] = useState<string | null>(null);
+
   const [giftDrawerOpen, setGiftDrawerOpen] = useState(false);
   const [activeGiftAnim, setActiveGiftAnim] = useState<GiftEvent | null>(null);
   const [entryRide, setEntryRide] = useState<EntryRideEvent | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const peerSidesRef = useRef<Map<string, 'left' | 'right'>>(new Map());
+  const pkRef = useRef<PkState | null>(null);
+  const roomMetaRef = useRef<any>(null);
+  const viewerCountRef = useRef<number>(1);
+  const relayTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    pkRef.current = pk;
+  }, [pk]);
+
+  useEffect(() => {
+    roomMetaRef.current = roomMeta;
+  }, [roomMeta]);
+
+  useEffect(() => {
+    viewerCountRef.current = viewerCount;
+  }, [viewerCount]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -144,7 +171,14 @@ export const VideoRoomPage: React.FC = () => {
       setTotalGifts(s.totalGifts || 0);
       setPk(s.pk || null);
     };
-    const onViewers = ({ viewerCount: vc }: { viewerCount: number }) => setViewerCount(vc);
+    const onViewers = ({ viewerCount: vc }: { viewerCount: number }) => {
+      setViewerCount(vc);
+      // If we are broadcasting locally, announce stream presence to newly arrived viewers
+      if (localStreamRef.current && roomId) {
+        const mySide = pkRef.current?.rightHostId === user?.id ? 'right' : 'left';
+        socket.emit('video:host_status', { roomId, live: true, side: mySide });
+      }
+    };
     const onMsg = (msg: RoomChatMessage) =>
       setMessages((prev) =>
         prev.some(
@@ -161,6 +195,10 @@ export const VideoRoomPage: React.FC = () => {
       setPk(nextPk);
       if (nextPk?.active) sfx.pkHorn();
       if (nextPk && !nextPk.active && nextPk.winner) sfx.win();
+      if (!nextPk) {
+        setRemoteRightStream(null);
+        setRightRelayFrame(null);
+      }
     };
     const onGift = (g: GiftEvent) => {
       setTotalGifts(g.roomTotalGifts);
@@ -176,6 +214,96 @@ export const VideoRoomPage: React.FC = () => {
     const onWallet = ({ coins }: { coins: number }) => updateCoinsLocally(coins);
     const onErr = ({ message }: { message: string }) => toast(message, 'error');
 
+    const createVideoPeer = (targetPeerId: string, initiator: boolean, side: 'left' | 'right' = 'left') => {
+      peersRef.current.get(targetPeerId)?.close();
+      const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+      peerSidesRef.current.set(targetPeerId, side);
+
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((tr) => pc.addTrack(tr, localStreamRef.current!));
+      }
+      pc.onicecandidate = (ev) => {
+        if (ev.candidate) socket.emit('rtc:ice', { to: targetPeerId, candidate: ev.candidate });
+      };
+      pc.ontrack = (ev) => {
+        const remoteStream = ev.streams[0];
+        if (!remoteStream) return;
+        const assignedSide = peerSidesRef.current.get(targetPeerId) || 'left';
+        if (assignedSide === 'right') setRemoteRightStream(remoteStream);
+        else setRemoteLeftStream(remoteStream);
+      };
+      peersRef.current.set(targetPeerId, pc);
+      if (initiator) {
+        pc.createOffer()
+          .then((offer) => pc.setLocalDescription(offer).then(() => offer))
+          .then((offer) => socket.emit('rtc:offer', { to: targetPeerId, sdp: offer, side }))
+          .catch(() => {});
+      }
+      return pc;
+    };
+
+    const onHostStatus = ({ from, live, side }: { from: string; live: boolean; side?: 'left' | 'right' }) => {
+      if (!from || from === getMyPeerId()) return;
+      const targetSide = side || 'left';
+      if (!live) {
+        if (targetSide === 'right') {
+          setRemoteRightStream(null);
+          setRightRelayFrame(null);
+        } else {
+          setRemoteLeftStream(null);
+          setLeftRelayFrame(null);
+        }
+        return;
+      }
+      peerSidesRef.current.set(from, targetSide);
+      if (!peersRef.current.has(from)) {
+        socket.emit('video:request', { to: from, side: targetSide });
+      }
+    };
+
+    const onVideoRequest = ({ from }: { from: string }) => {
+      if (!from || from === getMyPeerId() || !localStreamRef.current) return;
+      // Direct WebRTC up to MAX_DIRECT_WEBRTC_PEERS viewers; overflow viewers get adaptive relay frames
+      if (peersRef.current.size >= MAX_DIRECT_WEBRTC_PEERS) return;
+      const mySide = pkRef.current?.rightHostId === user?.id ? 'right' : 'left';
+      createVideoPeer(from, true, mySide);
+    };
+
+    const onOffer = async ({ from, sdp, side }: { from: string; sdp: RTCSessionDescriptionInit; side?: 'left' | 'right' }) => {
+      if (!from || from === getMyPeerId()) return;
+      const pc = createVideoPeer(from, false, side || peerSidesRef.current.get(from) || 'left');
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('rtc:answer', { to: from, sdp: answer });
+    };
+
+    const onAnswer = async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
+      const pc = peersRef.current.get(from);
+      if (pc) await pc.setRemoteDescription(new RTCSessionDescription(sdp)).catch(() => {});
+    };
+
+    const onIce = async ({ from, candidate }: { from: string; candidate: RTCIceCandidateInit }) => {
+      const pc = peersRef.current.get(from);
+      if (pc && candidate) await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
+    };
+
+    const onRelayFrame = ({ from, frame, side }: { from: string; frame: string; side?: 'left' | 'right' }) => {
+      if (!from || from === getMyPeerId() || !frame) return;
+      if (side === 'right') setRightRelayFrame(frame);
+      else setLeftRelayFrame(frame);
+    };
+
+    const onPeerLeft = ({ socketId }: { socketId: string }) => {
+      peersRef.current.get(socketId)?.close();
+      peersRef.current.delete(socketId);
+    };
+
+    // Request active video streams shortly after entering room
+    const reqTimer = window.setTimeout(() => {
+      socket.emit('video:request', { roomId });
+    }, 550);
+
     socket.on('room:state', onState);
     socket.on('room:viewers', onViewers);
     socket.on('room:message', onMsg);
@@ -184,8 +312,17 @@ export const VideoRoomPage: React.FC = () => {
     socket.on('room:entry_ride', onRide);
     socket.on('wallet:updated', onWallet);
     socket.on('room:error', onErr);
+    socket.on('video:host_status', onHostStatus);
+    socket.on('video:request', onVideoRequest);
+    socket.on('video:relay_frame', onRelayFrame);
+    socket.on('rtc:offer', onOffer);
+    socket.on('rtc:answer', onAnswer);
+    socket.on('rtc:ice', onIce);
+    socket.on('rtc:peer_left', onPeerLeft);
 
     return () => {
+      window.clearTimeout(reqTimer);
+      if (relayTimerRef.current) window.clearInterval(relayTimerRef.current);
       socket.emit('room:leave');
       socket.off('room:state', onState);
       socket.off('room:viewers', onViewers);
@@ -195,20 +332,71 @@ export const VideoRoomPage: React.FC = () => {
       socket.off('room:entry_ride', onRide);
       socket.off('wallet:updated', onWallet);
       socket.off('room:error', onErr);
+      socket.off('video:host_status', onHostStatus);
+      socket.off('video:request', onVideoRequest);
+      socket.off('video:relay_frame', onRelayFrame);
+      socket.off('rtc:offer', onOffer);
+      socket.off('rtc:answer', onAnswer);
+      socket.off('rtc:ice', onIce);
+      socket.off('rtc:peer_left', onPeerLeft);
       unsubSupaChat();
-      cameraStream?.getTracks().forEach((tr) => tr.stop());
+      for (const pc of peersRef.current.values()) pc.close();
+      peersRef.current.clear();
+      localStreamRef.current?.getTracks().forEach((tr) => tr.stop());
+      localStreamRef.current = null;
     };
   }, [roomId]);
 
+  const startAdaptiveRelay = (stream: MediaStream) => {
+    if (relayTimerRef.current) window.clearInterval(relayTimerRef.current);
+    const vid = document.createElement('video');
+    vid.muted = true;
+    vid.playsInline = true;
+    vid.srcObject = stream;
+    vid.play().catch(() => {});
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    relayTimerRef.current = window.setInterval(() => {
+      if (!localStreamRef.current || !ctx || vid.videoWidth === 0) return;
+      // Only broadcast adaptive frames when overflow viewers (>8) or remote viewers are present
+      if (viewerCountRef.current <= 1 && peersRef.current.size === 0) return;
+      const w = 320;
+      const h = Math.max(180, Math.round((vid.videoHeight / vid.videoWidth) * w));
+      canvas.width = w;
+      canvas.height = h;
+      ctx.drawImage(vid, 0, 0, w, h);
+      const frame = canvas.toDataURL('image/jpeg', 0.52);
+      const mySide = pkRef.current?.rightHostId === user?.id ? 'right' : 'left';
+      getSocket().emit('video:relay_frame', { roomId, frame, side: mySide });
+    }, 330);
+  };
+
   const toggleCamera = async () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((tr) => tr.stop());
+    const socket = getSocket();
+    const mySide = pkRef.current?.rightHostId === user?.id ? 'right' : 'left';
+    if (localStreamRef.current) {
+      if (relayTimerRef.current) {
+        window.clearInterval(relayTimerRef.current);
+        relayTimerRef.current = null;
+      }
+      localStreamRef.current.getTracks().forEach((tr) => tr.stop());
+      localStreamRef.current = null;
       setCameraStream(null);
+      for (const pc of peersRef.current.values()) pc.close();
+      peersRef.current.clear();
+      socket.emit('video:host_status', { roomId, live: false, side: mySide });
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 960 }, frameRate: { ideal: 24 } },
+        audio: true,
+      });
+      localStreamRef.current = stream;
       setCameraStream(stream);
+      socket.emit('video:host_status', { roomId, live: true, side: mySide });
+      startAdaptiveRelay(stream);
     } catch {
       toast('Kamera ulanmadi', 'info');
     }
@@ -322,11 +510,36 @@ export const VideoRoomPage: React.FC = () => {
             </div>
 
             <div className="relative grid grid-cols-2 gap-1 h-72 rounded-2xl overflow-hidden">
-              <VideoCanvas stream={cameraStream} hostName={pk.leftName} hostAvatar={pk.leftAvatar} label="MEZBON" muted compact />
-              <VideoCanvas stream={null} hostName={pk.rightName} hostAvatar={pk.rightAvatar} label="RAQIB" compact />
+              <VideoCanvas
+                stream={roomMeta?.hostId === user?.id || pk.leftHostId === user?.id ? cameraStream : remoteLeftStream}
+                relayFrame={leftRelayFrame}
+                hostName={pk.leftName}
+                hostAvatar={pk.leftAvatar}
+                label="MEZBON"
+                muted={roomMeta?.hostId === user?.id || pk.leftHostId === user?.id}
+                compact
+              />
+              <VideoCanvas
+                stream={pk.rightHostId === user?.id ? cameraStream : remoteRightStream}
+                relayFrame={rightRelayFrame}
+                hostName={pk.rightName}
+                hostAvatar={pk.rightAvatar}
+                label="RAQIB"
+                muted={pk.rightHostId === user?.id}
+                compact
+              />
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
                 <PkVsCrest />
               </div>
+              {pk.active && !pk.rightHostId && user?.id !== pk.leftHostId && (
+                <button
+                  type="button"
+                  onClick={() => getSocket().emit('pk:join_rival', { roomId })}
+                  className="absolute bottom-3 right-3 z-30 px-3 py-1.5 rounded-full btn-brand text-[11px] font-black shadow-lg cursor-pointer"
+                >
+                  ⚔️ PK ga chiqish
+                </button>
+              )}
             </div>
 
             {!pk.active && pk.winner && (
@@ -339,10 +552,11 @@ export const VideoRoomPage: React.FC = () => {
         ) : (
           <div className="h-[52vh] w-full">
             <VideoCanvas
-              stream={cameraStream}
+              stream={roomMeta?.hostId === user?.id ? cameraStream : remoteLeftStream}
+              relayFrame={leftRelayFrame}
               hostName={roomMeta?.host?.displayName || 'Host'}
               hostAvatar={roomMeta?.host?.avatar || ''}
-              muted
+              muted={roomMeta?.hostId === user?.id}
             />
           </div>
         )}

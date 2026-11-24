@@ -27,7 +27,7 @@ import {
   Megaphone,
 } from 'lucide-react';
 import { api } from '../lib/api';
-import { getSocket } from '../lib/socket';
+import { getSocket, getMyPeerId } from '../lib/socket';
 import {
   sendRoomMessageToSupabase,
   fetchRoomMessagesFromSupabase,
@@ -294,6 +294,20 @@ export const VoiceRoomPage: React.FC = () => {
     const onViewers = ({ viewerCount: vc, viewers }: { viewerCount: number; viewers: any[] }) => {
       setViewerCount(vc);
       setViewersList(viewers || []);
+      // Automatically offer live audio to new peers when local mic is streaming (capped at 10 WebRTC peers)
+      if (localStreamRef.current && Array.isArray(viewers)) {
+        const selfPeer = getMyPeerId();
+        viewers.forEach((v: any) => {
+          if (
+            v?.peerId &&
+            v.peerId !== selfPeer &&
+            peersRef.current.size < 10 &&
+            !peersRef.current.has(v.peerId)
+          ) {
+            createPeer(v.peerId, true);
+          }
+        });
+      }
     };
     const onTopGifters = (list: any[]) => setTopGifters(list || []);
     const onMsg = (msg: RoomChatMessage) =>
@@ -440,8 +454,14 @@ export const VoiceRoomPage: React.FC = () => {
     if (!seat.userId) {
       await ensureLocalMic();
       getSocket().emit('seat:take', { roomId, seatIndex: seat.index });
+      const selfPeer = getMyPeerId();
+      viewersList.forEach((v: any) => {
+        if (v?.peerId && v.peerId !== selfPeer && peersRef.current.size < 10 && !peersRef.current.has(v.peerId)) {
+          createPeer(v.peerId, true);
+        }
+      });
       seats.forEach((other) => {
-        if (other.socketId && other.userId && other.userId !== user?.id && !peersRef.current.has(other.socketId)) {
+        if (other.socketId && other.socketId !== selfPeer && other.userId && other.userId !== user?.id && !peersRef.current.has(other.socketId)) {
           createPeer(other.socketId, true);
         }
       });

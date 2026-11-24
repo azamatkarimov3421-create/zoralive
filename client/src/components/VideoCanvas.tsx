@@ -4,6 +4,7 @@ import { Avatar } from './Avatar';
 
 interface VideoCanvasProps {
   stream: MediaStream | null;
+  relayFrame?: string | null;
   hostName: string;
   hostAvatar: string;
   hostFrame?: string;
@@ -16,6 +17,7 @@ interface VideoCanvasProps {
 
 export const VideoCanvas: React.FC<VideoCanvasProps> = ({
   stream,
+  relayFrame = null,
   hostName,
   hostAvatar,
   hostFrame,
@@ -42,6 +44,14 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
           muted={muted}
           className="w-full h-full object-cover"
         />
+      ) : relayFrame ? (
+        <>
+          <img src={relayFrame} alt={hostName} className="w-full h-full object-cover" />
+          <div className="absolute bottom-2.5 right-2.5 z-20 px-2.5 py-1 rounded-full bg-black/55 backdrop-blur-md border border-white/20 text-[9.5px] font-black text-emerald-300 flex items-center gap-1">
+            <LiveWaveBars color="bg-emerald-400" className="h-2" />
+            <span>LIVE OQIM</span>
+          </div>
+        </>
       ) : (
         <>
           {/* Full-bleed photographic live stream studio feed fallback */}
@@ -73,7 +83,7 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
         </>
       )}
 
-      {!stream && !hostAvatar && (
+      {!stream && !relayFrame && !hostAvatar && (
         <div className="relative z-10 flex flex-col items-center gap-2">
           <Avatar name={hostName} size={compact ? 'lg' : 'xl'} frame={hostFrame} vipLevel={hostVip} speaking />
           <span className="font-extrabold text-sm text-white">{hostName}</span>
