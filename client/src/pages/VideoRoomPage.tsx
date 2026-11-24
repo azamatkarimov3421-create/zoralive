@@ -846,7 +846,7 @@ export const VideoRoomPage: React.FC = () => {
         }}
       />
 
-      {(user?.vipLevel || 0) > 0 && (
+      {roomMeta?.hostId === user?.id && (
         <ThemeOrbDial
           activeTheme={roomTheme}
           onSelect={(nextTheme) => {
