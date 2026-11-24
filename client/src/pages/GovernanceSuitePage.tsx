@@ -190,23 +190,10 @@ export const GovernanceSuitePage: React.FC = () => {
     addAuditLog(currentUser?.displayName || 'LOYIHA EGASI', 'OWNER', `Xona yopildi: ${r.title}`, true);
     toast(`Xona yopildi: ${r.title}`, 'info');
   };
-  const [staffList, setStaffList] = useState([
-    { id: 'st-1', name: 'Ulug‘bek M.', role: 'MANAGER', status: 'FAOL' },
-    { id: 'st-2', name: 'Azizbek T.', role: 'SUPER_ADMIN', status: 'FAOL' },
-    { id: 'st-3', name: 'Sardor K.', role: 'ADMIN', status: 'FAOL' },
-    { id: 'st-4', name: 'Abrorbek E.', role: 'AGENT', status: 'FAOL' },
-    { id: 'st-5', name: 'Madina R.', role: 'HOST', status: 'FAOL' },
-    { id: 'st-6', name: 'Jasur N.', role: 'BOSHLOVCHI', status: 'FAOL' },
-  ]);
+  const [staffList, setStaffList] = useState<Array<{ id: string; name: string; role: string; status: string }>>([]);
   const [eventTitle, setEventTitle] = useState('');
-  const [events, setEvents] = useState([
-    { id: 'ev-1', title: 'Balkon Ajdarho Chempionati (Valtor vs Xaldris)', time: 'Bugun 21:00', players: 64 },
-    { id: 'ev-2', title: 'Turon vs Nythera Hudud Urushi', time: 'Ertaga 20:00', players: 120 },
-  ]);
-  const [complaints, setComplaints] = useState([
-    { id: 'cp-1', user: 'user_402', reason: 'Chatda spam xabarlar', status: 'OCHIQ' },
-    { id: 'cp-2', user: 'dragon_99', reason: 'Noqonuniy savdo urinishi', status: 'OCHIQ' },
-  ]);
+  const [events, setEvents] = useState<Array<{ id: string; title: string; time: string; players: number }>>([]);
+  const [complaints, setComplaints] = useState<Array<{ id: string; user: string; reason: string; status: string }>>([]);
 
   const totalElements = Object.values(state.elements).reduce((a, b) => a + b, 0);
   const currentRankMeta = MILITARY_RANKS_10[state.rankLevel - 1] || MILITARY_RANKS_10[0];
@@ -285,7 +272,7 @@ export const GovernanceSuitePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f7fb] text-slate-900 pb-10">
+    <div className="min-h-screen bg-transparent text-slate-900 pb-10">
       {/* Top Bar */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
@@ -666,13 +653,14 @@ export const GovernanceSuitePage: React.FC = () => {
                   <span>Favqulodda Texnik To‘xtatish (2-Bosqichli Tasdiqlash)</span>
                 </div>
                 <p className="text-[11px] text-slate-600 font-medium">
-                  Kritik moliyaviy yoki tizim to‘xtatish amaliyoti uchun 2FA kodini kiriting (Demo kod: <b>2026</b>).
+                  Kritik texnik to‘xtatish amaliyoti uchun Ega PIN kodini kiriting.
                 </p>
                 <div className="flex gap-2">
                   <input
+                    type="password"
                     value={twoFaCode}
                     onChange={(e) => setTwoFaCode(e.target.value)}
-                    placeholder="2FA kod (2026)"
+                    placeholder="PIN kod"
                     className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold"
                   />
                   <button

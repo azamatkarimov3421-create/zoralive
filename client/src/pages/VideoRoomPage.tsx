@@ -453,12 +453,12 @@ export const VideoRoomPage: React.FC = () => {
     : [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-white relative overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-transparent relative overflow-hidden">
       <EntryBanner event={entryRide} />
       <GiftOverlay gift={activeGiftAnim} />
 
       {/* Header */}
-      <header className="px-3 py-2.5 bg-white border-b border-slate-100 flex items-center justify-between gap-2 z-30">
+      <header className="px-3 py-2.5 bg-white/65 backdrop-blur-2xl border-b border-white/85 flex items-center justify-between gap-2 z-30">
         <div className="flex items-center gap-2 min-w-0">
           <Avatar src={roomMeta?.host?.avatar} name={roomMeta?.host?.displayName} size="sm" />
           <div className="min-w-0">
@@ -562,19 +562,19 @@ export const VideoRoomPage: React.FC = () => {
         )}
 
         {/* Chat */}
-        <div className="flex-1 px-3 py-2 overflow-y-auto no-scrollbar max-h-[26vh] space-y-1.5 bg-[#f8f9fc]">
+        <div className="flex-1 px-3 py-2 overflow-y-auto no-scrollbar max-h-[26vh] space-y-1.5 bg-transparent">
           {messages.map((m) => (
             <div key={m.id}>
               {m.type === 'SYSTEM' ? (
-                <span className="inline-block px-2.5 py-1 rounded-xl bg-white border border-slate-200/70 text-[11px] text-slate-500">
+                <span className="inline-block px-2.5 py-1 rounded-xl bg-white/70 backdrop-blur-md border border-white/85 text-[11px] text-slate-600">
                   {m.text}
                 </span>
               ) : m.type === 'GIFT' ? (
-                <span className="inline-block px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-700 font-bold">
+                <span className="inline-block px-2.5 py-1 rounded-xl bg-amber-50/85 backdrop-blur-md border border-amber-200 text-[11px] text-amber-700 font-bold">
                   🎁 {m.text}
                 </span>
               ) : (
-                <div className={`inline-block px-3 py-1.5 rounded-2xl text-xs ${m.bubble || 'bg-white border border-slate-200/70 text-slate-800'}`}>
+                <div className={`inline-block px-3 py-1.5 rounded-2xl text-xs ${m.bubble || 'bg-white/75 backdrop-blur-md border border-white/90 text-slate-900'}`}>
                   {m.vipLevel && m.vipLevel > 0 ? (
                     <span className="inline-block mr-1 px-1.5 py-0.2 rounded-md bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-[9px] font-black shadow-xs">
                       V{m.vipLevel}
@@ -591,8 +591,8 @@ export const VideoRoomPage: React.FC = () => {
       </div>
 
       {/* Bottom Dock */}
-      <footer className="px-3 py-2.5 bg-white border-t border-slate-200/80 flex items-center gap-1.5 z-20">
-        <form onSubmit={sendChat} className="flex-1 flex items-center gap-1.5 bg-slate-100 rounded-full px-3 py-1.5">
+      <footer className="px-3 py-2.5 bg-white/65 backdrop-blur-2xl border-t border-white/85 flex items-center gap-1.5 z-20">
+        <form onSubmit={sendChat} className="flex-1 flex items-center gap-1.5 bg-white/75 border border-white/90 rounded-full px-3 py-1.5">
           <input
             value={chatText}
             onChange={(e) => setChatText(e.target.value)}

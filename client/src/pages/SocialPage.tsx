@@ -183,9 +183,9 @@ export const SocialPage: React.FC = () => {
 
   if (section === 'chat' && activePeer) {
     return (
-      <div className="flex flex-col h-[calc(100vh-66px)] bg-white">
-        <div className="p-3 border-b border-slate-100 flex items-center gap-3">
-          <button onClick={() => setActivePeer(null)} className="p-2 rounded-full bg-slate-100 text-slate-700">
+      <div className="flex flex-col h-[calc(100vh-84px)] bg-transparent">
+        <div className="p-3 bg-white/65 backdrop-blur-2xl border-b border-white/85 flex items-center gap-3">
+          <button onClick={() => setActivePeer(null)} className="p-2 rounded-full bg-white/80 text-slate-700 cursor-pointer">
             <ArrowLeft className="w-4 h-4" />
           </button>
           <Avatar src={activePeer.avatar} name={activePeer.displayName} size="sm" frame={activePeer.activeFrame} />
@@ -195,18 +195,20 @@ export const SocialPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 p-3.5 overflow-y-auto space-y-2 bg-[#f8f9fc]">
+        <div className="flex-1 p-3.5 overflow-y-auto space-y-2 bg-transparent">
           {dmMessages.map((m) => {
             const mine = m.sender_id === user?.id;
             return (
               <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`max-w-[78%] px-3.5 py-2 rounded-2xl text-xs ${
-                    mine ? 'bg-[#ff3366] text-white rounded-br-xs' : 'bg-white border border-slate-200/80 text-slate-800 rounded-bl-xs'
+                  className={`max-w-[78%] px-3.5 py-2 rounded-2xl text-xs shadow-2xs ${
+                    mine
+                      ? 'bg-[#ff3366] text-white rounded-br-xs'
+                      : 'bg-white/75 backdrop-blur-xl border border-white/90 text-slate-900 rounded-bl-xs'
                   }`}
                 >
                   <div>{m.content}</div>
-                  <div className={`text-[9px] mt-0.5 text-right ${mine ? 'text-white/75' : 'text-slate-400'}`}>
+                  <div className={`text-[9px] mt-0.5 text-right ${mine ? 'text-white/75' : 'text-slate-500'}`}>
                     {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
@@ -216,12 +218,12 @@ export const SocialPage: React.FC = () => {
           <div ref={dmEndRef} />
         </div>
 
-        <form onSubmit={sendDm} className="p-3 bg-white border-t border-slate-100 flex gap-2">
+        <form onSubmit={sendDm} className="p-3 bg-white/65 backdrop-blur-2xl border-t border-white/85 flex gap-2">
           <input
             value={dmInput}
             onChange={(e) => setDmInput(e.target.value)}
             placeholder="Xabar..."
-            className="flex-1 px-4 py-2 rounded-full bg-slate-100 text-xs text-slate-900 focus:outline-none"
+            className="flex-1 px-4 py-2 rounded-full bg-white/75 border border-white/90 text-xs text-slate-900 focus:outline-none"
           />
           <button type="submit" className="p-2.5 rounded-full btn-brand">
             <Send className="w-4 h-4" />
@@ -236,8 +238,8 @@ export const SocialPage: React.FC = () => {
   const scoreOf = (u: User) => (rankType === 'charm' ? u.charmXp : u.wealthXp);
 
   return (
-    <div className="bg-white min-h-full px-3.5 pt-3 pb-8 space-y-4">
-      <div className="grid grid-cols-4 gap-1 bg-slate-100 p-1 rounded-full">
+    <div className="bg-transparent min-h-full px-3.5 pt-3 pb-24 space-y-4">
+      <div className="grid grid-cols-4 gap-1 bg-white/60 backdrop-blur-xl border border-white/90 p-1 rounded-2xl shadow-xs">
         {[
           { id: 'rank', label: 'Reyting', icon: Trophy },
           { id: 'moments', label: 'Lenta', icon: Flame },
@@ -250,8 +252,8 @@ export const SocialPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setSection(tab.id as any)}
-              className={`py-2 rounded-full text-[11px] font-extrabold flex items-center justify-center gap-1 transition ${
-                active ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
+              className={`py-2 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1 transition cursor-pointer ${
+                active ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />

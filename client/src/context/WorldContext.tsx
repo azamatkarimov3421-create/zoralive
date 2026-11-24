@@ -113,25 +113,8 @@ const DEFAULT_STATE: WorldPersistedState = {
   equippedGearIds: ['gear-sword-valtor', 'gear-shield-auriel'],
   sellerProducts: INITIAL_SELLER_PRODUCTS,
   sellerShopOpen: true,
-  sellerOrders: [
-    {
-      id: 'ord-1',
-      buyerName: 'Sardor Prime',
-      itemNameUz: 'Valtor Vulqon Tuxumi',
-      priceCoins: 5200,
-      status: 'KUTILMOQDA',
-      createdAt: 'Bugun 18:10',
-    },
-    {
-      id: 'ord-2',
-      buyerName: 'Laylo 🌙',
-      itemNameUz: 'Qirollik #1 Animatsiyali Ramka',
-      priceCoins: 2200,
-      status: 'TASDIQLANGAN',
-      createdAt: 'Bugun 16:45',
-    },
-  ],
-  sellerRating: 4.9,
+  sellerOrders: [],
+  sellerRating: 5.0,
   emergencyStopped: false,
   managerPermissions: {
     manageAdmins: true,
@@ -525,8 +508,8 @@ export const WorldProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const toggleEmergencyStop = (twoFactorCode: string) => {
-    if (twoFactorCode.trim() !== '2026' && twoFactorCode.trim() !== '7777') {
-      toast('2-bosqichli tasdiqlash kodi noto‘g‘ri! (Demo kod: 2026)', 'error');
+    if (twoFactorCode.trim() !== '3434' && twoFactorCode.trim() !== '2026') {
+      toast('Tasdiqlash kodi noto‘g‘ri!', 'error');
       return false;
     }
     setState((prev) => ({ ...prev, emergencyStopped: !prev.emergencyStopped }));

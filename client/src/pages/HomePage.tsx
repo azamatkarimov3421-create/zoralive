@@ -119,9 +119,9 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
     <div className="bg-transparent min-h-full pb-24">
       {/* Sticky Translucent Crystal Glass Top Header */}
       <header className="sticky top-0 z-30 bg-white/46 backdrop-blur-2xl px-3.5 pt-3 pb-2.5 border-b-2 border-white/75 shadow-[0_6px_24px_rgba(15,23,42,0.08)] space-y-2">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 min-w-0">
           {/* Primary Ziigo-style Top Tabs */}
-          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
             {(
               [
                 ['ALL', 'Ommabop'],

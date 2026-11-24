@@ -565,7 +565,7 @@ export const DragonArenaPage: React.FC = () => {
 
               {/* Balcony Fire Mode Title Banner */}
               {balconyFireMode && (
-                <div className="absolute top-11 left-1/2 -translate-x-1/2 z-30 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 via-red-500 to-amber-500 text-white text-[10px] font-black tracking-wide shadow-lg animate-pulse whitespace-nowrap">
+                <div className="absolute top-11 left-1/2 -translate-x-1/2 z-30 max-w-[92%] text-center px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 via-red-500 to-amber-500 text-white text-[10px] font-black tracking-wide shadow-lg animate-pulse leading-tight">
                   🔥 {balconyFireMode === 'left' ? leftDragon.name : rightDragon.name} BALKONGA CHIQIB OLOV PURKADI!
                 </div>
               )}

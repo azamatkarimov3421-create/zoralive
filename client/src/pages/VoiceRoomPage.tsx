@@ -542,7 +542,7 @@ export const VoiceRoomPage: React.FC = () => {
   const alreadyClaimedBox = luckyBox && user ? luckyBox.claimedUserIds?.includes(user.id) : false;
 
   return (
-    <div className={`min-h-screen flex flex-col justify-between relative overflow-hidden ${isLight ? 'bg-[#f8f9fc] text-slate-900' : 'bg-[#090a12] text-white'}`}>
+    <div className={`min-h-screen flex flex-col justify-between relative overflow-hidden ${isLight ? 'bg-transparent text-slate-900' : 'bg-[#090a12] text-white'}`}>
       {!isLight && (
         <>
           <img src={getStageWallpaper(theme)} alt="" className="absolute inset-0 w-full h-full object-cover opacity-75" />
@@ -556,7 +556,7 @@ export const VoiceRoomPage: React.FC = () => {
 
       {/* Top Header */}
       <header className="px-3 pt-3 pb-1.5 flex items-center justify-between gap-2 relative z-20">
-        <div className={`flex items-center gap-2 min-w-0 rounded-full pl-1.5 pr-3 py-1 ${isLight ? 'bg-white border border-slate-200/80 shadow-xs' : 'glass-dark'}`}>
+        <div className={`flex items-center gap-2 min-w-0 rounded-full pl-1.5 pr-3 py-1 ${isLight ? 'bg-white/65 backdrop-blur-xl border border-white/85 shadow-xs' : 'glass-dark'}`}>
           <Avatar src={roomMeta?.host?.avatar} name={roomMeta?.host?.displayName} size="sm" />
           <div className="min-w-0">
             <div className={`text-xs font-extrabold truncate max-w-[122px] ${isLight ? 'text-slate-900' : 'text-white'}`}>
@@ -581,7 +581,7 @@ export const VoiceRoomPage: React.FC = () => {
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => setViewersOpen(true)}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold ${isLight ? 'bg-white border border-slate-200/80 text-slate-700' : 'glass-dark text-white'}`}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold ${isLight ? 'bg-white/65 backdrop-blur-xl border border-white/85 text-slate-700' : 'glass-dark text-white'}`}
           >
             <Users className="w-3.5 h-3.5 text-[#ff3366]" />
             {viewerCount}
@@ -831,7 +831,7 @@ export const VoiceRoomPage: React.FC = () => {
 
       {/* Seat Emoji / Dice / RPS Quick Bar */}
       {reactOpen && (
-        <div className="mx-3 mb-2 p-2.5 rounded-2xl bg-white border border-slate-200 shadow-lg flex items-center justify-between gap-1.5 overflow-x-auto no-scrollbar relative z-20">
+        <div className="mx-3 mb-2 p-2.5 rounded-2xl bg-white/75 backdrop-blur-2xl border border-white/90 shadow-lg flex items-center justify-between gap-1.5 overflow-x-auto no-scrollbar relative z-20">
           {QUICK_EMOJIS.map((em) => (
             <button
               key={em}
