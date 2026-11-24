@@ -494,6 +494,7 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     const winAmount = Math.round(Math.max(50, bet) * sector.multiplier);
     currentUser.coins = (currentUser.coins || 0) + winAmount;
     setStoredUser(currentUser);
+    syncProfileToSupabase({ id: currentUser.id, coins: currentUser.coins });
     mockWheelRecent.unshift({
       id: `w_${Date.now()}`,
       display_name: currentUser.displayName,

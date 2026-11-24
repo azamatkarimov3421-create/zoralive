@@ -109,7 +109,7 @@ export const LuckyWheelGame: React.FC<{ roomId?: string; compact?: boolean }> = 
         <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-20 w-0 h-0 border-l-[11px] border-l-transparent border-r-[11px] border-r-transparent border-t-[18px] border-t-slate-900" />
 
         <div
-          className={`${compact ? 'w-56 h-56' : 'w-64 h-64'} rounded-full p-2 bg-white border-4 border-slate-200 shadow-lg`}
+          className={`${compact ? 'w-56 h-56' : 'w-64 h-64'} rounded-full p-2 bg-white/75 backdrop-blur-xl border-4 border-white/90 shadow-xl`}
         >
           <div
             className="w-full h-full rounded-full overflow-hidden relative"

@@ -113,7 +113,7 @@ export const ShopPage: React.FC = () => {
             <span>VIP Panellar & Ajdarho</span>
           </div>
           <div className="text-xs font-extrabold text-white">
-            VIP 1–12 panellar va afsonaviy ajdarhoni xarid qiling
+            VIP 1–12 panellar va afsonaviy Xaldris ajdarhosini tekinga yoqing
           </div>
         </div>
         <div className="text-right shrink-0">

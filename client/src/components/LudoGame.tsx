@@ -105,17 +105,17 @@ export const LudoGame: React.FC<{ roomId?: string; compact?: boolean }> = ({ roo
                   : 'bg-slate-50 border-slate-200 text-slate-600'
               }`}
             >
-              {fee === 0 ? 'Bepul' : `${fee}`}
+              {fee === 0 ? 'Bepul' : `+${fee}`}
             </button>
           ))}
         </div>
 
         <button
           onClick={() => getSocket().emit('ludo:create', { entryFee, roomId, playerCount })}
-          className="w-full py-3 rounded-full btn-brand font-extrabold text-sm flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-full btn-brand font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer"
         >
           <Play className="w-4 h-4 fill-current" />
-          <span>Boshlash ({entryFee * playerCount} 🪙)</span>
+          <span>{entryFee === 0 ? 'Bepul Boshlash' : `Boshlash (Yutuq: ${entryFee * playerCount} 🪙)`}</span>
         </button>
       </div>
     );
@@ -158,7 +158,7 @@ export const LudoGame: React.FC<{ roomId?: string; compact?: boolean }> = ({ roo
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+      <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/90 text-xs shadow-2xs">
         <span className="font-extrabold text-amber-600 flex items-center gap-1">
           <Trophy className="w-3.5 h-3.5" /> {game.pot} 🪙
         </span>
@@ -173,7 +173,7 @@ export const LudoGame: React.FC<{ roomId?: string; compact?: boolean }> = ({ roo
             <div
               key={p.id}
               className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${
-                active ? `${st.bg} ${st.border}` : 'bg-white border-slate-200 opacity-70'
+                active ? `${st.bg} ${st.border}` : 'bg-white/65 backdrop-blur-md border-white/85 opacity-75'
               }`}
             >
               <span className={`w-2.5 h-2.5 rounded-full ${st.token}`} />

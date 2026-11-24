@@ -3,7 +3,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { getStoredUser, getToken, setStoredUser } from './api';
 import { MOCK_GIFTS } from './mockData';
 import { supabase, isSupabaseConfigured } from './supabase';
-import { fetchRoomByIdFromSupabase, sendGiftInSupabase } from './supabaseSync';
+import { fetchRoomByIdFromSupabase, sendGiftInSupabase, syncProfileToSupabase } from './supabaseSync';
 import { LudoGameState, PkState, SeatState } from '../types';
 
 let socketInstance: Socket | null = null;
@@ -33,6 +33,8 @@ class SupabaseRealtimeSocket {
   private activePk: PkState | null = null;
   private activeBox: any = null;
   private ludoGame: LudoGameState | null = null;
+  private drawSecretWord = '';
+  private drawState: any = null;
   private mySeatIndex: number | null = null;
 
   constructor() {
@@ -340,6 +342,23 @@ class SupabaseRealtimeSocket {
             })
             .on('broadcast', { event: 'video:relay_frame' }, ({ payload }) => {
               this.trigger('video:relay_frame', payload);
+            })
+            .on('broadcast', { event: 'draw:state' }, ({ payload }) => {
+              this.drawState = payload?.state ?? null;
+              if (payload?.secretWord !== undefined) this.drawSecretWord = payload.secretWord;
+              if (this.drawState) this.trigger('draw:state', this.drawState);
+            })
+            .on('broadcast', { event: 'draw:stroke' }, ({ payload }) => {
+              if (payload?.stroke) this.trigger('draw:stroke', payload.stroke);
+            })
+            .on('broadcast', { event: 'draw:clear' }, () => {
+              this.trigger('draw:clear');
+            })
+            .on('broadcast', { event: 'draw:solved' }, ({ payload }) => {
+              if (payload) {
+                this.drawState = payload.state ?? this.drawState;
+                this.trigger('draw:solved', payload.result);
+              }
             })
             .subscribe(async (status) => {
               if (status === 'SUBSCRIBED') {
@@ -677,12 +696,49 @@ class SupabaseRealtimeSocket {
           g.status = 'FINISHED';
           g.winnerId = p.id;
           g.winnerName = p.name;
-          g.lastEvent = `🏆 ${p.name} g‘olib bo‘ldi!`;
+          g.lastEvent = `🏆 ${p.name} g‘olib bo‘ldi! (+${g.pot} 🪙)`;
+          if (p.id === u.id && g.pot > 0) {
+            const nextCoins = (u.coins || 0) + g.pot;
+            setStoredUser({ ...u, coins: nextCoins });
+            syncProfileToSupabase({ id: u.id, coins: nextCoins });
+            this.trigger('wallet:updated', { coins: nextCoins });
+          }
         } else if (dice !== 6) {
           g.turnIndex = (g.turnIndex + 1) % g.players.length;
         }
         this.trigger('ludo:state', { ...g });
         this.runBotTurn();
+      } else if (event === 'draw:start') {
+        const words = ['Olma', 'Quyosh', 'Mashina', 'Uy', 'Mushuk', 'Samolyot', 'Yulduz', 'Daraxt', 'Toj', 'Ajdarho'];
+        const w = words[Math.floor(Math.random() * words.length)];
+        this.drawSecretWord = w;
+        this.drawState = {
+          active: true,
+          drawerId: u.id,
+          drawerName: u.displayName,
+          hint: `${w[0]} ${'_ '.repeat(Math.max(1, w.length - 1)).trim()} (${w.length})`,
+          solvedBy: null,
+        };
+        this.trigger('draw:state', this.drawState);
+        this.trigger('draw:word', { word: w });
+        this.broadcastRoom('draw:state', { state: this.drawState, secretWord: w });
+      } else if (event === 'draw:stroke') {
+        this.broadcastRoom('draw:stroke', { stroke: data.stroke });
+      } else if (event === 'draw:clear') {
+        this.broadcastRoom('draw:clear', {});
+      } else if (event === 'draw:guess') {
+        const guess = String(data.guess || '').trim().toLowerCase();
+        if (this.drawState?.active && this.drawSecretWord && guess === this.drawSecretWord.toLowerCase()) {
+          const reward = 50;
+          const nextCoins = (u.coins || 0) + reward;
+          setStoredUser({ ...u, coins: nextCoins });
+          syncProfileToSupabase({ id: u.id, coins: nextCoins });
+          this.trigger('wallet:updated', { coins: nextCoins });
+          this.drawState = { ...this.drawState, active: false, solvedBy: u.displayName };
+          const result = { winnerName: u.displayName, word: this.drawSecretWord, reward };
+          this.trigger('draw:solved', result);
+          this.broadcastRoom('draw:solved', { state: this.drawState, result });
+        }
       }
     }, 20);
 

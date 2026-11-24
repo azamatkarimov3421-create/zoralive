@@ -221,17 +221,17 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
                           isCurrent
                         )
                       }
-                      className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition ${
+                      className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition cursor-pointer ${
                         isCurrent
                           ? 'bg-emerald-500 text-white'
                           : unlocked
                           ? isCosmic
                             ? 'bg-white/15 text-white hover:bg-white/25'
-                            : 'bg-slate-100 text-slate-700'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                           : 'btn-brand'
                       }`}
                     >
-                      {isCurrent ? '✓ Faol daraja' : unlocked ? 'Qayta taqish' : `VIP ${tier.level} olish`}
+                      {isCurrent ? '✓ Faol daraja' : unlocked ? 'Tanlash' : `VIP ${tier.level} yoqish`}
                     </button>
                   </div>
                 </div>
@@ -333,7 +333,7 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
           onClick={() => setInspectDragon(null)}
         >
           <div
-            className="w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl"
+            className="w-full max-w-sm bg-white/85 backdrop-blur-2xl border-2 border-white rounded-3xl overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative h-56 w-full bg-slate-950">

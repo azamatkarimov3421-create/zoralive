@@ -156,7 +156,7 @@ export const DrawGuessGame: React.FC<{ roomId?: string; compact?: boolean }> = (
   return (
     <div className="space-y-3">
       {/* Top Bar: Word / Hint + Start */}
-      <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-2xl bg-slate-50 border border-slate-200">
+      <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/90 shadow-2xs">
         <div className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5 min-w-0">
           <Sparkles className="w-3.5 h-3.5 text-[#ff3366] shrink-0" />
           <span className="truncate">
@@ -183,7 +183,7 @@ export const DrawGuessGame: React.FC<{ roomId?: string; compact?: boolean }> = (
       )}
 
       {/* Touch & Mouse Drawing Canvas */}
-      <div className="rounded-2xl border-2 border-slate-200 bg-white overflow-hidden touch-none">
+      <div className="rounded-2xl border-2 border-white/90 bg-white/90 backdrop-blur-md overflow-hidden touch-none shadow-sm">
         <canvas
           ref={canvasRef}
           width={380}
