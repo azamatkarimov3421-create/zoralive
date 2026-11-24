@@ -56,6 +56,9 @@ export interface RoomSummary {
   viewerCount: number;
   hasPk: boolean;
   occupiedSeats: number;
+  isLocked?: boolean;
+  roomPassword?: string;
+  maxCapacity?: number;
 }
 
 export interface SeatState {

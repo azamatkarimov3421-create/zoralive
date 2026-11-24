@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Smartphone, Monitor } from 'lucide-react';
+import { Smartphone, Monitor, Lock, KeyRound } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorldProvider } from './context/WorldContext';
 import { AuthPage } from './pages/AuthPage';
@@ -15,6 +15,86 @@ import { GovernanceSuitePage } from './pages/GovernanceSuitePage';
 import { BottomNav } from './components/BottomNav';
 import { FloatingVoiceBar } from './components/FloatingVoiceBar';
 import { CreateRoomModal } from './components/CreateRoomModal';
+
+const SITE_GATE_KEY = 'zoralive_site_gate_v1';
+
+const SitePasswordGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [unlocked, setUnlocked] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem(SITE_GATE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+
+  if (unlocked) return <>{children}</>;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pin.trim() === '3434') {
+      try {
+        sessionStorage.setItem(SITE_GATE_KEY, '1');
+      } catch {
+        // ignore
+      }
+      setUnlocked(true);
+      setError('');
+    } else {
+      setError('Parol noto‘g‘ri');
+      setPin('');
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="pointer-events-none select-none fixed inset-0 overflow-hidden z-0">
+        <div className="absolute -top-24 left-1/2 -translate-x-[240px] w-80 h-80 rounded-full bg-rose-400/24 blur-3xl" />
+        <div className="absolute top-1/3 left-1/2 translate-x-[40px] w-80 h-80 rounded-full bg-sky-400/26 blur-3xl" />
+        <div className="absolute bottom-[-80px] left-1/2 -translate-x-[160px] w-80 h-80 rounded-full bg-violet-400/22 blur-3xl" />
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        className="relative z-10 w-full max-w-xs bg-white/80 backdrop-blur-2xl border-2 border-white rounded-3xl p-6 shadow-2xl space-y-4 text-center"
+      >
+        <div className="w-14 h-14 mx-auto rounded-2xl btn-brand flex items-center justify-center shadow-lg">
+          <Lock className="w-7 h-7 text-white" />
+        </div>
+        <div className="space-y-1">
+          <h1 className="text-lg font-black text-slate-900">ZoraLive</h1>
+          <p className="text-xs font-semibold text-slate-500">Saytga kirish uchun parolni kiriting</p>
+        </div>
+
+        <div className="flex items-center gap-2 bg-white/90 border border-slate-200 rounded-2xl px-3.5 py-2.5">
+          <KeyRound className="w-4 h-4 text-[#ff3366] shrink-0" />
+          <input
+            type="password"
+            inputMode="numeric"
+            autoFocus
+            value={pin}
+            onChange={(e) => {
+              setPin(e.target.value);
+              if (error) setError('');
+            }}
+            placeholder="Kirish paroli"
+            className="flex-1 bg-transparent text-sm font-black tracking-widest text-slate-900 focus:outline-none"
+          />
+        </div>
+
+        {error && <div className="text-xs font-extrabold text-rose-600">{error}</div>}
+
+        <button
+          type="submit"
+          className="w-full py-3 rounded-full btn-brand text-sm font-black shadow-lg active:scale-95 transition cursor-pointer"
+        >
+          Kirish
+        </button>
+      </form>
+    </div>
+  );
+};
 
 const AppShell: React.FC = () => {
   const { user, loading } = useAuth();
@@ -110,12 +190,14 @@ const AppShell: React.FC = () => {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <WorldProvider>
-          <AppShell />
-        </WorldProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <SitePasswordGate>
+      <BrowserRouter>
+        <AuthProvider>
+          <WorldProvider>
+            <AppShell />
+          </WorldProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </SitePasswordGate>
   );
 }

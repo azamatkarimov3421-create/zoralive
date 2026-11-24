@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { getSocket, getMyPeerId } from '../lib/socket';
+import { getRoomSettings, saveRoomSettings, RoomAccessSettings } from '../lib/roomSettings';
 import {
   sendRoomMessageToSupabase,
   fetchRoomMessagesFromSupabase,
@@ -41,6 +42,7 @@ import { GiftDrawer } from '../components/GiftDrawer';
 import { GiftOverlay } from '../components/GiftOverlay';
 import { EntryBanner, EntryRideEvent } from '../components/EntryBanner';
 import { HostExitModal, HostCandidate } from '../components/HostExitModal';
+import { RoomLockModal } from '../components/RoomLockModal';
 import { LiveWaveBars, getStageWallpaper } from '../components/LuxuryBadges';
 import { ANIMATED_FRAMES, getAnimatedFrameUrl } from '../lib/mythicCatalog';
 import { sfx } from '../lib/sound';
@@ -96,6 +98,10 @@ export const VoiceRoomPage: React.FC = () => {
   const [viewersTab, setViewersTab] = useState<'online' | 'gifters'>('online');
   const [toolsOpen, setToolsOpen] = useState(false);
   const [hostExitOpen, setHostExitOpen] = useState(false);
+  const [lockModalOpen, setLockModalOpen] = useState(false);
+  const [roomSettings, setRoomSettings] = useState<RoomAccessSettings>(() =>
+    getRoomSettings(roomId || '') || { maxCapacity: 8, isLocked: false, password: '' }
+  );
   const [closesAt, setClosesAt] = useState<number>(() => {
     const saved = roomId ? Number(localStorage.getItem(`zoralive_room_close_${roomId}`) || 0) : 0;
     return saved > Date.now() ? saved : 0;
@@ -638,8 +644,23 @@ export const VoiceRoomPage: React.FC = () => {
             className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold ${isLight ? 'bg-white/65 backdrop-blur-xl border border-white/85 text-slate-700' : 'glass-dark text-white'}`}
           >
             <Users className="w-3.5 h-3.5 text-[#ff3366]" />
-            {viewerCount}
+            {viewerCount}/{roomSettings.maxCapacity}
           </button>
+          {roomMeta?.hostId === user?.id && (
+            <button
+              onClick={() => setLockModalOpen(true)}
+              className={`p-2 rounded-full ${
+                roomSettings.isLocked
+                  ? 'bg-amber-400/25 text-amber-700'
+                  : isLight
+                  ? 'bg-white border border-slate-200/80 text-slate-600'
+                  : 'glass-dark text-white'
+              }`}
+              title="Xona qulfi va parol"
+            >
+              {roomSettings.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+            </button>
+          )}
           <button
             onClick={() => setThemePickerOpen((v) => !v)}
             className={`p-2 rounded-full ${isLight ? 'bg-white border border-slate-200/80 text-slate-600' : 'glass-dark text-white'}`}
@@ -1272,6 +1293,17 @@ export const VoiceRoomPage: React.FC = () => {
           leaveVoiceRoomMeta();
           toast(`Xona ${candidate.displayName} ga topshirildi`, 'success');
           navigate('/');
+        }}
+      />
+
+      <RoomLockModal
+        open={lockModalOpen}
+        onClose={() => setLockModalOpen(false)}
+        settings={roomSettings}
+        onSave={(next) => {
+          setRoomSettings(next);
+          if (roomId) saveRoomSettings(roomId, next);
+          toast(next.isLocked ? 'Xona qulflandi 🔒' : 'Xona ochildi 🔓', 'success');
         }}
       />
     </div>

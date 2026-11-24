@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coins, Users, Shield, RefreshCw, Swords, Search, X, Crown, Plus } from 'lucide-react';
+import { Coins, Users, Shield, RefreshCw, Swords, Search, X, Crown, Plus, Lock, KeyRound } from 'lucide-react';
 import { api } from '../lib/api';
 import { fetchRoomsFromSupabase } from '../lib/supabaseSync';
+import { getRoomSettings } from '../lib/roomSettings';
 import { useAuth } from '../context/AuthContext';
 import { RoomSummary } from '../types';
 import { LiveWaveBars, VipCrest, getStageWallpaper } from '../components/LuxuryBadges';
@@ -10,13 +11,15 @@ import { Avatar } from '../components/Avatar';
 import { MYTHIC_DRAGONS } from '../lib/mythicCatalog';
 
 export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
-  const { user } = useAuth();
+  const { user, toast } = useAuth();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'ALL' | 'VOICE' | 'VIDEO' | 'GAME' | 'FOLLOWING'>('ALL');
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState('');
+  const [lockedRoomPrompt, setLockedRoomPrompt] = useState<RoomSummary | null>(null);
+  const [passInput, setPassInput] = useState('');
 
   // Preload dragon thumbnails cleanly in background so GiftDrawer opens instantaneously
   useEffect(() => {
@@ -67,6 +70,27 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
   }, [filter]);
 
   const openRoom = (r: RoomSummary) => {
+    const localCfg = getRoomSettings(r.id);
+    const isLocked = Boolean(localCfg?.isLocked ?? r.isLocked);
+    const roomPassword = localCfg?.password ?? r.roomPassword ?? '';
+    const maxCap = localCfg?.maxCapacity ?? r.maxCapacity ?? r.seatCount ?? 0;
+
+    if (r.hostId !== user?.id) {
+      if (maxCap > 0 && r.viewerCount >= maxCap) {
+        toast(`Xona to‘lgan (${maxCap} kishi)`, 'info');
+        return;
+      }
+      if (isLocked) {
+        if (!roomPassword) {
+          toast('Bu xona muallif tomonidan qulflangan 🔒', 'info');
+          return;
+        }
+        setLockedRoomPrompt({ ...r, isLocked, roomPassword });
+        setPassInput('');
+        return;
+      }
+    }
+
     if (r.type === 'VIDEO') navigate(`/video/${r.id}`);
     else navigate(`/voice/${r.id}`);
   };
@@ -265,11 +289,19 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
                         <Swords className="w-2.5 h-2.5" /> PK
                       </span>
                     )}
+                    {(getRoomSettings(r.id)?.isLocked || r.isLocked) && (
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-slate-950">
+                        <Lock className="w-2.5 h-2.5" />
+                      </span>
+                    )}
                   </div>
 
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-md text-[10px] font-bold text-white">
                     <Users className="w-2.5 h-2.5" />
-                    <span>{r.viewerCount}</span>
+                    <span>
+                      {r.viewerCount}
+                      {(getRoomSettings(r.id)?.maxCapacity || r.maxCapacity) ? `/${getRoomSettings(r.id)?.maxCapacity || r.maxCapacity}` : ''}
+                    </span>
                   </span>
                 </div>
 
@@ -288,6 +320,57 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
           </div>
         )}
       </div>
+
+      {lockedRoomPrompt && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 backdrop-blur-sm p-4"
+          onClick={() => setLockedRoomPrompt(null)}
+        >
+          <form
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (passInput.trim() !== (lockedRoomPrompt.roomPassword || '')) {
+                toast('Parol noto‘g‘ri!', 'error');
+                return;
+              }
+              const target = lockedRoomPrompt;
+              setLockedRoomPrompt(null);
+              if (target.type === 'VIDEO') navigate(`/video/${target.id}`);
+              else navigate(`/voice/${target.id}`);
+            }}
+            className="w-full max-w-xs bg-white/90 backdrop-blur-2xl border-2 border-white rounded-3xl p-4 space-y-3 shadow-2xl"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-sm font-black text-slate-900">
+                <Lock className="w-4 h-4 text-amber-500" />
+                <span>Parolni kiriting</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLockedRoomPrompt(null)}
+                className="p-1 rounded-full bg-slate-100 text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-[11px] font-semibold text-slate-500 truncate">{lockedRoomPrompt.title}</p>
+            <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-2xl px-3 py-2">
+              <KeyRound className="w-4 h-4 text-amber-500 shrink-0" />
+              <input
+                autoFocus
+                value={passInput}
+                onChange={(e) => setPassInput(e.target.value)}
+                placeholder="Xona paroli..."
+                className="flex-1 bg-transparent text-xs font-bold text-slate-900 focus:outline-none"
+              />
+            </div>
+            <button type="submit" className="w-full py-2.5 rounded-full btn-brand text-xs font-black cursor-pointer">
+              Kirish
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Users, Swords, Gift, Send, Video, VideoOff, Heart, Trophy } from 'lucide-react';
+import { ArrowLeft, Users, Swords, Gift, Send, Video, VideoOff, Heart, Trophy, Lock, Unlock } from 'lucide-react';
 import { api } from '../lib/api';
 import { getSocket, getMyPeerId } from '../lib/socket';
+import { getRoomSettings, saveRoomSettings, RoomAccessSettings } from '../lib/roomSettings';
 import {
   sendRoomMessageToSupabase,
   fetchRoomMessagesFromSupabase,
@@ -17,6 +18,7 @@ import { GiftDrawer } from '../components/GiftDrawer';
 import { GiftOverlay } from '../components/GiftOverlay';
 import { EntryBanner, EntryRideEvent } from '../components/EntryBanner';
 import { HostExitModal, HostCandidate } from '../components/HostExitModal';
+import { RoomLockModal } from '../components/RoomLockModal';
 import { PkVsCrest } from '../components/LuxuryBadges';
 import { sfx } from '../lib/sound';
 
@@ -44,6 +46,10 @@ export const VideoRoomPage: React.FC = () => {
 
   const [giftDrawerOpen, setGiftDrawerOpen] = useState(false);
   const [hostExitOpen, setHostExitOpen] = useState(false);
+  const [lockModalOpen, setLockModalOpen] = useState(false);
+  const [roomSettings, setRoomSettings] = useState<RoomAccessSettings>(() =>
+    getRoomSettings(roomId || '') || { maxCapacity: 8, isLocked: false, password: '' }
+  );
   const [closesAt, setClosesAt] = useState<number>(() => {
     const saved = roomId ? Number(localStorage.getItem(`zoralive_room_close_${roomId}`) || 0) : 0;
     return saved > Date.now() ? saved : 0;
@@ -561,8 +567,17 @@ export const VideoRoomPage: React.FC = () => {
           )}
           <span className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-slate-100 text-xs font-bold text-slate-700">
             <Users className="w-3.5 h-3.5 text-[#ff3366]" />
-            {viewerCount}
+            {viewerCount}/{roomSettings.maxCapacity}
           </span>
+          {roomMeta?.hostId === user?.id && (
+            <button
+              onClick={() => setLockModalOpen(true)}
+              className={`p-2 rounded-full ${roomSettings.isLocked ? 'bg-amber-400/25 text-amber-700' : 'bg-slate-100 text-slate-700'}`}
+              title="Xona qulfi va parol"
+            >
+              {roomSettings.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+            </button>
+          )}
           <button onClick={toggleCamera} className="p-2 rounded-full bg-slate-100 text-slate-700">
             {cameraStream ? <Video className="w-4 h-4 text-emerald-600" /> : <VideoOff className="w-4 h-4" />}
           </button>
@@ -804,6 +819,17 @@ export const VideoRoomPage: React.FC = () => {
           setCameraStream(null);
           toast(`Xona ${candidate.displayName} ga topshirildi`, 'success');
           navigate('/');
+        }}
+      />
+
+      <RoomLockModal
+        open={lockModalOpen}
+        onClose={() => setLockModalOpen(false)}
+        settings={roomSettings}
+        onSave={(next) => {
+          setRoomSettings(next);
+          if (roomId) saveRoomSettings(roomId, next);
+          toast(next.isLocked ? 'Xona qulflandi 🔒' : 'Xona ochildi 🔓', 'success');
         }}
       />
     </div>
