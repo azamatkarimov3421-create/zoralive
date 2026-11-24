@@ -681,11 +681,7 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
   }
 
   if (path === '/wallet/withdraw') {
-    const diamonds = Number(body.diamonds || 500);
-    if (currentUser.diamonds < diamonds) throw new Error('Olmoslar yetarli emas');
-    currentUser.diamonds -= diamonds;
-    setStoredUser(currentUser);
-    return { usdAmount: Number((diamonds / 100).toFixed(2)), success: true } as unknown as T;
+    throw new Error('Bu ilovada pul yechish va daromad olish mavjud emas');
   }
 
   // 9. Agency

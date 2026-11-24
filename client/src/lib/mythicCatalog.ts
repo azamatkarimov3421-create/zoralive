@@ -271,7 +271,7 @@ export const CRYSTAL_ENERGIES: CrystalEnergyMeta[] = [
     name: 'Citrine',
     nameUz: 'Oltin Sitrina',
     elementUz: 'Quyosh & Boylik',
-    benefitUz: '+20% Kunlik tanga daromadi',
+    benefitUz: '+20% Kunlik tanga bonusi',
     auraUz: 'Oltin baraka oqimi',
     webp: '/assets/crystals/citrine.webp',
     price: 0,

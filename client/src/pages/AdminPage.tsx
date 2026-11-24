@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, ArrowLeft, Users, Radio, DollarSign, Gift, Check, X, Plus, RefreshCw } from 'lucide-react';
+import { Shield, ArrowLeft, Users, Radio, Gift, Plus, RefreshCw } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,7 +8,7 @@ export const AdminPage: React.FC = () => {
   const { user, toast } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
-  const [tab, setTab] = useState<'overview' | 'users' | 'rooms' | 'payouts' | 'gifts' | 'reports'>('overview');
+  const [tab, setTab] = useState<'overview' | 'users' | 'rooms' | 'gifts' | 'reports'>('overview');
   const [loading, setLoading] = useState(true);
   const [newGift, setNewGift] = useState({
     nameUz: '',
@@ -60,12 +60,11 @@ export const AdminPage: React.FC = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {[
           { label: 'Foydalanuvchilar', val: stats.totalUsers, icon: Users },
           { label: 'Jonli xonalar', val: stats.activeRooms, icon: Radio },
-          { label: 'Payout', val: stats.pendingPayouts, icon: DollarSign },
-          { label: 'Daromad', val: `$${stats.estimatedPlatformRevenueUsd || 0}`, icon: Gift },
+          { label: 'Sovg‘alar', val: data?.gifts?.length || 0, icon: Gift },
         ].map((k) => {
           const Icon = k.icon;
           return (
@@ -85,7 +84,6 @@ export const AdminPage: React.FC = () => {
           ['overview', 'Umumiy'],
           ['users', `Foydalanuvchilar (${data?.users?.length || 0})`],
           ['rooms', `Xonalar (${data?.rooms?.length || 0})`],
-          ['payouts', `Payout (${stats.pendingPayouts || 0})`],
           ['gifts', `Sovg‘alar (${data?.gifts?.length || 0})`],
           ['reports', `Shikoyatlar (${stats.openReports || 0})`],
         ].map(([k, lbl]) => (
@@ -192,43 +190,6 @@ export const AdminPage: React.FC = () => {
               >
                 {r.is_live ? 'Yopish' : 'Yoqish'}
               </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tab === 'payouts' && (
-        <div className="space-y-2">
-          {(data?.payouts || []).map((p: any) => (
-            <div key={p.id} className="bg-white rounded-2xl p-4 border border-slate-200/80 flex items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-extrabold">{p.display_name} — ${p.usd_amount}</div>
-                <div className="text-xs text-slate-500">{p.method}: {p.destination}</div>
-              </div>
-              {p.status === 'PENDING' ? (
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={async () => {
-                      await api(`/admin/payouts/${p.id}/process`, { method: 'POST', body: JSON.stringify({ status: 'APPROVED' }) });
-                      load();
-                    }}
-                    className="px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center gap-1"
-                  >
-                    <Check className="w-3.5 h-3.5" /> Tasdiq
-                  </button>
-                  <button
-                    onClick={async () => {
-                      await api(`/admin/payouts/${p.id}/process`, { method: 'POST', body: JSON.stringify({ status: 'REJECTED' }) });
-                      load();
-                    }}
-                    className="px-3 py-1.5 rounded-full bg-rose-50 text-rose-600 text-xs font-bold flex items-center gap-1"
-                  >
-                    <X className="w-3.5 h-3.5" /> Rad
-                  </button>
-                </div>
-              ) : (
-                <span className="text-xs font-extrabold text-slate-500">{p.status}</span>
-              )}
             </div>
           ))}
         </div>

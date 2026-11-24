@@ -4,9 +4,7 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import {
   creditCoins,
   exchangeDiamondsToCoins,
-  createWithdrawalRequest,
 } from '../services/economy';
-import { config } from '../config';
 
 const router = Router();
 
@@ -23,18 +21,12 @@ router.get('/', requireAuth, (req: AuthRequest, res) => {
   const ledger = db
     .prepare('SELECT * FROM ledger WHERE user_id = ? ORDER BY created_at DESC LIMIT 40')
     .all(user.id);
-  const payouts = db
-    .prepare('SELECT * FROM payout_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 20')
-    .all(user.id);
 
   res.json({
     coins: user.coins,
     diamonds: user.diamonds,
-    usdEquivalent: Number((user.diamonds / config.economy.diamondsPerUsd).toFixed(2)),
-    minWithdrawDiamonds: config.economy.minWithdrawDiamonds,
     packages: TOPUP_PACKAGES,
     ledger,
-    payouts,
   });
 });
 
@@ -70,24 +62,8 @@ router.post('/exchange', requireAuth, (req: AuthRequest, res) => {
   }
 });
 
-router.post('/withdraw', requireAuth, (req: AuthRequest, res) => {
-  try {
-    const { diamonds, method, destination, kycFullName } = req.body || {};
-    if (!destination || !kycFullName) {
-      res.status(400).json({ error: 'Hamyon/karta raqami va to‘liq ism-familiya majburiy' });
-      return;
-    }
-    const result = createWithdrawalRequest({
-      userId: req.user!.id,
-      diamondsAmount: Number(diamonds),
-      method: String(method || 'USDT_TRC20'),
-      destination: String(destination).trim(),
-      kycFullName: String(kycFullName).trim(),
-    });
-    res.json({ ok: true, ...result });
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
+router.post('/withdraw', requireAuth, (_req: AuthRequest, res) => {
+  res.status(400).json({ error: 'Bu ilovada pul yechish va daromad olish mavjud emas' });
 });
 
 export default router;

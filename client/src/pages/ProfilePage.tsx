@@ -80,10 +80,6 @@ export const ProfilePage: React.FC = () => {
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
   const [payProvider, setPayProvider] = useState('Click');
   const [exchangeAmt, setExchangeAmt] = useState('100');
-  const [withdrawDiamonds, setWithdrawDiamonds] = useState('500');
-  const [withdrawMethod, setWithdrawMethod] = useState('USDT_TRC20');
-  const [withdrawDest, setWithdrawDest] = useState('');
-  const [kycName, setKycName] = useState('');
 
   const [tasks, setTasks] = useState<any[]>([]);
 
@@ -524,7 +520,7 @@ export const ProfilePage: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-xs font-extrabold text-slate-900">To‘ldirish</span>
               <div className="flex gap-1">
-                {['Click', 'Payme', 'Play', 'USDT'].map((prov) => (
+                {['Click', 'Payme', 'Play'].map((prov) => (
                   <button
                     key={prov}
                     onClick={() => setPayProvider(prov)}
@@ -591,59 +587,11 @@ export const ProfilePage: React.FC = () => {
                 }
               }}
               className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs"
+              title="Olmoslarni tangaga almashtirish"
             >
               💎 → 🪙
             </button>
           </div>
-
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              try {
-                const res = await api<{ usdAmount: number }>('/wallet/withdraw', {
-                  method: 'POST',
-                  body: JSON.stringify({
-                    diamonds: Number(withdrawDiamonds),
-                    method: withdrawMethod,
-                    destination: withdrawDest,
-                    kycFullName: kycName,
-                  }),
-                });
-                toast(`$${res.usdAmount} so‘rov yuborildi`, 'success');
-                setWithdrawDest('');
-                await refreshUser();
-                loadTabData('wallet');
-              } catch (err: any) {
-                toast(err.message, 'error');
-              }
-            }}
-            className="card-white rounded-2xl p-3.5 space-y-2"
-          >
-            <div className="text-xs font-extrabold text-slate-900">Pul yechish (min 500 💎)</div>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="number"
-                min={500}
-                value={withdrawDiamonds}
-                onChange={(e) => setWithdrawDiamonds(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs"
-              />
-              <select
-                value={withdrawMethod}
-                onChange={(e) => setWithdrawMethod(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs"
-              >
-                <option value="USDT_TRC20">USDT TRC-20</option>
-                <option value="UZCARD">Uzcard / Humo</option>
-                <option value="BINANCE">Binance</option>
-              </select>
-            </div>
-            <input required value={kycName} onChange={(e) => setKycName(e.target.value)} placeholder="Ism-familiya" className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs" />
-            <input required value={withdrawDest} onChange={(e) => setWithdrawDest(e.target.value)} placeholder="Karta / Hamyon" className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs" />
-            <button type="submit" className="w-full py-2.5 rounded-full btn-brand font-extrabold text-xs">
-              Yechish (${(Number(withdrawDiamonds || 0) / 100).toFixed(2)})
-            </button>
-          </form>
 
           {(() => {
             const paymentRows = (walletData?.ledger || []).filter(
