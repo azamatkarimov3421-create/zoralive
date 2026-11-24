@@ -60,8 +60,26 @@ async function syncBackendJwt(profile: User): Promise<string> {
   return profile.id;
 }
 
+const AUTH_SCHEMA_KEY = 'zoralive_auth_v2';
+
+function purgeLegacyDemoCacheIfNeeded(): User | null {
+  try {
+    const tok = getToken();
+    const migrated = localStorage.getItem(AUTH_SCHEMA_KEY);
+    if (!migrated || (tok && tok.startsWith('demo_token'))) {
+      setToken(null);
+      setStoredUser(null);
+      localStorage.setItem(AUTH_SCHEMA_KEY, '1');
+      return null;
+    }
+    return getStoredUser();
+  } catch {
+    return null;
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => getStoredUser());
+  const [user, setUser] = useState<User | null>(() => purgeLegacyDemoCacheIfNeeded());
   const [loading, setLoading] = useState(true);
   const [lang, setLangState] = useState<Lang>(() => (localStorage.getItem('zoralive_lang') as Lang) || 'uz');
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -164,6 +182,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     async function initAuth() {
       try {
+        // Show clear message if OAuth returned an error query param
+        if (typeof window !== 'undefined' && window.location.search.includes('error_description=')) {
+          const sp = new URLSearchParams(window.location.search);
+          const desc = sp.get('error_description') || sp.get('error') || 'Google kirish xatoligi';
+          toast(`Google kirish xatosi: ${desc}`, 'error');
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         if (isSupabaseConfigured) {
           const {
             data: { session },
@@ -175,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
-        const stored = getStoredUser();
+        const stored = purgeLegacyDemoCacheIfNeeded();
         if (stored?.id) {
           const liveProfile = await fetchProfileFromSupabase(stored.id);
           const resolved = liveProfile || stored;
