@@ -614,30 +614,6 @@ export const VoiceRoomPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Seamless Jump to World / Balkon Battle while keeping Voice Active (Section 8) */}
-      <div className="px-3 pb-1.5 flex items-center gap-1.5 relative z-20 overflow-x-auto no-scrollbar">
-        <button
-          onClick={() => navigate('/battle')}
-          className="px-2.5 py-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-black shadow-xs shrink-0"
-        >
-          🔥 Balkon Jangi (Ovoz saqlanadi)
-        </button>
-        <button
-          onClick={() => navigate('/world')}
-          className="px-2.5 py-1 rounded-full bg-slate-900 text-white text-[10px] font-black shadow-xs shrink-0"
-        >
-          🗺️ World • 10 Qit’a
-        </button>
-        <button
-          onClick={() => navigate('/market')}
-          className={`px-2.5 py-1 rounded-full text-[10px] font-black shrink-0 border ${
-            isLight ? 'bg-white border-slate-200 text-slate-700' : 'glass-dark border-white/15 text-white'
-          }`}
-        >
-          🛍️ Market
-        </button>
-      </div>
-
       {/* Pinned Room Notice + Active Lucky Coin Box */}
       {(notice || luckyBox) && (
         <div className="px-3 pb-1 flex items-center justify-between gap-2 relative z-20">

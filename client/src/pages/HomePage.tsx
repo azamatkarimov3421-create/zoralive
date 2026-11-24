@@ -168,27 +168,6 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
       </header>
 
       <div className="px-3.5 pt-3 space-y-4">
-        {/* 4 Clean Compact Shortcut Pills */}
-        {!searchOpen && (
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { to: '/battle', icon: '🔥', label: 'Balkon Jangi' },
-              { to: '/world', icon: '🗺️', label: '10 Qit’a' },
-              { to: '/market', icon: '🛍️', label: 'Market' },
-              { to: '/admin', icon: '👑', label: '7 Panel' },
-            ].map((item) => (
-              <button
-                key={item.to}
-                onClick={() => navigate(item.to)}
-                className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-2xl bg-white/46 backdrop-blur-xl border-2 border-white/80 hover:bg-white/70 shadow-xs active:scale-95 transition cursor-pointer"
-              >
-                <span className="text-lg leading-none">{item.icon}</span>
-                <span className="text-[10px] font-black text-slate-800">{item.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* Active Live Hosts Row (1:1 Crisp Animated Frames!) */}
         {!searchOpen && rooms.length > 0 && (
           <div className="space-y-2">
