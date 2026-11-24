@@ -222,7 +222,7 @@ export const WorldMapPage: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => navigate('/games')}
+                    onClick={() => navigate('/battle')}
                     className="py-2 rounded-full bg-slate-900 text-white text-[11px] font-black flex items-center justify-center gap-1"
                   >
                     <Flame className="w-3.5 h-3.5 text-amber-400" />

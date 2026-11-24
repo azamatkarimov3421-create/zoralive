@@ -12,7 +12,7 @@ import { MYTHIC_DRAGONS } from '../lib/mythicCatalog';
 const HERO_BANNERS = [
   {
     id: 'balcony-battle',
-    to: '/games',
+    to: '/battle',
     badge: 'ODAMLARSIZ • BALKON ARENASI',
     title: 'Ajdarho vs Ajdarho Jangi 🔥',
     subtitle: '1-Tomon vs 2-Tomon • Balkonga chiqib olov purkash • Evolyutsiya',
@@ -261,7 +261,7 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
             {/* 4 Clean Compact Shortcut Pills */}
             <div className="grid grid-cols-4 gap-2">
               {[
-                { to: '/games', icon: '🔥', label: 'Balkon Jangi' },
+                { to: '/battle', icon: '🔥', label: 'Balkon Jangi' },
                 { to: '/world', icon: '🗺️', label: '10 Qit’a' },
                 { to: '/market', icon: '🛍️', label: 'Market' },
                 { to: '/admin', icon: '👑', label: '7 Panel' },

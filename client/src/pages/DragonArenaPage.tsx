@@ -16,9 +16,6 @@ import { MYTHIC_DRAGONS, MythicDragon } from '../lib/mythicCatalog';
 import { CONTINENTS_10 } from '../lib/worldEcosystemData';
 import { useWorld } from '../context/WorldContext';
 import { useAuth } from '../context/AuthContext';
-import { LuckyWheelGame } from '../components/LuckyWheelGame';
-import { LudoGame } from '../components/LudoGame';
-import { DrawGuessGame } from '../components/DrawGuessGame';
 import { sfx } from '../lib/sound';
 
 interface Particle {
@@ -56,8 +53,7 @@ export const DragonArenaPage: React.FC = () => {
   const { toast } = useAuth();
   const { state, evolveDragon, recordBattleWin, setUserPresence } = useWorld();
 
-  const [mainTab, setMainTab] = useState<'ARENA' | 'EVOLUTION' | 'MINIGAMES'>('ARENA');
-  const [miniTab, setMiniTab] = useState<'wheel' | 'ludo' | 'draw'>('wheel');
+  const [mainTab, setMainTab] = useState<'ARENA' | 'EVOLUTION'>('ARENA');
 
   // 3v3 Dragon Squads (Side 1 vs Side 2 — ZERO humans!)
   const [leftSquadIds, setLeftSquadIds] = useState<string[]>(['valtor', 'thalassor', 'zepharion']);
@@ -355,7 +351,6 @@ export const DragonArenaPage: React.FC = () => {
             [
               ['ARENA', '🐉 Balkon Jangi'],
               ['EVOLUTION', '✨ Evolyutsiya'],
-              ['MINIGAMES', '🎮 Mini-O‘yinlar'],
             ] as const
           ).map(([k, label]) => (
             <button
@@ -817,41 +812,6 @@ export const DragonArenaPage: React.FC = () => {
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: CLASSIC MINI-GAMES (Lucky Wheel, Ludo, Chiz va Top) */}
-      {mainTab === 'MINIGAMES' && (
-        <div className="px-3.5 pt-3 space-y-3">
-          <div className="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-full">
-            {(
-              [
-                ['wheel', '🎡 Charx'],
-                ['ludo', '🎲 Ludo'],
-                ['draw', '🎨 Chiz'],
-              ] as const
-            ).map(([k, lbl]) => (
-              <button
-                key={k}
-                onClick={() => setMiniTab(k)}
-                className={`py-1.5 rounded-full text-xs font-extrabold transition ${
-                  miniTab === k ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
-                }`}
-              >
-                {lbl}
-              </button>
-            ))}
-          </div>
-
-          <div className="card-white rounded-3xl p-3">
-            {miniTab === 'wheel' ? (
-              <LuckyWheelGame />
-            ) : miniTab === 'ludo' ? (
-              <LudoGame />
-            ) : (
-              <DrawGuessGame />
-            )}
           </div>
         </div>
       )}

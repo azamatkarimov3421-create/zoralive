@@ -6,7 +6,6 @@ import {
   Mic,
   MicOff,
   Gift,
-  Gamepad2,
   Send,
   Lock,
   Unlock,
@@ -40,9 +39,6 @@ import { Avatar } from '../components/Avatar';
 import { GiftDrawer } from '../components/GiftDrawer';
 import { GiftOverlay } from '../components/GiftOverlay';
 import { EntryBanner, EntryRideEvent } from '../components/EntryBanner';
-import { LuckyWheelGame } from '../components/LuckyWheelGame';
-import { LudoGame } from '../components/LudoGame';
-import { DrawGuessGame } from '../components/DrawGuessGame';
 import { LiveWaveBars, getStageWallpaper } from '../components/LuxuryBadges';
 import { ANIMATED_FRAMES, getAnimatedFrameUrl } from '../lib/mythicCatalog';
 import { sfx } from '../lib/sound';
@@ -90,7 +86,6 @@ export const VoiceRoomPage: React.FC = () => {
   const [giftDrawerOpen, setGiftDrawerOpen] = useState(false);
   const [activeGiftAnim, setActiveGiftAnim] = useState<GiftEvent | null>(null);
   const [entryRide, setEntryRide] = useState<EntryRideEvent | null>(null);
-  const [miniGame, setMiniGame] = useState<null | 'wheel' | 'ludo' | 'draw'>(null);
   const [modSeat, setModSeat] = useState<SeatState | null>(null);
   const [themePickerOpen, setThemePickerOpen] = useState(false);
   const [reactOpen, setReactOpen] = useState(false);
@@ -610,7 +605,7 @@ export const VoiceRoomPage: React.FC = () => {
       {/* Seamless Jump to World / Balkon Battle while keeping Voice Active (Section 8) */}
       <div className="px-3 pb-1.5 flex items-center gap-1.5 relative z-20 overflow-x-auto no-scrollbar">
         <button
-          onClick={() => navigate('/games')}
+          onClick={() => navigate('/battle')}
           className="px-2.5 py-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-black shadow-xs shrink-0"
         >
           🔥 Balkon Jangi (Ovoz saqlanadi)
@@ -941,14 +936,6 @@ export const VoiceRoomPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setMiniGame('wheel')}
-          className={`p-2 rounded-full ${isLight ? 'bg-slate-100 text-slate-700' : 'bg-white/10 text-white'}`}
-          title="O‘yinlar"
-        >
-          <Gamepad2 className="w-4 h-4" />
-        </button>
-
-        <button
           onClick={() => {
             if (!roomMeta?.hostId || !roomId) return;
             getSocket().emit('room:gift', { roomId, receiverId: roomMeta.hostId, giftId: 'gift-rose', quantity: 1 });
@@ -973,41 +960,6 @@ export const VoiceRoomPage: React.FC = () => {
           getSocket().emit('room:gift', { roomId, receiverId, giftId, quantity });
         }}
       />
-
-      {/* In-Room 3 Mini-Games Drawer */}
-      {miniGame && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45" onClick={() => setMiniGame(null)}>
-          <div className="w-full max-w-md max-h-[86vh] overflow-y-auto bg-white rounded-t-3xl p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex gap-1.5">
-                {[
-                  ['wheel', 'Wheel'],
-                  ['ludo', 'Ludo'],
-                  ['draw', 'Chiz va Top'],
-                ].map(([k, lbl]) => (
-                  <button
-                    key={k}
-                    onClick={() => setMiniGame(k as any)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold ${miniGame === k ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}
-                  >
-                    {lbl}
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => setMiniGame(null)} className="p-1.5 rounded-full bg-slate-100 text-slate-600">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            {miniGame === 'wheel' ? (
-              <LuckyWheelGame roomId={roomId} compact />
-            ) : miniGame === 'ludo' ? (
-              <LudoGame roomId={roomId} compact />
-            ) : (
-              <DrawGuessGame roomId={roomId} compact />
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Audience & Top Gifters Sheet */}
       {viewersOpen && (
