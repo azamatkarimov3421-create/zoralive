@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { Sparkles, Check, Crown, Flame, Shield, Zap, X } from 'lucide-react';
+import { Crown, Flame, Shield, Zap, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { syncProfileToSupabase } from '../lib/supabaseSync';
 import {
-  ANIMATED_FRAMES,
-  CRYSTAL_ENERGIES,
   MYTHIC_DRAGONS,
   VIP_LEVELS_1_TO_12,
   MythicDragon,
@@ -20,26 +18,15 @@ interface MythicVaultSectionProps {
   darkSurface?: boolean;
 }
 
-const CRYSTAL_KEY = 'zoralive_active_crystal';
-const CRYSTAL_CHARGED_KEY = 'zoralive_crystal_charged';
-
 export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
   storeItems,
   onReloadStore,
   initialFilter = 'VIP',
   darkSurface = false,
 }) => {
-  const { user, refreshUser, updateCoinsLocally, toast } = useAuth();
+  const { user, refreshUser, toast } = useAuth();
   const [filter, setFilter] = useState<'VIP' | 'DRAGON' | 'FRAME' | 'CRYSTAL' | 'RIDE' | 'BUBBLE'>(initialFilter);
   const [inspectDragon, setInspectDragon] = useState<MythicDragon | null>(null);
-  const [activeCrystal, setActiveCrystal] = useState<string>(() => localStorage.getItem(CRYSTAL_KEY) || 'crystal-amethyst');
-  const [chargedToday, setChargedToday] = useState<Record<string, boolean>>(() => {
-    try {
-      return JSON.parse(localStorage.getItem(CRYSTAL_CHARGED_KEY) || '{}');
-    } catch {
-      return {};
-    }
-  });
 
   if (!user) return null;
 
@@ -90,41 +77,24 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
     }
   };
 
-  const handleChargeCrystal = (c: (typeof CRYSTAL_ENERGIES)[number]) => {
-    if (chargedToday[c.code]) {
-      setActiveCrystal(c.code);
-      localStorage.setItem(CRYSTAL_KEY, c.code);
-      toast(`${c.nameUz} faol kristall etib tanlandi ✨`, 'success');
-      return;
-    }
-    const next = { ...chargedToday, [c.code]: true };
-    setChargedToday(next);
-    localStorage.setItem(CRYSTAL_CHARGED_KEY, JSON.stringify(next));
-    setActiveCrystal(c.code);
-    localStorage.setItem(CRYSTAL_KEY, c.code);
-    updateCoinsLocally((user.coins || 0) + c.bonusCoins);
-    toast(`💎 ${c.nameUz} energiyasi olindi: +${c.bonusCoins} tanga!`, 'success');
-  };
-
   const tabs: Array<[typeof filter, string]> = [
     ['VIP', '👑 VIP 1-12 Panellar'],
-    ['DRAGON', '🐉 Ajdarholar (10)'],
-    ['FRAME', '🖼️ Siken / Ramka (12)'],
-    ['CRYSTAL', '💎 Kristall (4)'],
-    ['RIDE', '🏎️ Boshqa Ulovlar'],
-    ['BUBBLE', '💬 Chat Pufak'],
+    ['DRAGON', '🐉 Ajdarho (1)'],
   ];
+
+  const featuredDragon = MYTHIC_DRAGONS.find((d) => d.id === 'xaldris') || MYTHIC_DRAGONS[0];
+  const activeFilter: 'VIP' | 'DRAGON' = filter === 'DRAGON' ? 'DRAGON' : 'VIP';
 
   return (
     <div className="space-y-3.5">
       {/* Category Pills */}
-      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+      <div className="flex gap-2 pb-0.5">
         {tabs.map(([k, lbl]) => (
           <button
             key={k}
             onClick={() => setFilter(k)}
-            className={`px-3 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition ${
-              filter === k
+            className={`flex-1 py-2 px-3 rounded-full text-xs font-extrabold whitespace-nowrap transition cursor-pointer ${
+              activeFilter === k
                 ? darkSurface
                   ? 'bg-amber-400 text-slate-950 shadow-[0_0_12px_rgba(251,191,36,0.45)]'
                   : 'bg-slate-900 text-white shadow-xs'
@@ -139,7 +109,7 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
       </div>
 
       {/* 1. VIP 1-12 PRIVILEGE CENTER */}
-      {filter === 'VIP' && (
+      {activeFilter === 'VIP' && (
         <div className="space-y-3">
           {/* Current VIP Status Banner */}
           <div className="rounded-3xl p-4 bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 text-white shadow-md border border-amber-400/30">
@@ -265,212 +235,84 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
         </div>
       )}
 
-      {/* 2. ALL 10 MYTHICAL DRAGONS */}
-      {filter === 'DRAGON' && (
-        <div className="grid grid-cols-2 gap-2.5">
-          {MYTHIC_DRAGONS.map((d) => {
-            const isEquipped = user.activeRide === d.rideCode;
-            const isOwned = ownedCodes.has(d.rideCode) || isEquipped;
-            return (
-              <div
-                key={d.id}
-                className="card-white rounded-2xl overflow-hidden flex flex-col justify-between border border-slate-200/80"
-              >
-                <button onClick={() => setInspectDragon(d)} className="text-left group">
-                  <div className="relative h-32 w-full overflow-hidden bg-slate-900">
-                    <img
-                      src={d.image}
-                      alt={d.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/20" />
-                    <span
-                      className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black text-white bg-gradient-to-r ${d.gradient} shadow`}
-                    >
-                      {d.elementUz}
-                    </span>
-                    {d.vipUnlock && (
-                      <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-black/65 text-amber-300 text-[9px] font-black">
-                        VIP{d.vipUnlock}
-                      </span>
-                    )}
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <div className="text-sm font-black text-white leading-tight">{d.name}</div>
-                      <div className="text-[10px] font-semibold text-amber-200 truncate">{d.titleUz}</div>
-                    </div>
-                  </div>
-                </button>
-
-                <div className="p-2.5 space-y-2">
-                  <div className="text-[10px] text-slate-500 line-clamp-2 min-h-[28px]">{d.powerUz}</div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setInspectDragon(d)}
-                      className="px-2.5 py-1.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-extrabold"
-                    >
-                      Batafsil
-                    </button>
-                    <button
-                      onClick={() =>
-                        buyOrEquip(`st-drg-${d.id}`, 'RIDE', d.rideCode, d.ridePrice, isOwned, isEquipped)
-                      }
-                      className={`flex-1 py-1.5 rounded-full text-[10px] font-extrabold ${
-                        isEquipped
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : isOwned
-                          ? 'bg-slate-900 text-white'
-                          : 'btn-brand'
-                      }`}
-                    >
-                      {isEquipped ? '✓ Faol' : isOwned ? 'Taqish' : `🪙 ${d.ridePrice.toLocaleString()}`}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* 3. ALL 12 ANIMATED LUXURY FRAMES */}
-      {filter === 'FRAME' && (
-        <div className="grid grid-cols-2 gap-2.5">
-          {ANIMATED_FRAMES.map((fr) => {
-            const isEquipped = user.activeFrame === fr.code;
-            const isOwned = ownedCodes.has(fr.code) || isEquipped;
-            return (
-              <div key={fr.id} className="card-white rounded-2xl p-3 flex flex-col items-center justify-between gap-2.5">
-                <span className="self-end px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[9px] font-black">
-                  {fr.badge}
-                </span>
-
-                <div className="py-3.5 px-2 flex items-center justify-center min-h-[92px]">
-                  <Avatar src={user.avatar} name={user.displayName} size="lg" frame={fr.code} />
-                </div>
-
-                <div className="text-center">
-                  <div className="text-xs font-extrabold text-slate-900">{fr.nameUz}</div>
-                  <div className="text-[10px] text-slate-400">Animatsiyali SVGA/WebP</div>
-                </div>
-
-                <button
-                  onClick={() => buyOrEquip(fr.id, 'FRAME', fr.code, fr.price, isOwned, isEquipped)}
-                  className={`w-full py-2 rounded-full text-xs font-extrabold transition ${
-                    isEquipped
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : isOwned
-                      ? 'bg-slate-900 text-white'
-                      : 'btn-brand'
-                  }`}
-                >
-                  {isEquipped ? '✓ Taqilgan' : isOwned ? 'Taqish' : `🪙 ${fr.price.toLocaleString()}`}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* 4. CRYSTAL ENERGY SYSTEM (4 ANIMATED CRYSTALS) */}
-      {filter === 'CRYSTAL' && (
-        <div className="space-y-3">
-          {CRYSTAL_ENERGIES.map((c) => {
-            const isActive = activeCrystal === c.code;
-            const claimed = Boolean(chargedToday[c.code]);
-            return (
-              <div
-                key={c.id}
-                className={`rounded-3xl overflow-hidden border transition shadow-xs ${
-                  isActive ? 'border-amber-400 ring-2 ring-amber-300/40' : 'border-slate-200'
-                }`}
-              >
-                <div className="relative h-40 w-full bg-slate-950 overflow-hidden">
-                  <img src={c.webp} alt={c.nameUz} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/25" />
-                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black text-white bg-gradient-to-r ${c.gradient}`}>
-                      💎 {c.elementUz}
-                    </span>
-                    {isActive && (
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black flex items-center gap-0.5">
-                        <Check className="w-3 h-3" /> Faol
-                      </span>
-                    )}
-                  </div>
-                  <div className="absolute bottom-2.5 left-3 right-3 text-white">
-                    <div className="text-base font-black">{c.nameUz}</div>
-                    <div className="text-[11px] text-amber-200 font-bold">{c.benefitUz}</div>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-white flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
-                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span>{c.auraUz}</span>
-                  </div>
-
-                  <button
-                    onClick={() => handleChargeCrystal(c)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold shrink-0 ${
-                      claimed
-                        ? isActive
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-slate-900 text-white'
-                        : 'btn-brand'
-                    }`}
+      {/* 2. SINGLE FEATURED DRAGON */}
+      {activeFilter === 'DRAGON' && featuredDragon && (() => {
+        const d = featuredDragon;
+        const isEquipped = user.activeRide === d.rideCode;
+        const isOwned = ownedCodes.has(d.rideCode) || isEquipped;
+        return (
+          <div className="space-y-3">
+            <div className="card-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-md">
+              <button onClick={() => setInspectDragon(d)} className="text-left group w-full block">
+                <div className="relative h-56 w-full overflow-hidden bg-slate-950">
+                  <img
+                    src={d.image}
+                    alt={d.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-black/25" />
+                  <span
+                    className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black text-white bg-gradient-to-r ${d.gradient} shadow`}
                   >
-                    {claimed ? (isActive ? '✓ Faol Aura' : 'Faollashtirish') : `⚡ Quvvat (+${c.bonusCoins} 🪙)`}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* 5. RIDES & 6. CHAT BUBBLES */}
-      {(filter === 'RIDE' || filter === 'BUBBLE') && (
-        <div className="grid grid-cols-2 gap-2.5">
-          {storeItems
-            .filter((i) => i.type === filter)
-            .map((item) => {
-              const isEquipped = user.activeRide === item.code || user.activeBubble === item.code;
-              return (
-                <div key={item.id} className="card-white rounded-2xl p-3 flex flex-col justify-between gap-2.5">
-                  <div className="flex flex-col items-center py-2">
-                    {item.type === 'BUBBLE' ? (
-                      <span className={`px-3.5 py-1.5 rounded-2xl text-[11px] font-bold ${item.code}`}>
-                        Salom ZoraLive! ✨
-                      </span>
-                    ) : (
-                      <div className="w-16 h-16 rounded-2xl bg-slate-950 overflow-hidden flex items-center justify-center">
-                        <img
-                          src={item.image || (item.code === 'ride-dragon' ? '/assets/gift-dragon.jpg' : '/assets/gift-car.jpg')}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <div className="text-xs font-extrabold text-slate-900 mt-2 text-center">{item.name_uz}</div>
+                    🐉 {d.elementUz}
+                  </span>
+                  <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/70 text-amber-300 text-[10px] font-black border border-amber-400/30">
+                    Yagona Afsonaviy Ajdarho
+                  </span>
+                  <div className="absolute bottom-3 left-4 right-4 text-white">
+                    <div className="text-xl font-black leading-tight">{d.name}</div>
+                    <div className="text-xs font-bold text-amber-200 mt-0.5">{d.titleUz}</div>
                   </div>
+                </div>
+              </button>
 
+              <div className="p-4 space-y-3">
+                <div className="bg-amber-50/70 border border-amber-200/70 rounded-2xl p-3 flex items-start gap-2">
+                  <Flame className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-[10px] font-bold text-amber-700">Kuchi va Ta’siri</div>
+                    <div className="text-xs font-extrabold text-slate-900">{d.powerUz}</div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {d.abilitiesUz.map((ab) => (
+                    <span
+                      key={ab}
+                      className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold"
+                    >
+                      ✦ {ab}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 pt-1">
                   <button
-                    onClick={() => buyOrEquip(item.id, item.type, item.code, item.price, Boolean(item.owned), isEquipped)}
-                    className={`w-full py-2 rounded-full text-xs font-extrabold ${
+                    onClick={() => setInspectDragon(d)}
+                    className="px-4 py-2.5 rounded-full bg-slate-100 text-slate-700 text-xs font-extrabold"
+                  >
+                    Batafsil
+                  </button>
+                  <button
+                    onClick={() =>
+                      buyOrEquip(`st-drg-${d.id}`, 'RIDE', d.rideCode, d.ridePrice, isOwned, isEquipped)
+                    }
+                    className={`flex-1 py-2.5 rounded-full text-xs font-extrabold ${
                       isEquipped
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : item.owned
+                        : isOwned
                         ? 'bg-slate-900 text-white'
                         : 'btn-brand'
                     }`}
                   >
-                    {isEquipped ? '✓ Faol' : item.owned ? 'Taqish' : `🪙 ${Number(item.price || 0).toLocaleString()}`}
+                    {isEquipped ? '✓ Faol Ajdarho' : isOwned ? 'Taqish' : `🐉 Sotib olish (🪙 ${d.ridePrice.toLocaleString()})`}
                   </button>
                 </div>
-              );
-            })}
-        </div>
-      )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* DRAGON FULL LORE & ATTRIBUTES MODAL */}
       {inspectDragon && (

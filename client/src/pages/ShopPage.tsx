@@ -34,7 +34,7 @@ export const ShopPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-base font-black text-slate-900 leading-tight">Savdo Markazi</h1>
-            <p className="text-[10.5px] font-semibold text-slate-500">Ajdarholar, VIP va shohona sikenlar</p>
+            <p className="text-[10.5px] font-semibold text-slate-500">VIP Panellar va Afsonaviy Ajdarho</p>
           </div>
         </div>
 
@@ -50,10 +50,10 @@ export const ShopPage: React.FC = () => {
         <div className="space-y-0.5">
           <div className="text-[10px] font-black text-amber-300 uppercase tracking-wider flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
-            <span>VIP & Mythic Sikenlar Do‘koni</span>
+            <span>VIP Panellar & Ajdarho</span>
           </div>
           <div className="text-xs font-extrabold text-white">
-            Istalgan ajdarho, VIP daraja yoki ramkani alohida tanlab xarid qiling
+            VIP 1–12 panellar va afsonaviy ajdarhoni xarid qiling
           </div>
         </div>
         <div className="text-right shrink-0">

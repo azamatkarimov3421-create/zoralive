@@ -33,7 +33,7 @@ import {
   closeRoomInSupabase,
   sendRoomMessageToSupabase,
 } from '../lib/supabaseSync';
-import { MYTHIC_DRAGONS, VIP_LEVELS_1_TO_12 } from '../lib/mythicCatalog';
+import { VIP_LEVELS_1_TO_12 } from '../lib/mythicCatalog';
 import { Avatar } from '../components/Avatar';
 import { RoomSummary, User } from '../types';
 import {
@@ -45,6 +45,8 @@ import {
 } from '../lib/worldEcosystemData';
 
 const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+const EGA_PANEL_PIN = '3434';
+const EGA_UNLOCK_KEY = 'zoralive_ega_unlocked';
 
 type PanelRole = 'OWNER' | 'MANAGER' | 'SUPER_ADMIN' | 'ADMIN' | 'AGENT' | 'HOST' | 'BOSHLOVCHI';
 
@@ -59,6 +61,10 @@ export const GovernanceSuitePage: React.FC = () => {
     toggleManagerPermission,
     addAuditLog,
   } = useWorld();
+
+  const [unlocked, setUnlocked] = useState<boolean>(() => sessionStorage.getItem(EGA_UNLOCK_KEY) === EGA_PANEL_PIN);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
 
   const [roleTab, setRoleTab] = useState<PanelRole>('OWNER');
   const [twoFaCode, setTwoFaCode] = useState('');
@@ -83,8 +89,31 @@ export const GovernanceSuitePage: React.FC = () => {
   };
 
   useEffect(() => {
-    loadLiveSupabaseData();
-  }, []);
+    if (unlocked) {
+      loadLiveSupabaseData();
+    }
+  }, [unlocked]);
+
+  const handleUnlockSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pinInput.trim() === EGA_PANEL_PIN) {
+      sessionStorage.setItem(EGA_UNLOCK_KEY, EGA_PANEL_PIN);
+      setUnlocked(true);
+      setPinError('');
+      setPinInput('');
+      toast('👑 Ega Paneliga muvaffaqiyatli kirdingiz!', 'success');
+    } else {
+      setPinError('Kod noto‘g‘ri! Ega Paneliga kirish taqiqlangan.');
+      toast('Kod noto‘g‘ri!', 'error');
+    }
+  };
+
+  const handleLockPanel = () => {
+    sessionStorage.removeItem(EGA_UNLOCK_KEY);
+    setUnlocked(false);
+    setPinInput('');
+    toast('🔒 Ega Paneli qulflandi', 'info');
+  };
 
   const updateMemberLive = async (target: User, patch: Partial<User>, actionDesc: string) => {
     const merged: User = { ...target, ...patch };
@@ -194,6 +223,67 @@ export const GovernanceSuitePage: React.FC = () => {
     setEventTitle('');
   };
 
+  if (!unlocked) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-5 relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-36 -left-36 w-80 h-80 bg-amber-500/20 rounded-full blur-[120px]" />
+        <div className="pointer-events-none absolute -bottom-36 -right-36 w-80 h-80 bg-indigo-500/20 rounded-full blur-[120px]" />
+
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white/90 text-xs font-bold transition cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Orqaga</span>
+        </button>
+
+        <form
+          onSubmit={handleUnlockSubmit}
+          className="w-full max-w-xs bg-slate-900/90 border border-amber-400/35 rounded-3xl p-6 shadow-2xl space-y-4 relative z-10 text-center"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-600 text-slate-950 flex items-center justify-center mx-auto shadow-lg">
+            <Lock className="w-7 h-7" />
+          </div>
+          <div>
+            <h1 className="text-lg font-black text-white flex items-center justify-center gap-1.5">
+              <Crown className="w-4 h-4 text-amber-400" />
+              <span>Ega Paneli Himoyalangan</span>
+            </h1>
+            <p className="text-xs text-slate-400 mt-1">
+              Kirish uchun Ega maxfiy kodini kiriting
+            </p>
+          </div>
+
+          <input
+            type="password"
+            inputMode="numeric"
+            autoFocus
+            value={pinInput}
+            onChange={(e) => {
+              setPinInput(e.target.value);
+              if (pinError) setPinError('');
+            }}
+            placeholder="Maxfiy parol"
+            className="w-full px-4 py-3 rounded-2xl bg-black/50 border border-white/15 text-center text-base font-black tracking-[0.35em] text-white placeholder:text-slate-500 placeholder:tracking-normal placeholder:text-xs focus:outline-none focus:border-amber-400"
+          />
+
+          {pinError && (
+            <div className="text-[11px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-3 py-2">
+              {pinError}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-black text-sm shadow-lg hover:brightness-110 active:scale-98 transition cursor-pointer"
+          >
+            Panelni ochish →
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f5f7fb] text-slate-900 pb-10">
       {/* Top Bar */}
@@ -216,11 +306,20 @@ export const GovernanceSuitePage: React.FC = () => {
           </div>
         </div>
 
-        {state.emergencyStopped && (
-          <span className="px-2.5 py-1 rounded-full bg-rose-600 text-white text-[10px] font-black animate-pulse">
-            TEXNIK TO‘XTATILGAN
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {state.emergencyStopped && (
+            <span className="px-2.5 py-1 rounded-full bg-rose-600 text-white text-[10px] font-black animate-pulse">
+              TEXNIK TO‘XTATILGAN
+            </span>
+          )}
+          <button
+            onClick={handleLockPanel}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-900 text-amber-300 text-[11px] font-black hover:bg-slate-800 cursor-pointer"
+          >
+            <Lock className="w-3 h-3" />
+            <span>Qulflash</span>
+          </button>
+        </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-3.5 pt-4 space-y-4">
@@ -436,11 +535,7 @@ export const GovernanceSuitePage: React.FC = () => {
                               className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-900"
                             >
                               <option value="">Yo‘q (Ajdarhosiz)</option>
-                              {MYTHIC_DRAGONS.map((d) => (
-                                <option key={d.rideCode} value={d.rideCode}>
-                                  🐉 {d.name} ({d.titleUz})
-                                </option>
-                              ))}
+                              <option value="ride-dragon-xaldris">🐉 Afsonaviy Ajdarho (Xaldris)</option>
                             </select>
                           </label>
 
