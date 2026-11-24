@@ -594,17 +594,22 @@ export const VoiceRoomPage: React.FC = () => {
             <MoreHorizontal className="w-4 h-4" />
           </button>
           <button
-            onClick={() => {
-              if (roomId) getSocket().emit('room:leave', { roomId });
+            onClick={async () => {
+              if (roomId) {
+                getSocket().emit('room:leave', { roomId });
+                if (roomMeta?.hostId === user?.id) {
+                  await api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {});
+                }
+              }
               stopAudio();
               leaveVoiceRoomMeta();
               navigate('/');
             }}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-rose-500/15 border border-rose-300/70 text-rose-700 text-[11px] font-black hover:bg-rose-500/25 transition cursor-pointer"
-            title="Xonadan chiqish"
+            title={roomMeta?.hostId === user?.id ? 'Xonani yopish' : 'Xonadan chiqish'}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Chiqish</span>
+            <span>{roomMeta?.hostId === user?.id ? 'Yopish' : 'Chiqish'}</span>
           </button>
         </div>
       </header>

@@ -86,6 +86,10 @@ export const VideoRoomPage: React.FC = () => {
       .then((res) => {
         setRoomMeta(res.room);
         setIsFollowing(Boolean(res.room.isFollowing));
+        // Auto-start front camera for the room host upon opening the video room
+        if (res.room?.hostId === user?.id && !localStreamRef.current) {
+          startCamera();
+        }
       })
       .catch((err) => {
         toast(err.message, 'error');
@@ -372,6 +376,33 @@ export const VideoRoomPage: React.FC = () => {
     }, 330);
   };
 
+  const startCamera = async () => {
+    if (localStreamRef.current) return;
+    const socket = getSocket();
+    const mySide = pkRef.current?.rightHostId === user?.id ? 'right' : 'left';
+    try {
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 960 }, frameRate: { ideal: 24 } },
+          audio: true,
+        });
+      } catch {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        } catch {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+      }
+      localStreamRef.current = stream;
+      setCameraStream(stream);
+      socket.emit('video:host_status', { roomId, live: true, side: mySide });
+      startAdaptiveRelay(stream);
+    } catch {
+      toast('Kamera ruxsati berilmadi yoki kamera topilmadi', 'info');
+    }
+  };
+
   const toggleCamera = async () => {
     const socket = getSocket();
     const mySide = pkRef.current?.rightHostId === user?.id ? 'right' : 'left';
@@ -388,18 +419,7 @@ export const VideoRoomPage: React.FC = () => {
       socket.emit('video:host_status', { roomId, live: false, side: mySide });
       return;
     }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 960 }, frameRate: { ideal: 24 } },
-        audio: true,
-      });
-      localStreamRef.current = stream;
-      setCameraStream(stream);
-      socket.emit('video:host_status', { roomId, live: true, side: mySide });
-      startAdaptiveRelay(stream);
-    } catch {
-      toast('Kamera ulanmadi', 'info');
-    }
+    await startCamera();
   };
 
   const sendChat = (e: React.FormEvent) => {
@@ -486,16 +506,28 @@ export const VideoRoomPage: React.FC = () => {
             {cameraStream ? <Video className="w-4 h-4 text-emerald-600" /> : <VideoOff className="w-4 h-4" />}
           </button>
           <button
-            onClick={() => {
-              if (roomId) getSocket().emit('room:leave', { roomId });
+            onClick={async () => {
+              if (relayTimerRef.current) {
+                window.clearInterval(relayTimerRef.current);
+                relayTimerRef.current = null;
+              }
+              if (roomId) {
+                getSocket().emit('room:leave', { roomId });
+                if (roomMeta?.hostId === user?.id) {
+                  await api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {});
+                }
+              }
+              localStreamRef.current?.getTracks().forEach((t) => t.stop());
+              localStreamRef.current = null;
               cameraStream?.getTracks().forEach((t) => t.stop());
+              setCameraStream(null);
               navigate('/');
             }}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-rose-500/15 border border-rose-300/70 text-rose-700 text-[11px] font-black hover:bg-rose-500/25 transition cursor-pointer"
-            title="Efirdan chiqish"
+            title={roomMeta?.hostId === user?.id ? 'Efirni yopish' : 'Efirdan chiqish'}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Chiqish</span>
+            <span>{roomMeta?.hostId === user?.id ? 'Yopish' : 'Chiqish'}</span>
           </button>
         </div>
       </header>
@@ -559,7 +591,7 @@ export const VideoRoomPage: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="h-[52vh] w-full">
+          <div className="h-[52vh] w-full relative">
             <VideoCanvas
               stream={roomMeta?.hostId === user?.id ? cameraStream : remoteLeftStream}
               relayFrame={leftRelayFrame}
@@ -567,6 +599,16 @@ export const VideoRoomPage: React.FC = () => {
               hostAvatar={roomMeta?.host?.avatar || ''}
               muted={roomMeta?.hostId === user?.id}
             />
+            {roomMeta?.hostId === user?.id && !cameraStream && (
+              <button
+                type="button"
+                onClick={startCamera}
+                className="absolute left-1/2 bottom-4 -translate-x-1/2 z-30 flex items-center gap-1.5 px-4 py-2 rounded-full btn-brand text-xs font-black shadow-xl cursor-pointer"
+              >
+                <Video className="w-4 h-4" />
+                <span>Kamerani yoqish</span>
+              </button>
+            )}
           </div>
         )}
 

@@ -31,6 +31,7 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(() => {});
     }
   }, [stream]);
 
@@ -42,7 +43,7 @@ export const VideoCanvas: React.FC<VideoCanvasProps> = ({
           autoPlay
           playsInline
           muted={muted}
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover ${muted ? 'scale-x-[-1]' : ''}`}
         />
       ) : relayFrame ? (
         <>
