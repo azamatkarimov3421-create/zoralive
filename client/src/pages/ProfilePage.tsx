@@ -183,7 +183,7 @@ export const ProfilePage: React.FC = () => {
       className={
         hasDragon
           ? 'relative min-h-screen bg-[#07070c] overflow-x-clip pb-24'
-          : 'bg-white min-h-full px-3.5 pt-2 pb-8 space-y-3'
+          : 'bg-slate-50/70 min-h-full px-3.5 pt-3 pb-24 space-y-3'
       }
     >
       {/* Full-Page Edge-to-Edge VIP Dragon Background Artwork */}
@@ -214,56 +214,46 @@ export const ProfilePage: React.FC = () => {
       )}
 
       <div className={hasDragon ? 'relative z-10 px-3.5 pt-2.5 space-y-3' : 'space-y-3'}>
-        {/* Top Utility Bar: Always foreground z-40 so admin, languages, and logout are never occluded */}
-        <div
-          className={`relative z-40 flex items-center justify-between pb-1 ${
-            hasDragon ? '' : 'bg-white/95 backdrop-blur-xs'
-          }`}
-        >
+        {/* Top Utility Bar: Single clean row for Language switcher, Ega Paneli, and Logout */}
+        <div className="relative z-40 flex items-center justify-between gap-2">
           <div
             className={`flex gap-0.5 rounded-full p-0.5 ${
-              hasDragon ? 'bg-black/50 border border-white/15 backdrop-blur-md' : 'bg-slate-100'
+              hasDragon
+                ? 'bg-black/50 border border-white/15 backdrop-blur-md'
+                : 'bg-white border border-slate-200/80 shadow-2xs'
             }`}
           >
             {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
               <button
                 key={l}
                 onClick={() => setLang(l)}
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase transition cursor-pointer ${
+                className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase transition cursor-pointer ${
                   lang === l
-                    ? 'bg-white text-slate-950 shadow-xs'
+                    ? hasDragon
+                      ? 'bg-white text-slate-950 shadow-xs'
+                      : 'bg-slate-900 text-white shadow-xs'
                     : hasDragon
                     ? 'text-white/75 hover:text-white'
-                    : 'text-slate-500'
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 {l}
               </button>
             ))}
           </div>
+
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => navigate('/admin')}
-              className={`px-3 py-1.5 rounded-full text-white text-[10.5px] font-black flex items-center gap-1 shadow-xs transition active:scale-95 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-[11px] font-black flex items-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer ${
                 hasDragon
-                  ? 'bg-black/55 hover:bg-black/80 border border-amber-400/50 backdrop-blur-md'
-                  : 'bg-slate-900 hover:bg-slate-800'
+                  ? 'bg-black/55 hover:bg-black/80 border border-amber-400/50 text-amber-300 backdrop-blur-md'
+                  : 'bg-slate-900 hover:bg-slate-800 text-white'
               }`}
-              title="7-Rolli Boshqaruv Markazi (Ochiq)"
+              title="Ega Paneli"
             >
-              <Shield className="w-3.5 h-3.5 text-amber-400" />
-              <span>7-Rolli Panel</span>
-            </button>
-            <button
-              onClick={() => navigate('/login')}
-              className={`px-2.5 py-1.5 rounded-full text-[10.5px] font-black flex items-center gap-1 shadow-xs transition active:scale-95 cursor-pointer ${
-                hasDragon
-                  ? 'bg-black/55 hover:bg-black/80 border border-cyan-400/50 text-cyan-300 backdrop-blur-md'
-                  : 'bg-cyan-50 border border-cyan-200 text-cyan-700 hover:bg-cyan-100'
-              }`}
-              title="Hisob almashtirish / Kirish"
-            >
-              <span>Kirish</span>
+              <Crown className="w-3.5 h-3.5 text-amber-400" />
+              <span>Ega Paneli</span>
             </button>
             <button
               onClick={async () => {
@@ -273,7 +263,7 @@ export const ProfilePage: React.FC = () => {
               className={`p-2 rounded-full transition active:scale-95 cursor-pointer ${
                 hasDragon
                   ? 'bg-black/50 border border-white/15 text-white/85 hover:text-rose-400 backdrop-blur-md'
-                  : 'bg-slate-100 text-slate-600 hover:text-rose-600'
+                  : 'bg-white border border-slate-200/80 text-slate-600 hover:text-rose-600 shadow-2xs'
               }`}
               title="Chiqish"
             >
@@ -362,93 +352,128 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center text-center pt-6 pb-4 border-b border-slate-100 relative">
-            <div className="relative p-2 flex items-center justify-center">
+          <div className="rounded-3xl bg-gradient-to-b from-indigo-50/75 via-white to-white border border-slate-200/80 px-4 pt-5 pb-4 shadow-xs flex flex-col items-center text-center">
+            <div className="relative p-1 rounded-full ring-4 ring-white shadow-sm">
               <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
             </div>
 
-            <div className="mt-2.5 flex items-center justify-center gap-2">
+            <div className="mt-3 flex items-center justify-center gap-1.5">
               <h2 className="text-lg font-black text-slate-900 tracking-tight">{user.displayName}</h2>
               {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
-              <button onClick={openEditor} className="p-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="Tahrirlash">
+              <button
+                onClick={openEditor}
+                className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition cursor-pointer"
+                title="Tahrirlash"
+              >
                 <Pencil className="w-3 h-3" />
               </button>
             </div>
 
-            <button
-              onClick={() => {
-                navigator.clipboard?.writeText(String(user.uid));
-                toast(`ID: ${user.uid}`, 'info');
-              }}
-              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 mt-1 font-semibold group"
-            >
-              <span className="px-2 py-0.5 rounded-md bg-slate-100 group-hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition">ID {user.uid}</span>
-              <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-600" />
-            </button>
+            {user.bio && (
+              <p className="mt-1 text-xs text-slate-500 max-w-[260px] line-clamp-2">{user.bio}</p>
+            )}
 
-            <div className="flex items-center justify-center gap-4 mt-2 text-xs text-slate-500 font-medium">
+            <div className="mt-2 flex items-center justify-center gap-2.5 flex-wrap text-xs text-slate-500 font-medium">
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(String(user.uid));
+                  toast(`ID: ${user.uid}`, 'info');
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition cursor-pointer"
+              >
+                <span>ID {user.uid}</span>
+                <Copy className="w-3 h-3 text-slate-400" />
+              </button>
               <span><b className="text-slate-900">{user.followersCount ?? 0}</b> obunachi</span>
               <span className="w-1 h-1 rounded-full bg-slate-300" />
               <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
+            </div>
+
+            {/* Balance Quick Summary */}
+            <div className="mt-3.5 pt-3 border-t border-slate-100 w-full grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setTab('wallet')}
+                className="flex items-center justify-center gap-2 py-2 px-3 rounded-2xl bg-amber-50/90 hover:bg-amber-100/80 border border-amber-200/70 transition cursor-pointer"
+              >
+                <Coins className="w-4 h-4 text-amber-500 shrink-0" />
+                <div className="text-left leading-tight">
+                  <div className="text-[10px] font-bold text-amber-700">Tangalar</div>
+                  <div className="text-xs font-black text-slate-900">{(user.coins ?? 0).toLocaleString()}</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setTab('wallet')}
+                className="flex items-center justify-center gap-2 py-2 px-3 rounded-2xl bg-sky-50/90 hover:bg-sky-100/80 border border-sky-200/70 transition cursor-pointer"
+              >
+                <Gem className="w-4 h-4 text-sky-500 shrink-0" />
+                <div className="text-left leading-tight">
+                  <div className="text-[10px] font-bold text-sky-700">Olmoslar</div>
+                  <div className="text-xs font-black text-slate-900">{(user.diamonds ?? 0).toLocaleString()}</div>
+                </div>
+              </button>
             </div>
           </div>
         )}
 
         {/* Dragon Shop Prompt (Only shown if user does not own/equip a dragon) */}
         {!hasDragon && (
-          <div
-            onClick={() => setTab('store')}
-            className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-purple-500/10 border border-amber-300/40 flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-500/15 transition active:scale-98"
+          <button
+            type="button"
+            onClick={() => navigate('/shop')}
+            className="w-full text-left px-3.5 py-2.5 rounded-2xl bg-white border border-amber-200/80 shadow-2xs flex items-center justify-between gap-2.5 cursor-pointer hover:border-amber-300 transition active:scale-[0.99]"
           >
-            <div className="flex items-center gap-2.5">
-              <span className="text-2xl">🐉</span>
-              <div>
-                <div className="text-xs font-black text-slate-900">Sizda hali Ajdarho yo‘q</div>
-                <div className="text-[10.5px] font-semibold text-slate-500">Do‘kondan afsonaviy ajdarho xarid qiling va profilingizga o‘rnating</div>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200/70 flex items-center justify-center text-xl shrink-0">
+                🐉
+              </span>
+              <div className="min-w-0">
+                <div className="text-xs font-black text-slate-900 truncate">Ajdarho o‘rnatilmagan</div>
+                <div className="text-[10.5px] font-medium text-slate-500 truncate">Do‘kondan Xaldris ajdarhosini oling</div>
               </div>
             </div>
             <span className="px-2.5 py-1 rounded-full bg-slate-900 text-amber-300 text-[10px] font-black shrink-0">
-              Do‘konga o‘tish →
+              Do‘kon →
             </span>
-          </div>
+          </button>
         )}
 
-        {/* Military Rank (1-10) & 7-Role Governance Portal */}
+        {/* Military Rank (1-10) & World Gem Summary (Clean, no duplicate Admin button) */}
         <div
-          className={`rounded-3xl p-3 text-white flex items-center justify-between gap-2 shadow-sm ${
+          className={`rounded-2xl px-3.5 py-2.5 text-white flex items-center justify-between gap-2 shadow-xs ${
             hasDragon
               ? 'bg-black/55 backdrop-blur-md border'
-              : 'bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 border border-amber-400/35'
+              : 'bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 border border-slate-800'
           }`}
           style={hasDragon ? { borderColor: dragonTheme.borderColor } : undefined}
         >
-          <div className="min-w-0">
-            <div className="text-[10px] font-black text-amber-300">
-              HARBIY UNVON ({currentRank.level}/10) • 💎 {worldState.worldGems} WORLD GEM
-            </div>
-            <div className="text-xs font-black truncate mt-0.5">
-              {currentRank.badge} {currentRank.titleUz} — Turon Imperiyasi
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-sm shrink-0">
+              <Shield className="w-4 h-4 text-amber-300" />
+            </span>
+            <div className="min-w-0">
+              <div className="text-[10px] font-extrabold text-amber-300 tracking-wide">
+                HARBIY UNVON ({currentRank.level}/10)
+              </div>
+              <div className="text-xs font-black truncate">
+                {currentRank.badge} {currentRank.titleUz} — Turon Imperiyasi
+              </div>
             </div>
           </div>
-          <button
-            onClick={() => navigate('/admin')}
-            className="px-3.5 py-2 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 text-[11px] font-black shrink-0 flex items-center gap-1.5 hover:brightness-110 shadow-md transition cursor-pointer"
-          >
-            <Crown className="w-3.5 h-3.5 fill-current" />
-            <span>Ega Paneli</span>
-          </button>
+          <div className="px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10.5px] font-black text-sky-200 shrink-0">
+            💎 {worldState.worldGems}
+          </div>
         </div>
 
         {/* 5 Compact Tabs */}
         <div
-          className={`grid grid-cols-5 gap-1 p-1 rounded-full ${
+          className={`grid grid-cols-5 gap-1 p-1 rounded-2xl border ${
             hasDragon
-              ? 'bg-black/55 border border-white/15 backdrop-blur-md'
-              : 'bg-slate-100'
+              ? 'bg-black/55 border-white/15 backdrop-blur-md'
+              : 'bg-white border-slate-200/80 shadow-2xs'
           }`}
         >
           {[
-            { id: 'store', label: 'Sovg‘a/VIP', icon: ShoppingBag },
+            { id: 'store', label: 'VIP', icon: ShoppingBag },
             { id: 'wallet', label: 'Hamyon', icon: Wallet },
             { id: 'clan', label: 'Klan', icon: Users },
             { id: 'tasks', label: 'Vazifa', icon: CheckCircle2 },
@@ -459,12 +484,14 @@ export const ProfilePage: React.FC = () => {
               <button
                 key={item.id}
                 onClick={() => setTab(item.id as any)}
-                className={`py-2 rounded-full text-[10px] font-extrabold flex flex-col items-center gap-0.5 transition cursor-pointer ${
+                className={`py-2 rounded-xl text-[10.5px] font-extrabold flex flex-col items-center gap-0.5 transition cursor-pointer ${
                   tab === item.id
-                    ? 'bg-white text-slate-950 shadow-sm'
+                    ? hasDragon
+                      ? 'bg-white text-slate-950 shadow-sm'
+                      : 'bg-slate-900 text-white shadow-xs'
                     : hasDragon
                     ? 'text-white/75 hover:text-white'
-                    : 'text-slate-500'
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />

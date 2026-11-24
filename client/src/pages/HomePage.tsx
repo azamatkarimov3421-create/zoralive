@@ -32,11 +32,11 @@ const HERO_BANNERS = [
   },
   {
     id: 'dragons',
-    to: '/profile?tab=store&sub=DRAGON',
-    badge: '10 TA AJDARHO • VIP 1-12',
-    title: 'Sovg‘alar, Ramkalar & VIP',
-    subtitle: 'Zepharion, Nythera, Valtor, Thalassor • 12 ta SVGA ramka',
-    image: '/assets/dragons/zepharion.jpg',
+    to: '/shop',
+    badge: 'VIP 1–12 • YAGONA AJDARHO',
+    title: 'VIP Panellar & Ajdarho',
+    subtitle: 'Xaldris afsonaviy ajdarhosi va VIP 1–12 imtiyozlar',
+    image: '/assets/dragons/xaldris.jpg',
     gradient: 'from-slate-950/90 via-slate-900/60 to-transparent',
     pillCls: 'bg-amber-400 text-slate-950',
   },
@@ -118,7 +118,7 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
   return (
     <div className="bg-white min-h-full pb-6">
       {/* Sticky Clean Ziigo Top Header */}
-      <header className="sticky top-[46px] z-30 bg-white/95 backdrop-blur-md px-3.5 pt-2 pb-2 border-b border-slate-100 space-y-2">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-3.5 pt-2.5 pb-2 border-b border-slate-100 space-y-2">
         <div className="flex items-center justify-between gap-2">
           {/* Primary Ziigo-style Top Tabs */}
           <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">

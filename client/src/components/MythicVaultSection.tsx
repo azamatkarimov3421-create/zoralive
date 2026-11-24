@@ -87,20 +87,26 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
 
   return (
     <div className="space-y-3.5">
-      {/* Category Pills */}
-      <div className="flex gap-2 pb-0.5">
+      {/* Category Segmented Tabs */}
+      <div
+        className={`grid grid-cols-2 gap-1 p-1 rounded-2xl border ${
+          darkSurface
+            ? 'bg-black/50 border-white/15 backdrop-blur-md'
+            : 'bg-slate-100/90 border-slate-200/70'
+        }`}
+      >
         {tabs.map(([k, lbl]) => (
           <button
             key={k}
             onClick={() => setFilter(k)}
-            className={`flex-1 py-2 px-3 rounded-full text-xs font-extrabold whitespace-nowrap transition cursor-pointer ${
+            className={`py-2 px-3 rounded-xl text-xs font-extrabold whitespace-nowrap transition cursor-pointer ${
               activeFilter === k
                 ? darkSurface
-                  ? 'bg-amber-400 text-slate-950 shadow-[0_0_12px_rgba(251,191,36,0.45)]'
-                  : 'bg-slate-900 text-white shadow-xs'
+                  ? 'bg-amber-400 text-slate-950 shadow-sm'
+                  : 'bg-white text-slate-950 shadow-xs'
                 : darkSurface
-                ? 'bg-black/50 border border-white/15 text-white/85 hover:bg-black/70 backdrop-blur-md'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'text-white/75 hover:text-white'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             {lbl}
@@ -119,16 +125,16 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
                   src={user.avatar}
                   name={user.displayName}
                   size="md"
-                  frame={user.activeFrame || 'frame-gold-1'}
-                  vipLevel={user.vipLevel || 1}
+                  frame={user.activeFrame || undefined}
+                  vipLevel={user.vipLevel || 0}
                 />
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm font-black">VIP 1–12 Imtiyozlar</span>
-                    <VipCrest level={user.vipLevel || 1} size="xs" />
+                    {(user.vipLevel || 0) > 0 && <VipCrest level={user.vipLevel} size="xs" />}
                   </div>
                   <p className="text-[11px] text-amber-200/90 mt-0.5">
-                    Joriy daraja: <span className="font-black text-white">VIP {user.vipLevel || 1}</span> / 12
+                    Joriy daraja: <span className="font-black text-white">VIP {user.vipLevel || 0}</span> / 12
                   </p>
                 </div>
               </div>
@@ -138,7 +144,7 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
             <div className="mt-3 h-1.5 w-full rounded-full bg-white/15 overflow-hidden">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-amber-300 via-rose-400 to-purple-400 transition-all duration-500"
-                style={{ width: `${Math.min(100, Math.round(((user.vipLevel || 1) / 12) * 100))}%` }}
+                style={{ width: `${Math.min(100, Math.round(((user.vipLevel || 0) / 12) * 100))}%` }}
               />
             </div>
           </div>
