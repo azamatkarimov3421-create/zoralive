@@ -116,9 +116,9 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
   const activeBanner = HERO_BANNERS[bannerIdx];
 
   return (
-    <div className="bg-white min-h-full pb-6">
-      {/* Sticky Clean Ziigo Top Header */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-3.5 pt-2.5 pb-2 border-b border-slate-100 space-y-2">
+    <div className="bg-transparent min-h-full pb-24">
+      {/* Sticky Translucent Crystal Glass Top Header */}
+      <header className="sticky top-0 z-30 bg-white/55 backdrop-blur-2xl px-3.5 pt-3 pb-2.5 border-b-2 border-white/80 shadow-[0_6px_24px_rgba(15,23,42,0.06)] space-y-2">
         <div className="flex items-center justify-between gap-2">
           {/* Primary Ziigo-style Top Tabs */}
           <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
@@ -217,7 +217,7 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
           <div className="space-y-2.5">
             <button
               onClick={() => navigate(activeBanner.to)}
-              className="relative w-full h-[112px] rounded-2xl overflow-hidden text-left shadow-sm border border-slate-200/60 block group"
+              className="relative w-full h-[116px] rounded-3xl overflow-hidden text-left shadow-lg border-2 border-white/80 block group"
             >
               <img
                 src={activeBanner.image}

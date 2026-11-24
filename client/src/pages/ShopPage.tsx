@@ -31,16 +31,16 @@ export const ShopPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="bg-white min-h-full px-3.5 pt-3 pb-24 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#ff3366] to-amber-500 text-white flex items-center justify-center shadow-sm shrink-0">
-            <ShoppingBag className="w-5 h-5" />
+    <div className="bg-transparent min-h-full px-3.5 pt-3 pb-24 space-y-4">
+      {/* Translucent Crystal Header */}
+      <div className="rounded-3xl bg-white/58 backdrop-blur-2xl border-2 border-white/90 px-3.5 py-3 shadow-[0_10px_28px_-8px_rgba(15,23,42,0.12),inset_0_1.5px_0_rgba(255,255,255,0.95)] flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#ff2d68] to-amber-500 text-white flex items-center justify-center shadow-lg border-2 border-white/50 shrink-0">
+            <ShoppingBag className="w-5 h-5 stroke-[2.4]" />
           </div>
           <div className="min-w-0">
             <h1 className="text-base font-black text-slate-900 leading-tight truncate">Savdo Markazi</h1>
-            <p className="text-[10.5px] font-semibold text-slate-500 truncate">VIP Panellar va Afsonaviy Ajdarho</p>
+            <p className="text-[11px] font-bold text-slate-500 truncate">VIP Panellar va Afsonaviy Ajdarho</p>
           </div>
         </div>
 
@@ -49,18 +49,18 @@ export const ShopPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setHistoryOpen((v) => !v)}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full border text-[11px] font-extrabold transition cursor-pointer ${
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full border-2 text-[11px] font-black transition cursor-pointer ${
               historyOpen
-                ? 'bg-slate-900 border-slate-900 text-white'
-                : 'bg-slate-100 border-slate-200/80 text-slate-700 hover:bg-slate-200'
+                ? 'bg-slate-900 border-slate-900 text-white shadow-md'
+                : 'bg-white/70 border-white/90 text-slate-800 hover:bg-white shadow-2xs'
             }`}
             title="Savdo va to‘lovlar tarixi"
           >
-            <History className="w-3.5 h-3.5" />
+            <History className="w-3.5 h-3.5 stroke-[2.4]" />
             <span>Tarix</span>
           </button>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-black shadow-2xs">
-            <Coins className="w-3.5 h-3.5 text-amber-500" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/20 backdrop-blur-md border-2 border-amber-300/70 text-amber-900 text-xs font-black shadow-2xs">
+            <Coins className="w-3.5 h-3.5 text-amber-600" />
             <span>{(user?.coins || 0).toLocaleString()}</span>
           </div>
         </div>
@@ -68,8 +68,8 @@ export const ShopPage: React.FC = () => {
 
       {/* Collapsible Savdo & To'lovlar Tarixi Panel */}
       {historyOpen && (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 overflow-hidden shadow-xs">
-          <div className="px-3.5 py-2.5 bg-white border-b border-slate-100 flex items-center justify-between">
+        <div className="rounded-3xl border-2 border-white/90 bg-white/70 backdrop-blur-2xl overflow-hidden shadow-lg">
+          <div className="px-4 py-3 bg-white/50 border-b border-white/80 flex items-center justify-between">
             <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
               <History className="w-3.5 h-3.5 text-[#ff3366]" />
               <span>Savdo va to‘lovlar tarixi</span>
@@ -77,23 +77,23 @@ export const ShopPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setHistoryOpen(false)}
-              className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer"
+              className="p-1.5 rounded-full bg-white/80 hover:bg-white text-slate-500 hover:text-slate-800 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
           {shopHistory.length === 0 ? (
-            <div className="px-3.5 py-5 text-center text-xs font-semibold text-slate-400">
+            <div className="px-4 py-6 text-center text-xs font-bold text-slate-400">
               Hozircha savdo yoki to‘lov tarixi yo‘q
             </div>
           ) : (
-            <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto bg-white">
+            <div className="divide-y divide-slate-200/40 max-h-60 overflow-y-auto">
               {shopHistory.slice(0, 20).map((tx: any) => (
-                <div key={tx.id} className="flex items-center justify-between text-xs px-3.5 py-2.5">
-                  <span className="font-semibold text-slate-700 truncate pr-2">{tx.description}</span>
+                <div key={tx.id} className="flex items-center justify-between text-xs px-4 py-2.5">
+                  <span className="font-bold text-slate-700 truncate pr-2">{tx.description}</span>
                   <span
-                    className={`font-extrabold shrink-0 ${
-                      tx.amount > 0 ? 'text-emerald-600' : tx.amount === 0 ? 'text-slate-500' : 'text-rose-600'
+                    className={`font-black shrink-0 ${
+                      tx.amount > 0 ? 'text-emerald-600' : tx.amount === 0 ? 'text-slate-600' : 'text-rose-600'
                     }`}
                   >
                     {tx.amount === 0 ? 'Tekin' : `${tx.amount > 0 ? `+${tx.amount}` : tx.amount} ${tx.currency === 'COINS' ? '🪙' : '💎'}`}
@@ -106,7 +106,7 @@ export const ShopPage: React.FC = () => {
       )}
 
       {/* Highlights Banner */}
-      <div className="rounded-2xl p-3.5 bg-gradient-to-r from-slate-950 via-purple-950 to-slate-900 text-white border border-amber-400/30 flex items-center justify-between gap-3 shadow-sm">
+      <div className="rounded-3xl p-4 bg-gradient-to-r from-slate-950/90 via-purple-950/88 to-indigo-950/90 backdrop-blur-xl text-white border-2 border-amber-300/40 flex items-center justify-between gap-3 shadow-lg">
         <div className="space-y-0.5">
           <div className="text-[10px] font-black text-amber-300 uppercase tracking-wider flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />

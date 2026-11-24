@@ -53,9 +53,9 @@ export const MarketPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-white min-h-full pb-6">
+    <div className="bg-transparent min-h-full pb-24">
       {/* 3-Currency Virtual Economy Header (Section 9) */}
-      <div className="px-3.5 pt-3 pb-2.5 bg-white border-b border-slate-100 space-y-2.5">
+      <div className="px-3.5 pt-3 pb-3 bg-white/55 backdrop-blur-2xl border-b-2 border-white/80 space-y-2.5">
         <div className="grid grid-cols-3 gap-2">
           <div className="p-2 rounded-2xl bg-amber-50 border border-amber-200/80">
             <div className="text-[9px] font-black text-amber-700 flex items-center gap-1">

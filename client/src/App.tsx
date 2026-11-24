@@ -52,13 +52,13 @@ const AppShell: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#eef1f6] flex justify-center relative">
+    <div className="min-h-screen flex justify-center relative overflow-x-hidden">
       {/* Desktop Mobile/Wide Switch - Subtle desktop-only helper outside phone frame */}
       {!isAuthRoute && (
         <div className="hidden lg:flex fixed top-3 right-3 z-50 items-center">
           <button
             onClick={() => setWideMode((v) => !v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 shadow-sm text-[11px] font-bold text-slate-700 hover:bg-white active:scale-95 transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/65 backdrop-blur-xl border-2 border-white/90 shadow-md text-[11px] font-black text-slate-800 hover:bg-white/85 active:scale-95 transition cursor-pointer"
           >
             {wideMode ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
             <span>{wideMode ? 'Mobil' : 'Keng'}</span>
@@ -67,14 +67,21 @@ const AppShell: React.FC = () => {
       )}
 
       <div
-        className={`w-full min-h-screen bg-white flex flex-col relative shadow-[0_0_50px_rgba(15,23,42,0.08)] ${
-          wideMode ? 'max-w-3xl' : 'max-w-[430px] md:border-x md:border-slate-200/80'
+        className={`w-full min-h-screen bg-white/35 backdrop-blur-2xl flex flex-col relative shadow-[0_0_60px_rgba(15,23,42,0.12)] overflow-x-clip ${
+          wideMode ? 'max-w-3xl' : 'max-w-[430px] md:border-x-2 md:border-white/80'
         }`}
       >
+        {/* Ambient Iridescent Crystal Orbs glowing subtly behind translucent UI */}
+        <div className="pointer-events-none select-none fixed inset-0 overflow-hidden z-0 max-w-[430px] mx-auto">
+          <div className="absolute -top-20 -left-16 w-64 h-64 rounded-full bg-rose-400/20 blur-3xl" />
+          <div className="absolute top-1/3 -right-20 w-72 h-72 rounded-full bg-sky-400/22 blur-3xl" />
+          <div className="absolute -bottom-24 left-1/4 w-72 h-72 rounded-full bg-violet-400/18 blur-3xl" />
+        </div>
+
         {/* Persistent Voice Room Bar across World / Jang / Market / Profile (Section 8) */}
         {!isAuthRoute && <FloatingVoiceBar />}
 
-        <main className="flex-1">
+        <main className="flex-1 relative z-10">
           <Routes>
             <Route path="/" element={<HomePage onGoLive={() => setCreateOpen(true)} />} />
             <Route path="/login" element={<AuthPage />} />

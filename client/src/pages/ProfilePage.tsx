@@ -180,8 +180,8 @@ export const ProfilePage: React.FC = () => {
     <div
       className={
         hasDragon
-          ? 'relative min-h-screen bg-[#07070c] overflow-x-clip pb-24'
-          : 'bg-slate-50/70 min-h-full px-3.5 pt-3 pb-24 space-y-3'
+          ? 'relative min-h-screen bg-[#07070c] overflow-x-clip pb-28'
+          : 'bg-transparent min-h-full px-3.5 pt-3 pb-28 space-y-3.5'
       }
     >
       {/* Full-Page Edge-to-Edge VIP Dragon Background Artwork */}
@@ -211,28 +211,28 @@ export const ProfilePage: React.FC = () => {
         </div>
       )}
 
-      <div className={hasDragon ? 'relative z-10 px-3.5 pt-2.5 space-y-3' : 'space-y-3'}>
+      <div className={hasDragon ? 'relative z-10 px-3.5 pt-2.5 space-y-3.5' : 'space-y-3.5'}>
         {/* Top Utility Bar: Single clean row for Language switcher, Ega Paneli, and Logout */}
         <div className="relative z-40 flex items-center justify-between gap-2">
           <div
-            className={`flex gap-0.5 rounded-full p-0.5 ${
+            className={`flex gap-0.5 rounded-full p-1 border-2 ${
               hasDragon
-                ? 'bg-black/50 border border-white/15 backdrop-blur-md'
-                : 'bg-white border border-slate-200/80 shadow-2xs'
+                ? 'bg-black/45 border-white/25 backdrop-blur-2xl'
+                : 'bg-white/60 border-white/90 backdrop-blur-xl shadow-xs'
             }`}
           >
             {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
               <button
                 key={l}
                 onClick={() => setLang(l)}
-                className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase transition cursor-pointer ${
+                className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase transition cursor-pointer ${
                   lang === l
                     ? hasDragon
-                      ? 'bg-white text-slate-950 shadow-xs'
-                      : 'bg-slate-900 text-white shadow-xs'
+                      ? 'bg-white text-slate-950 shadow-sm'
+                      : 'bg-slate-900 text-white shadow-sm'
                     : hasDragon
-                    ? 'text-white/75 hover:text-white'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'text-white/80 hover:text-white'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {l}
@@ -243,10 +243,10 @@ export const ProfilePage: React.FC = () => {
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => navigate('/admin')}
-              className={`px-3 py-1.5 rounded-full text-[11px] font-black flex items-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-[11px] font-black flex items-center gap-1.5 border-2 shadow-sm transition active:scale-95 cursor-pointer ${
                 hasDragon
-                  ? 'bg-black/55 hover:bg-black/80 border border-amber-400/50 text-amber-300 backdrop-blur-md'
-                  : 'bg-slate-900 hover:bg-slate-800 text-white'
+                  ? 'bg-black/45 hover:bg-black/75 border-amber-300/60 text-amber-300 backdrop-blur-2xl'
+                  : 'bg-slate-900/90 hover:bg-slate-900 border-white/70 text-white backdrop-blur-md'
               }`}
               title="Ega Paneli"
             >
@@ -258,10 +258,10 @@ export const ProfilePage: React.FC = () => {
                 await logout();
                 navigate('/login');
               }}
-              className={`p-2 rounded-full transition active:scale-95 cursor-pointer ${
+              className={`p-2 rounded-full border-2 transition active:scale-95 cursor-pointer ${
                 hasDragon
-                  ? 'bg-black/50 border border-white/15 text-white/85 hover:text-rose-400 backdrop-blur-md'
-                  : 'bg-white border border-slate-200/80 text-slate-600 hover:text-rose-600 shadow-2xs'
+                  ? 'bg-black/45 border-white/25 text-white/90 hover:text-rose-400 backdrop-blur-2xl'
+                  : 'bg-white/65 border-white/90 text-slate-700 hover:text-rose-600 backdrop-blur-xl shadow-xs'
               }`}
               title="Chiqish"
             >
@@ -334,10 +334,10 @@ export const ProfilePage: React.FC = () => {
                       key={t.id}
                       type="button"
                       onClick={() => selectDragonTheme(t.id)}
-                      className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl border text-[10.5px] font-extrabold backdrop-blur-md transition active:scale-95 cursor-pointer ${
+                      className={`flex items-center justify-center gap-1 py-2 px-2 rounded-2xl border-2 text-[10.5px] font-black backdrop-blur-xl transition active:scale-95 cursor-pointer ${
                         isActive
                           ? t.activePillClass
-                          : 'bg-black/45 border-white/15 text-white/80 hover:bg-black/65 hover:border-white/30'
+                          : 'bg-black/40 border-white/25 text-white/85 hover:bg-black/60 hover:border-white/40'
                       }`}
                       title={`${t.nameUz} — ${t.taglineUz}`}
                     >
@@ -350,17 +350,17 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="rounded-3xl bg-gradient-to-b from-indigo-50/75 via-white to-white border border-slate-200/80 px-4 pt-5 pb-4 shadow-xs flex flex-col items-center text-center">
-            <div className="relative p-1 rounded-full ring-4 ring-white shadow-sm">
+          <div className="rounded-3xl bg-white/58 backdrop-blur-2xl border-2 border-white/90 px-4 pt-5 pb-4 shadow-[0_16px_42px_-10px_rgba(15,23,42,0.14),inset_0_2px_0_rgba(255,255,255,0.96)] flex flex-col items-center text-center">
+            <div className="relative p-1.5 rounded-full ring-4 ring-white/90 shadow-lg bg-white/40">
               <Avatar src={user.avatar} name={user.displayName} size="xl" frame={user.activeFrame} vipLevel={user.vipLevel} />
             </div>
 
             <div className="mt-3 flex items-center justify-center gap-1.5">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">{user.displayName}</h2>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">{user.displayName}</h2>
               {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
               <button
                 onClick={openEditor}
-                className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition cursor-pointer"
+                className="p-1.5 rounded-full bg-white/80 hover:bg-white border border-white text-slate-700 shadow-2xs transition cursor-pointer"
                 title="Tahrirlash"
               >
                 <Pencil className="w-3 h-3" />
@@ -368,45 +368,45 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             {user.bio && (
-              <p className="mt-1 text-xs text-slate-500 max-w-[260px] line-clamp-2">{user.bio}</p>
+              <p className="mt-1 text-xs font-semibold text-slate-600 max-w-[260px] line-clamp-2">{user.bio}</p>
             )}
 
-            <div className="mt-2 flex items-center justify-center gap-2.5 flex-wrap text-xs text-slate-500 font-medium">
+            <div className="mt-2 flex items-center justify-center gap-2.5 flex-wrap text-xs text-slate-600 font-bold">
               <button
                 onClick={() => {
                   navigator.clipboard?.writeText(String(user.uid));
                   toast(`ID: ${user.uid}`, 'info');
                 }}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/75 hover:bg-white border border-white/90 text-[11px] font-black text-slate-800 shadow-2xs transition cursor-pointer"
               >
                 <span>ID {user.uid}</span>
                 <Copy className="w-3 h-3 text-slate-400" />
               </button>
-              <span><b className="text-slate-900">{user.followersCount ?? 0}</b> obunachi</span>
-              <span className="w-1 h-1 rounded-full bg-slate-300" />
-              <span><b className="text-slate-900">{user.followingCount ?? 0}</b> obuna</span>
+              <span><b className="text-slate-950 font-black">{user.followersCount ?? 0}</b> obunachi</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400/60" />
+              <span><b className="text-slate-950 font-black">{user.followingCount ?? 0}</b> obuna</span>
             </div>
 
-            {/* Balance Quick Summary */}
-            <div className="mt-3.5 pt-3 border-t border-slate-100 w-full grid grid-cols-2 gap-2">
+            {/* Frosted Crystal Balance Quick Summary */}
+            <div className="mt-4 pt-3 border-t border-white/80 w-full grid grid-cols-2 gap-2.5">
               <button
                 onClick={() => setTab('wallet')}
-                className="flex items-center justify-center gap-2 py-2 px-3 rounded-2xl bg-amber-50/90 hover:bg-amber-100/80 border border-amber-200/70 transition cursor-pointer"
+                className="flex items-center justify-center gap-2.5 py-2.5 px-3 rounded-2xl bg-amber-400/18 hover:bg-amber-400/28 backdrop-blur-md border-2 border-amber-300/65 shadow-2xs transition cursor-pointer"
               >
-                <Coins className="w-4 h-4 text-amber-500 shrink-0" />
+                <Coins className="w-4 h-4 text-amber-600 shrink-0" />
                 <div className="text-left leading-tight">
-                  <div className="text-[10px] font-bold text-amber-700">Tangalar</div>
-                  <div className="text-xs font-black text-slate-900">{(user.coins ?? 0).toLocaleString()}</div>
+                  <div className="text-[10px] font-black text-amber-800">Tangalar</div>
+                  <div className="text-sm font-black text-slate-950">{(user.coins ?? 0).toLocaleString()}</div>
                 </div>
               </button>
               <button
                 onClick={() => setTab('wallet')}
-                className="flex items-center justify-center gap-2 py-2 px-3 rounded-2xl bg-sky-50/90 hover:bg-sky-100/80 border border-sky-200/70 transition cursor-pointer"
+                className="flex items-center justify-center gap-2.5 py-2.5 px-3 rounded-2xl bg-sky-400/18 hover:bg-sky-400/28 backdrop-blur-md border-2 border-sky-300/65 shadow-2xs transition cursor-pointer"
               >
-                <Gem className="w-4 h-4 text-sky-500 shrink-0" />
+                <Gem className="w-4 h-4 text-sky-600 shrink-0" />
                 <div className="text-left leading-tight">
-                  <div className="text-[10px] font-bold text-sky-700">Olmoslar</div>
-                  <div className="text-xs font-black text-slate-900">{(user.diamonds ?? 0).toLocaleString()}</div>
+                  <div className="text-[10px] font-black text-sky-800">Olmoslar</div>
+                  <div className="text-sm font-black text-slate-950">{(user.diamonds ?? 0).toLocaleString()}</div>
                 </div>
               </button>
             </div>
@@ -418,38 +418,38 @@ export const ProfilePage: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/shop')}
-            className="w-full text-left px-3.5 py-2.5 rounded-2xl bg-white border border-amber-200/80 shadow-2xs flex items-center justify-between gap-2.5 cursor-pointer hover:border-amber-300 transition active:scale-[0.99]"
+            className="w-full text-left px-3.5 py-3 rounded-3xl bg-white/60 backdrop-blur-2xl border-2 border-amber-300/75 shadow-sm flex items-center justify-between gap-2.5 cursor-pointer hover:bg-white/80 transition active:scale-[0.99]"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200/70 flex items-center justify-center text-xl shrink-0">
+              <span className="w-10 h-10 rounded-2xl bg-amber-400/20 border-2 border-amber-300/70 flex items-center justify-center text-xl shrink-0">
                 🐉
               </span>
               <div className="min-w-0">
                 <div className="text-xs font-black text-slate-900 truncate">Ajdarho o‘rnatilmagan</div>
-                <div className="text-[10.5px] font-medium text-slate-500 truncate">Do‘kondan Xaldris ajdarhosini oling</div>
+                <div className="text-[11px] font-bold text-slate-600 truncate">Do‘kondan Xaldris ajdarhosini tekinga oling</div>
               </div>
             </div>
-            <span className="px-2.5 py-1 rounded-full bg-slate-900 text-amber-300 text-[10px] font-black shrink-0">
+            <span className="px-3 py-1.5 rounded-full bg-slate-900 text-amber-300 text-[10.5px] font-black shrink-0 shadow-xs">
               Do‘kon →
             </span>
           </button>
         )}
 
-        {/* Military Rank (1-10) & World Gem Summary (Clean, no duplicate Admin button) */}
+        {/* Military Rank (1-10) & World Gem Summary */}
         <div
-          className={`rounded-2xl px-3.5 py-2.5 text-white flex items-center justify-between gap-2 shadow-xs ${
+          className={`rounded-3xl px-4 py-3 text-white flex items-center justify-between gap-2 shadow-lg border-2 ${
             hasDragon
-              ? 'bg-black/55 backdrop-blur-md border'
-              : 'bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 border border-slate-800'
+              ? 'bg-black/42 backdrop-blur-2xl'
+              : 'bg-gradient-to-r from-slate-950/90 via-indigo-950/88 to-slate-900/90 backdrop-blur-xl border-white/30'
           }`}
           style={hasDragon ? { borderColor: dragonTheme.borderColor } : undefined}
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-sm shrink-0">
+            <span className="w-9 h-9 rounded-2xl bg-white/15 border-2 border-white/25 flex items-center justify-center text-sm shrink-0">
               <Shield className="w-4 h-4 text-amber-300" />
             </span>
             <div className="min-w-0">
-              <div className="text-[10px] font-extrabold text-amber-300 tracking-wide">
+              <div className="text-[10px] font-black text-amber-300 tracking-wide">
                 HARBIY UNVON ({currentRank.level}/10)
               </div>
               <div className="text-xs font-black truncate">
@@ -457,17 +457,17 @@ export const ProfilePage: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10.5px] font-black text-sky-200 shrink-0">
+          <div className="px-3 py-1 rounded-full bg-white/15 border-2 border-white/25 text-[11px] font-black text-sky-200 shrink-0">
             💎 {worldState.worldGems}
           </div>
         </div>
 
-        {/* 4 Compact Profile Tabs (VIP Panels live strictly in Savdo/Shop) */}
+        {/* 4 Compact Crystal Profile Tabs */}
         <div
-          className={`grid grid-cols-4 gap-1 p-1 rounded-2xl border ${
+          className={`grid grid-cols-4 gap-1.5 p-1.5 rounded-3xl border-2 ${
             hasDragon
-              ? 'bg-black/55 border-white/15 backdrop-blur-md'
-              : 'bg-white border-slate-200/80 shadow-2xs'
+              ? 'bg-black/45 border-white/25 backdrop-blur-2xl'
+              : 'bg-white/60 border-white/90 backdrop-blur-xl shadow-sm'
           }`}
         >
           {[
@@ -481,17 +481,17 @@ export const ProfilePage: React.FC = () => {
               <button
                 key={item.id}
                 onClick={() => setTab(item.id as any)}
-                className={`py-2 rounded-xl text-[10.5px] font-extrabold flex flex-col items-center gap-0.5 transition cursor-pointer ${
+                className={`py-2.5 rounded-2xl text-[11px] font-black flex flex-col items-center gap-0.5 transition cursor-pointer ${
                   tab === item.id
                     ? hasDragon
-                      ? 'bg-white text-slate-950 shadow-sm'
-                      : 'bg-slate-900 text-white shadow-xs'
+                      ? 'bg-white text-slate-950 shadow-md'
+                      : 'bg-slate-900 text-white shadow-md'
                     : hasDragon
-                    ? 'text-white/75 hover:text-white'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'text-white/80 hover:text-white'
+                    : 'text-slate-600 hover:text-slate-950'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-4 h-4" />
                 <span>{item.label}</span>
               </button>
             );

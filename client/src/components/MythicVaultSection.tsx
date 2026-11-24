@@ -89,24 +89,24 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
     <div className="space-y-3.5">
       {/* Category Segmented Tabs */}
       <div
-        className={`grid grid-cols-2 gap-1 p-1 rounded-2xl border ${
+        className={`grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl border-2 ${
           darkSurface
-            ? 'bg-black/50 border-white/15 backdrop-blur-md'
-            : 'bg-slate-100/90 border-slate-200/70'
+            ? 'bg-black/45 border-white/25 backdrop-blur-2xl'
+            : 'bg-white/55 border-white/85 backdrop-blur-xl shadow-xs'
         }`}
       >
         {tabs.map(([k, lbl]) => (
           <button
             key={k}
             onClick={() => setFilter(k)}
-            className={`py-2 px-3 rounded-xl text-xs font-extrabold whitespace-nowrap transition cursor-pointer ${
+            className={`py-2.5 px-3 rounded-xl text-xs font-black whitespace-nowrap transition cursor-pointer ${
               activeFilter === k
                 ? darkSurface
-                  ? 'bg-amber-400 text-slate-950 shadow-sm'
-                  : 'bg-white text-slate-950 shadow-xs'
+                  ? 'bg-amber-400 text-slate-950 shadow-md'
+                  : 'bg-slate-900 text-white shadow-md'
                 : darkSurface
-                ? 'text-white/75 hover:text-white'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'text-white/80 hover:text-white'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             {lbl}
@@ -118,7 +118,7 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
       {activeFilter === 'VIP' && (
         <div className="space-y-3">
           {/* Current VIP Status Banner */}
-          <div className="rounded-3xl p-4 bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 text-white shadow-md border border-amber-400/30">
+          <div className="rounded-3xl p-4 bg-gradient-to-br from-slate-950/90 via-indigo-950/90 to-purple-950/90 backdrop-blur-xl text-white shadow-lg border-2 border-amber-300/45">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <Avatar
@@ -158,12 +158,12 @@ export const MythicVaultSection: React.FC<MythicVaultSectionProps> = ({
               return (
                 <div
                   key={tier.level}
-                  className={`rounded-2xl p-3.5 border transition ${
+                  className={`rounded-3xl p-4 border-2 transition ${
                     isCosmic
-                      ? 'bg-gradient-to-br from-slate-950 via-purple-950 to-rose-950 text-white border-amber-400/50 shadow-md'
+                      ? 'bg-gradient-to-br from-slate-950/92 via-purple-950/90 to-rose-950/92 backdrop-blur-2xl text-white border-amber-300/55 shadow-lg'
                       : isCurrent
-                      ? 'bg-amber-50/70 border-amber-300'
-                      : 'bg-white border-slate-200/80'
+                      ? 'bg-amber-100/75 backdrop-blur-2xl border-amber-400 shadow-md'
+                      : 'bg-white/62 backdrop-blur-2xl border-white/90 shadow-[0_10px_28px_-8px_rgba(15,23,42,0.12),inset_0_1.5px_0_rgba(255,255,255,0.95)]'
                   }`}
                 >
                   <div className="flex items-center gap-3">
