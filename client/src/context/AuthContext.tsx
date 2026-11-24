@@ -109,14 +109,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [lang]
   );
 
-  const applyAuthenticatedProfile = useCallback(async (profile: User, silent = false) => {
+  const applyAuthenticatedProfile = useCallback(async (profile: User, silent = false, isNewSignup = false) => {
     const jwt = await syncBackendJwt(profile);
     setToken(jwt);
     setStoredUser(profile);
     resetSocket();
     setUser(profile);
     if (!silent) {
-      toast(`Xush kelibsiz, ${profile.displayName}!`, 'success');
+      toast(
+        isNewSignup
+          ? `Tabriklaymiz, ${profile.displayName}! Yangi hisob ochildi 🎉`
+          : `Xush kelibsiz, ${profile.displayName}!`,
+        'success'
+      );
     }
   }, [toast]);
 
@@ -127,8 +132,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       syncingRef.current = authUser.id;
       try {
         const existing = await fetchProfileFromSupabase(authUser.id);
+        const googleAvatar =
+          authUser.user_metadata?.avatar_url ||
+          authUser.user_metadata?.picture ||
+          '';
         if (existing) {
-          await applyAuthenticatedProfile(existing, silent);
+          if (!existing.avatar && googleAvatar) {
+            existing.avatar = googleAvatar;
+            await syncProfileToSupabase({ id: existing.id, avatar: googleAvatar });
+          }
+          await applyAuthenticatedProfile(existing, silent, false);
           return;
         }
 
@@ -139,10 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           authUser.user_metadata?.name ||
           (email ? email.split('@')[0] : 'Foydalanuvchi')
         ).trim();
-        const avatar =
-          authUser.user_metadata?.avatar_url ||
-          authUser.user_metadata?.picture ||
-          '';
+        const avatar = googleAvatar;
         const uid = Math.floor(Math.random() * 800000) + 100000;
         const baseUsername = (email ? email.split('@')[0] : rawName)
           .toLowerCase()
@@ -172,7 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.from('profiles').upsert(newRow, { onConflict: 'id' });
 
         const mapped = (await fetchProfileFromSupabase(authUser.id)) || mapDbUser(newRow);
-        await applyAuthenticatedProfile(mapped, silent);
+        await applyAuthenticatedProfile(mapped, silent, true);
       } catch (e: any) {
         console.warn('handleSupabaseAuthUser error:', e);
       } finally {
@@ -188,12 +198,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     async function initAuth() {
       try {
-        // Show clear message if OAuth returned an error query param
-        if (typeof window !== 'undefined' && window.location.search.includes('error_description=')) {
-          const sp = new URLSearchParams(window.location.search);
-          const desc = sp.get('error_description') || sp.get('error') || 'Google kirish xatoligi';
-          toast(`Google kirish xatosi: ${desc}`, 'error');
-          window.history.replaceState({}, document.title, window.location.pathname);
+        // Show clear message if OAuth returned an error in query OR hash
+        if (typeof window !== 'undefined') {
+          const rawErr =
+            (window.location.search.includes('error_description=') && window.location.search) ||
+            (window.location.hash.includes('error_description=') && window.location.hash.replace(/^#/, '?')) ||
+            '';
+          if (rawErr) {
+            const sp = new URLSearchParams(rawErr);
+            const desc = sp.get('error_description') || sp.get('error') || 'Google kirish xatoligi';
+            toast(`Google xatosi: ${desc}`, 'error');
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
         }
 
         if (isSupabaseConfigured) {
