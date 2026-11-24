@@ -253,3 +253,23 @@
 .animate-dragon-arrive {
   animation: dragon-arrive 3.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
+
+@keyframes water-jelly {
+  0% { transform: scale(1, 1); }
+  22% { transform: scale(0.84, 1.16); }
+  46% { transform: scale(1.14, 0.88); }
+  70% { transform: scale(0.95, 1.05); }
+  86% { transform: scale(1.03, 0.98); }
+  100% { transform: scale(1, 1); }
+}
+.animate-water-jelly {
+  animation: water-jelly 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes water-ripple {
+  0% { transform: scale(0.18); opacity: 0.85; }
+  100% { transform: scale(2.3); opacity: 0; }
+}
+.animate-water-ripple {
+  animation: water-ripple 540ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
