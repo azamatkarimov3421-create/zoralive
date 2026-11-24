@@ -15,6 +15,7 @@ import { VideoCanvas } from '../components/VideoCanvas';
 import { GiftDrawer } from '../components/GiftDrawer';
 import { GiftOverlay } from '../components/GiftOverlay';
 import { EntryBanner, EntryRideEvent } from '../components/EntryBanner';
+import { HostExitModal, HostCandidate } from '../components/HostExitModal';
 import { PkVsCrest } from '../components/LuxuryBadges';
 import { sfx } from '../lib/sound';
 
@@ -41,6 +42,13 @@ export const VideoRoomPage: React.FC = () => {
   const [rightRelayFrame, setRightRelayFrame] = useState<string | null>(null);
 
   const [giftDrawerOpen, setGiftDrawerOpen] = useState(false);
+  const [hostExitOpen, setHostExitOpen] = useState(false);
+  const [closesAt, setClosesAt] = useState<number>(() => {
+    const saved = roomId ? Number(localStorage.getItem(`zoralive_room_close_${roomId}`) || 0) : 0;
+    return saved > Date.now() ? saved : 0;
+  });
+  const [closeRemainingSec, setCloseRemainingSec] = useState(0);
+  const [viewersList, setViewersList] = useState<HostCandidate[]>([]);
   const [activeGiftAnim, setActiveGiftAnim] = useState<GiftEvent | null>(null);
   const [entryRide, setEntryRide] = useState<EntryRideEvent | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -68,6 +76,28 @@ export const VideoRoomPage: React.FC = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
+
+  useEffect(() => {
+    if (!closesAt) {
+      setCloseRemainingSec(0);
+      return;
+    }
+    const tick = () => {
+      const rem = Math.max(0, Math.ceil((closesAt - Date.now()) / 1000));
+      setCloseRemainingSec(rem);
+      if (rem === 0 && roomId) {
+        localStorage.removeItem(`zoralive_room_close_${roomId}`);
+        api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {});
+        localStreamRef.current?.getTracks().forEach((t) => t.stop());
+        localStreamRef.current = null;
+        toast('Xona taymeri tugadi va yopildi', 'info');
+        navigate('/');
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [closesAt, roomId]);
 
   useEffect(() => {
     if (!pk?.active) {
@@ -153,6 +183,7 @@ export const VideoRoomPage: React.FC = () => {
 
     const onState = (s: any) => {
       setViewerCount(s.viewerCount || 0);
+      if (Array.isArray(s.viewers)) setViewersList(s.viewers);
       setMessages((prev) => {
         const serverMsgs: RoomChatMessage[] = s.messages || [];
         if (prev.length === 0) return serverMsgs;
@@ -217,6 +248,23 @@ export const VideoRoomPage: React.FC = () => {
     };
     const onWallet = ({ coins }: { coins: number }) => updateCoinsLocally(coins);
     const onErr = ({ message }: { message: string }) => toast(message, 'error');
+    const onScheduleClose = ({ closesAt: ts }: { closesAt: number }) => {
+      if (ts > Date.now() && roomId) {
+        localStorage.setItem(`zoralive_room_close_${roomId}`, String(ts));
+        setClosesAt(ts);
+      }
+    };
+    const onRoomClosed = () => {
+      if (roomId) localStorage.removeItem(`zoralive_room_close_${roomId}`);
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
+      localStreamRef.current = null;
+      toast('Xona muallif tomonidan yopildi', 'info');
+      navigate('/');
+    };
+    const onTransferHost = ({ newHostId, newHostName }: { newHostId: string; newHostName: string }) => {
+      setRoomMeta((prev: any) => (prev ? { ...prev, hostId: newHostId, host: { ...prev.host, id: newHostId, displayName: newHostName } } : prev));
+      toast(`Yangi xona boshqaruvchisi: ${newHostName}`, 'info');
+    };
 
     const createVideoPeer = (targetPeerId: string, initiator: boolean, side: 'left' | 'right' = 'left') => {
       peersRef.current.get(targetPeerId)?.close();
@@ -316,6 +364,9 @@ export const VideoRoomPage: React.FC = () => {
     socket.on('room:entry_ride', onRide);
     socket.on('wallet:updated', onWallet);
     socket.on('room:error', onErr);
+    socket.on('room:schedule_close', onScheduleClose);
+    socket.on('room:closed', onRoomClosed);
+    socket.on('room:transfer_host', onTransferHost);
     socket.on('video:host_status', onHostStatus);
     socket.on('video:request', onVideoRequest);
     socket.on('video:relay_frame', onRelayFrame);
@@ -336,6 +387,9 @@ export const VideoRoomPage: React.FC = () => {
       socket.off('room:entry_ride', onRide);
       socket.off('wallet:updated', onWallet);
       socket.off('room:error', onErr);
+      socket.off('room:schedule_close', onScheduleClose);
+      socket.off('room:closed', onRoomClosed);
+      socket.off('room:transfer_host', onTransferHost);
       socket.off('video:host_status', onHostStatus);
       socket.off('video:request', onVideoRequest);
       socket.off('video:relay_frame', onRelayFrame);
@@ -498,6 +552,11 @@ export const VideoRoomPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
+          {closeRemainingSec > 0 && (
+            <span className="px-2 py-1 rounded-full bg-amber-400/20 border border-amber-300 text-amber-800 text-[10px] font-black">
+              ⏱ {formatTimer(closeRemainingSec)}
+            </span>
+          )}
           <span className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-slate-100 text-xs font-bold text-slate-700">
             <Users className="w-3.5 h-3.5 text-[#ff3366]" />
             {viewerCount}
@@ -506,17 +565,12 @@ export const VideoRoomPage: React.FC = () => {
             {cameraStream ? <Video className="w-4 h-4 text-emerald-600" /> : <VideoOff className="w-4 h-4" />}
           </button>
           <button
-            onClick={async () => {
-              if (relayTimerRef.current) {
-                window.clearInterval(relayTimerRef.current);
-                relayTimerRef.current = null;
+            onClick={() => {
+              if (roomMeta?.hostId === user?.id) {
+                setHostExitOpen(true);
+                return;
               }
-              if (roomId) {
-                getSocket().emit('room:leave', { roomId });
-                if (roomMeta?.hostId === user?.id) {
-                  await api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {});
-                }
-              }
+              if (roomId) getSocket().emit('room:leave', { roomId });
               localStreamRef.current?.getTracks().forEach((t) => t.stop());
               localStreamRef.current = null;
               cameraStream?.getTracks().forEach((t) => t.stop());
@@ -691,6 +745,60 @@ export const VideoRoomPage: React.FC = () => {
         onOpenTopup={() => navigate('/profile?tab=wallet')}
         onSend={({ giftId, quantity, receiverId, pkSide }) => {
           getSocket().emit('room:gift', { roomId, receiverId, giftId, quantity, pkSide });
+        }}
+      />
+
+      <HostExitModal
+        open={hostExitOpen}
+        onClose={() => setHostExitOpen(false)}
+        candidates={viewersList.filter((v) => v.id !== user?.id)}
+        onCloseNow={async () => {
+          setHostExitOpen(false);
+          if (relayTimerRef.current) {
+            window.clearInterval(relayTimerRef.current);
+            relayTimerRef.current = null;
+          }
+          if (roomId) {
+            localStorage.removeItem(`zoralive_room_close_${roomId}`);
+            getSocket().emit('room:close_now', { roomId });
+            await api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {});
+          }
+          localStreamRef.current?.getTracks().forEach((t) => t.stop());
+          localStreamRef.current = null;
+          cameraStream?.getTracks().forEach((t) => t.stop());
+          setCameraStream(null);
+          navigate('/');
+        }}
+        onScheduleClose={(mins) => {
+          setHostExitOpen(false);
+          if (!roomId) return;
+          const ts = Date.now() + mins * 60_000;
+          localStorage.setItem(`zoralive_room_close_${roomId}`, String(ts));
+          setClosesAt(ts);
+          getSocket().emit('room:schedule_close', { roomId, closesAt: ts });
+          toast(`Xona ${mins} daqiqadan so‘ng avtomatik yopiladi`, 'info');
+          localStreamRef.current?.getTracks().forEach((t) => t.stop());
+          localStreamRef.current = null;
+          cameraStream?.getTracks().forEach((t) => t.stop());
+          setCameraStream(null);
+          navigate('/');
+        }}
+        onTransferHost={(candidate) => {
+          setHostExitOpen(false);
+          if (roomId) {
+            getSocket().emit('room:transfer_host', {
+              roomId,
+              newHostId: candidate.id,
+              newHostName: candidate.displayName,
+            });
+            getSocket().emit('room:leave', { roomId });
+          }
+          localStreamRef.current?.getTracks().forEach((t) => t.stop());
+          localStreamRef.current = null;
+          cameraStream?.getTracks().forEach((t) => t.stop());
+          setCameraStream(null);
+          toast(`Xona ${candidate.displayName} ga topshirildi`, 'success');
+          navigate('/');
         }}
       />
     </div>

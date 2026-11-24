@@ -318,6 +318,15 @@ class SupabaseRealtimeSocket {
             .on('broadcast', { event: 'room:notice_changed' }, ({ payload }) => {
               if (payload) this.trigger('room:notice_changed', payload);
             })
+            .on('broadcast', { event: 'room:schedule_close' }, ({ payload }) => {
+              if (payload) this.trigger('room:schedule_close', payload);
+            })
+            .on('broadcast', { event: 'room:closed' }, ({ payload }) => {
+              if (payload) this.trigger('room:closed', payload);
+            })
+            .on('broadcast', { event: 'room:transfer_host' }, ({ payload }) => {
+              if (payload) this.trigger('room:transfer_host', payload);
+            })
             .on('broadcast', { event: 'room:lucky_box' }, ({ payload }) => {
               this.activeBox = payload?.box ?? null;
               this.trigger('room:lucky_box', this.activeBox);
@@ -547,6 +556,22 @@ class SupabaseRealtimeSocket {
         const noticePayload = { notice: data.notice || '' };
         this.trigger('room:notice_changed', noticePayload);
         this.broadcastRoom('room:notice_changed', noticePayload);
+      } else if (event === 'room:schedule_close') {
+        const payload = { roomId: data.roomId || this.currentRoomId, closesAt: Number(data.closesAt) || 0 };
+        this.trigger('room:schedule_close', payload);
+        this.broadcastRoom('room:schedule_close', payload);
+      } else if (event === 'room:close_now') {
+        const payload = { roomId: data.roomId || this.currentRoomId };
+        this.trigger('room:closed', payload);
+        this.broadcastRoom('room:closed', payload);
+      } else if (event === 'room:transfer_host') {
+        const payload = {
+          roomId: data.roomId || this.currentRoomId,
+          newHostId: data.newHostId,
+          newHostName: data.newHostName,
+        };
+        this.trigger('room:transfer_host', payload);
+        this.broadcastRoom('room:transfer_host', payload);
       } else if (event === 'room:lucky_box_drop') {
         const totalCoins = Number(data.totalCoins || 500);
         const nextCoins = u.coins || 0;

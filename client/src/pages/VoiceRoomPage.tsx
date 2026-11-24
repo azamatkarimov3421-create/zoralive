@@ -39,6 +39,7 @@ import { Avatar } from '../components/Avatar';
 import { GiftDrawer } from '../components/GiftDrawer';
 import { GiftOverlay } from '../components/GiftOverlay';
 import { EntryBanner, EntryRideEvent } from '../components/EntryBanner';
+import { HostExitModal, HostCandidate } from '../components/HostExitModal';
 import { LiveWaveBars, getStageWallpaper } from '../components/LuxuryBadges';
 import { ANIMATED_FRAMES, getAnimatedFrameUrl } from '../lib/mythicCatalog';
 import { sfx } from '../lib/sound';
@@ -93,6 +94,12 @@ export const VoiceRoomPage: React.FC = () => {
   const [viewersOpen, setViewersOpen] = useState(false);
   const [viewersTab, setViewersTab] = useState<'online' | 'gifters'>('online');
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [hostExitOpen, setHostExitOpen] = useState(false);
+  const [closesAt, setClosesAt] = useState<number>(() => {
+    const saved = roomId ? Number(localStorage.getItem(`zoralive_room_close_${roomId}`) || 0) : 0;
+    return saved > Date.now() ? saved : 0;
+  });
+  const [closeRemainingSec, setCloseRemainingSec] = useState(0);
   const [noticeDraft, setNoticeDraft] = useState('');
 
   const [micMuted, setMicMuted] = useState(false);
@@ -109,6 +116,28 @@ export const VoiceRoomPage: React.FC = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
+
+  useEffect(() => {
+    if (!closesAt) {
+      setCloseRemainingSec(0);
+      return;
+    }
+    const tick = () => {
+      const rem = Math.max(0, Math.ceil((closesAt - Date.now()) / 1000));
+      setCloseRemainingSec(rem);
+      if (rem === 0 && roomId) {
+        localStorage.removeItem(`zoralive_room_close_${roomId}`);
+        api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {});
+        stopAudio();
+        leaveVoiceRoomMeta();
+        toast('Xona taymeri tugadi va yopildi', 'info');
+        navigate('/');
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [closesAt, roomId]);
 
   const stopAudio = () => {
     sfx.stopMusic();
@@ -322,6 +351,23 @@ export const VoiceRoomPage: React.FC = () => {
       setNotice(n);
       setNoticeDraft(n);
     };
+    const onScheduleClose = ({ closesAt: ts }: { closesAt: number }) => {
+      if (ts > Date.now() && roomId) {
+        localStorage.setItem(`zoralive_room_close_${roomId}`, String(ts));
+        setClosesAt(ts);
+      }
+    };
+    const onRoomClosed = () => {
+      if (roomId) localStorage.removeItem(`zoralive_room_close_${roomId}`);
+      stopAudio();
+      leaveVoiceRoomMeta();
+      toast('Xona muallif tomonidan yopildi', 'info');
+      navigate('/');
+    };
+    const onTransferHost = ({ newHostId, newHostName }: { newHostId: string; newHostName: string }) => {
+      setRoomMeta((prev: any) => (prev ? { ...prev, hostId: newHostId, host: { ...prev.host, id: newHostId, displayName: newHostName } } : prev));
+      toast(`Yangi xona boshqaruvchisi: ${newHostName}`, 'info');
+    };
     const onReaction = (r: { id: string; seatIndex: number; emoji: string; displayName: string }) => {
       if (r.seatIndex >= 0) {
         setSeatReactions((prev) => ({ ...prev, [r.seatIndex]: { id: r.id, emoji: r.emoji } }));
@@ -390,6 +436,9 @@ export const VoiceRoomPage: React.FC = () => {
     socket.on('room:message', onMsg);
     socket.on('room:theme_changed', onTheme);
     socket.on('room:notice_changed', onNotice);
+    socket.on('room:schedule_close', onScheduleClose);
+    socket.on('room:closed', onRoomClosed);
+    socket.on('room:transfer_host', onTransferHost);
     socket.on('seat:reaction', onReaction);
     socket.on('room:sfx', onSfx);
     socket.on('room:lucky_box', onLuckyBox);
@@ -412,6 +461,9 @@ export const VoiceRoomPage: React.FC = () => {
       socket.off('room:message', onMsg);
       socket.off('room:theme_changed', onTheme);
       socket.off('room:notice_changed', onNotice);
+      socket.off('room:schedule_close', onScheduleClose);
+      socket.off('room:closed', onRoomClosed);
+      socket.off('room:transfer_host', onTransferHost);
       socket.off('seat:reaction', onReaction);
       socket.off('room:sfx', onSfx);
       socket.off('room:lucky_box', onLuckyBox);
@@ -574,6 +626,11 @@ export const VoiceRoomPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
+          {closeRemainingSec > 0 && (
+            <span className="px-2 py-1 rounded-full bg-amber-400/20 border border-amber-300 text-amber-800 text-[10px] font-black">
+              ⏱ {String(Math.floor(closeRemainingSec / 60)).padStart(2, '0')}:{String(closeRemainingSec % 60).padStart(2, '0')}
+            </span>
+          )}
           <button
             onClick={() => setViewersOpen(true)}
             className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold ${isLight ? 'bg-white/65 backdrop-blur-xl border border-white/85 text-slate-700' : 'glass-dark text-white'}`}
@@ -594,13 +651,12 @@ export const VoiceRoomPage: React.FC = () => {
             <MoreHorizontal className="w-4 h-4" />
           </button>
           <button
-            onClick={async () => {
-              if (roomId) {
-                getSocket().emit('room:leave', { roomId });
-                if (roomMeta?.hostId === user?.id) {
-                  await api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {});
-                }
+            onClick={() => {
+              if (roomMeta?.hostId === user?.id) {
+                setHostExitOpen(true);
+                return;
               }
+              if (roomId) getSocket().emit('room:leave', { roomId });
               stopAudio();
               leaveVoiceRoomMeta();
               navigate('/');
@@ -1162,6 +1218,57 @@ export const VoiceRoomPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <HostExitModal
+        open={hostExitOpen}
+        onClose={() => setHostExitOpen(false)}
+        candidates={[
+          ...seats
+            .filter((s) => s.userId && s.userId !== user?.id)
+            .map((s) => ({ id: s.userId!, displayName: s.displayName, avatar: s.avatar })),
+          ...viewersList
+            .filter((v) => v.id !== user?.id && !seats.some((s) => s.userId === v.id))
+            .map((v) => ({ id: v.id, displayName: v.displayName, avatar: v.avatar })),
+        ] as HostCandidate[]}
+        onCloseNow={async () => {
+          setHostExitOpen(false);
+          if (roomId) {
+            localStorage.removeItem(`zoralive_room_close_${roomId}`);
+            getSocket().emit('room:close_now', { roomId });
+            await api(`/rooms/${roomId}/close`, { method: 'POST' }).catch(() => {});
+          }
+          stopAudio();
+          leaveVoiceRoomMeta();
+          navigate('/');
+        }}
+        onScheduleClose={(mins) => {
+          setHostExitOpen(false);
+          if (!roomId) return;
+          const ts = Date.now() + mins * 60_000;
+          localStorage.setItem(`zoralive_room_close_${roomId}`, String(ts));
+          setClosesAt(ts);
+          getSocket().emit('room:schedule_close', { roomId, closesAt: ts });
+          toast(`Xona ${mins} daqiqadan so‘ng avtomatik yopiladi`, 'info');
+          stopAudio();
+          leaveVoiceRoomMeta();
+          navigate('/');
+        }}
+        onTransferHost={(candidate) => {
+          setHostExitOpen(false);
+          if (roomId) {
+            getSocket().emit('room:transfer_host', {
+              roomId,
+              newHostId: candidate.id,
+              newHostName: candidate.displayName,
+            });
+            getSocket().emit('room:leave', { roomId });
+          }
+          stopAudio();
+          leaveVoiceRoomMeta();
+          toast(`Xona ${candidate.displayName} ga topshirildi`, 'success');
+          navigate('/');
+        }}
+      />
     </div>
   );
 };

@@ -189,7 +189,8 @@ export async function fetchRoomsFromSupabase(): Promise<RoomSummary[] | null> {
       data = fallback.data;
     }
 
-    if (!data || data.length === 0) return null;
+    if (error) return null;
+    if (!data || data.length === 0) return [];
 
     return data.map((r: any, idx: number) => {
       const cat = String(r.category || '').toUpperCase();
@@ -326,6 +327,7 @@ export async function closeRoomInSupabase(roomId: string): Promise<void> {
   if (!isSupabaseConfigured) return;
   try {
     await supabase.from('rooms').update({ is_live: false }).eq('id', roomId);
+    await supabase.from('rooms').delete().eq('id', roomId);
   } catch (e) {
     console.warn('Failed to close room in Supabase:', e);
   }
