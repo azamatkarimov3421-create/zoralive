@@ -35,7 +35,7 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
         api<{ rooms: RoomSummary[] }>(`/rooms${qs}`).catch(() => ({ rooms: [] as RoomSummary[] })),
         fetchRoomsFromSupabase().catch(() => null),
       ]);
-      const source = supaRooms && supaRooms.length > 0 ? supaRooms : res.rooms || [];
+      const source = supaRooms !== null ? supaRooms : res.rooms || [];
       const combined: RoomSummary[] = [];
       const seen = new Set<string>();
       for (const r of source) {

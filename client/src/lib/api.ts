@@ -368,7 +368,8 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
       const m = path.match(/^\/rooms\/([^/?]+)\/close$/);
       if (m?.[1]) {
         mockRooms = mockRooms.filter((r) => r.id !== m[1]);
-        closeRoomInSupabase(m[1]);
+        saveLocalDb();
+        await closeRoomInSupabase(m[1]);
       }
       return { ok: true } as unknown as T;
     }
@@ -403,7 +404,7 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     const onlyFollowing = params.get('following') === '1';
 
     const supaRooms = await fetchRoomsFromSupabase();
-    let list = supaRooms && supaRooms.length > 0 ? supaRooms : [...mockRooms];
+    let list = supaRooms !== null ? supaRooms : [...mockRooms];
     if (onlyFollowing) list = list.filter((r) => mockFollows.has(r.hostId));
     else if (typeFilter && typeFilter !== 'ALL') list = list.filter((r) => r.type === typeFilter);
     if (q) {
