@@ -9,7 +9,7 @@ export interface User {
   bio: string;
   country: string;
   gender: string;
-  role: 'USER' | 'HOST' | 'AGENCY' | 'ADMIN';
+  role: 'USER' | 'HOST' | 'AGENT' | 'AGENCY' | 'ADMIN' | 'SUPER_ADMIN' | 'MANAGER' | 'OWNER';
   coins: number;
   diamonds: number;
   wealthXp: number;

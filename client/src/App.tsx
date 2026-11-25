@@ -12,6 +12,7 @@ import { ShopPage } from './pages/ShopPage';
 import { SocialPage } from './pages/SocialPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { GovernanceSuitePage } from './pages/GovernanceSuitePage';
+import { StaffRolePanelPage } from './pages/StaffRolePanelPage';
 import { BottomNav } from './components/BottomNav';
 import { FloatingVoiceBar } from './components/FloatingVoiceBar';
 import { CreateRoomModal } from './components/CreateRoomModal';
@@ -169,6 +170,7 @@ const AppShell: React.FC = () => {
             <Route path="/shop" element={<ShopPage />} />
             <Route path="/social" element={<SocialPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/staff-panel" element={<StaffRolePanelPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

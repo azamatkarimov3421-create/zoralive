@@ -423,6 +423,34 @@ export const ProfilePage: React.FC = () => {
           </div>
         )}
 
+        {/* Appointed Role Panel Shortcut (for any non-USER role) */}
+        {user.role && user.role !== 'USER' && (
+          <button
+            type="button"
+            onClick={() => navigate('/staff-panel')}
+            className={`w-full rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 border cursor-pointer transition active:scale-[0.99] ${
+              hasDragon
+                ? 'bg-indigo-500/25 border-indigo-300/40 text-white backdrop-blur-xl'
+                : 'bg-indigo-50/90 border-indigo-200 text-indigo-950'
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-base">🛡️</span>
+              <div className="text-left min-w-0">
+                <div className="text-xs font-black truncate">
+                  {user.role} — Boshqaruv Paneli
+                </div>
+                <div className={`text-[10px] font-semibold ${hasDragon ? 'text-white/75' : 'text-indigo-700'}`}>
+                  Vazifalar va quyi rollarni tayinlash
+                </div>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-indigo-600 text-white text-[10px] font-black shrink-0">
+              Ochish →
+            </span>
+          </button>
+        )}
+
         {/* Compact Harbiy Unvon & World Gem Row */}
         <div
           className={`rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 border ${

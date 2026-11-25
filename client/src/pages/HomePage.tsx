@@ -155,6 +155,16 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
               {searchOpen ? <X className="w-3.5 h-3.5" /> : <Search className="w-3.5 h-3.5" />}
             </button>
 
+            {user?.role && user.role !== 'USER' && (
+              <button
+                onClick={() => navigate('/staff-panel')}
+                className="px-2 py-1 rounded-full bg-indigo-600 text-white text-[10px] font-black hover:bg-indigo-700 shadow-xs cursor-pointer"
+                title="Mening boshqaruv panelim"
+              >
+                Panelim
+              </button>
+            )}
+
             <button
               onClick={() => navigate('/admin')}
               className="p-1.5 rounded-full bg-slate-900 text-amber-300 hover:bg-slate-800"
