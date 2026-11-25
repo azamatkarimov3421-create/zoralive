@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Trophy, MessageCircle, Users, Send, ArrowLeft, Search, Heart, Image as ImageIcon, Flame } from 'lucide-react';
 import { api } from '../lib/api';
 import { fetchAllProfilesFromSupabase } from '../lib/supabaseSync';
@@ -30,6 +31,7 @@ function compressImage(file: File, maxDim = 720): Promise<string> {
 }
 
 export const SocialPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, toast } = useAuth();
   const [section, setSection] = useState<'rank' | 'moments' | 'chat' | 'people'>('rank');
   const [rankType, setRankType] = useState<'wealth' | 'charm' | 'agency'>('wealth');
@@ -238,7 +240,19 @@ export const SocialPage: React.FC = () => {
   const scoreOf = (u: User) => (rankType === 'charm' ? u.charmXp : u.wealthXp);
 
   return (
-    <div className="bg-transparent min-h-full px-3.5 pt-3 pb-24 space-y-4">
+    <div className="bg-transparent min-h-full px-3.5 pt-3 pb-24 space-y-3.5">
+      <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="p-2 rounded-full bg-white/70 backdrop-blur-xl border border-white/90 text-slate-700 hover:bg-white shadow-2xs active:scale-95 transition cursor-pointer"
+          title="Orqaga"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <h1 className="text-base font-black text-slate-900">Ijtimoiy Markaz</h1>
+      </div>
+
       <div className="grid grid-cols-4 gap-1 bg-white/60 backdrop-blur-xl border border-white/90 p-1 rounded-2xl shadow-xs">
         {[
           { id: 'rank', label: 'Reyting', icon: Trophy },

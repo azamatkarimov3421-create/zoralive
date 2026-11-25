@@ -542,30 +542,32 @@ export const VideoRoomPage: React.FC = () => {
   const activeThemeBg = BG_THEMES.find((t) => t.id === roomTheme)?.image;
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent relative overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-[#080b18] text-white relative overflow-hidden">
       {activeThemeBg && (
         <div className="pointer-events-none select-none fixed inset-0 z-0">
           <img src={activeThemeBg} alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-slate-950/35" />
+          <div className="absolute inset-0 bg-slate-950/45" />
         </div>
       )}
       <EntryBanner event={entryRide} />
       <GiftOverlay gift={activeGiftAnim} />
 
-      {/* Header */}
-      <header className="px-3 py-2.5 bg-white/65 backdrop-blur-2xl border-b border-white/85 flex items-center justify-between gap-2 z-30">
+      {/* Cinema Glass Header */}
+      <header className="px-3 py-2.5 bg-slate-950/65 backdrop-blur-2xl border-b border-white/15 flex items-center justify-between gap-2 z-30">
         <div className="flex items-center gap-2 min-w-0">
           <Avatar src={roomMeta?.host?.avatar} name={roomMeta?.host?.displayName} size="sm" />
           <div className="min-w-0">
-            <div className="text-xs font-extrabold text-slate-900 truncate max-w-[140px]">
+            <div className="text-xs font-extrabold text-white truncate max-w-[130px]">
               {roomMeta?.title || roomMeta?.host?.displayName}
             </div>
-            <div className="text-[10px] font-bold text-amber-600">🪙 {totalGifts.toLocaleString()}</div>
+            <div className="text-[10px] font-bold text-amber-300">🪙 {totalGifts.toLocaleString()}</div>
           </div>
           {roomMeta?.hostId !== user?.id && (
             <button
               onClick={toggleFollow}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${isFollowing ? 'bg-slate-100 text-slate-600' : 'btn-brand'}`}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold cursor-pointer ${
+                isFollowing ? 'bg-white/15 text-white/85' : 'btn-brand'
+              }`}
             >
               {isFollowing ? '✓' : 'Obuna'}
             </button>
@@ -574,25 +576,33 @@ export const VideoRoomPage: React.FC = () => {
 
         <div className="flex items-center gap-1.5 shrink-0">
           {closeRemainingSec > 0 && (
-            <span className="px-2 py-1 rounded-full bg-amber-400/20 border border-amber-300 text-amber-800 text-[10px] font-black">
+            <span className="px-2 py-1 rounded-full bg-amber-400/20 border border-amber-300/50 text-amber-300 text-[10px] font-black">
               ⏱ {formatTimer(closeRemainingSec)}
             </span>
           )}
-          <span className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-slate-100 text-xs font-bold text-slate-700">
+          <span className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/12 border border-white/15 text-xs font-bold text-white">
             <Users className="w-3.5 h-3.5 text-[#ff3366]" />
             {viewerCount}/{roomSettings.maxCapacity}
           </span>
           {roomMeta?.hostId === user?.id && (
             <button
               onClick={() => setLockModalOpen(true)}
-              className={`p-2 rounded-full ${roomSettings.isLocked ? 'bg-amber-400/25 text-amber-700' : 'bg-slate-100 text-slate-700'}`}
+              className={`p-2 rounded-full border cursor-pointer ${
+                roomSettings.isLocked
+                  ? 'bg-amber-400/25 border-amber-300/50 text-amber-300'
+                  : 'bg-white/12 border-white/15 text-white'
+              }`}
               title="Xona qulfi va parol"
             >
               {roomSettings.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
             </button>
           )}
-          <button onClick={toggleCamera} className="p-2 rounded-full bg-slate-100 text-slate-700">
-            {cameraStream ? <Video className="w-4 h-4 text-emerald-600" /> : <VideoOff className="w-4 h-4" />}
+          <button
+            onClick={toggleCamera}
+            className="p-2 rounded-full bg-white/12 border border-white/15 text-white cursor-pointer"
+            title="Kamera"
+          >
+            {cameraStream ? <Video className="w-4 h-4 text-emerald-400" /> : <VideoOff className="w-4 h-4 text-white/75" />}
           </button>
           <button
             onClick={() => {
@@ -607,7 +617,7 @@ export const VideoRoomPage: React.FC = () => {
               setCameraStream(null);
               navigate('/');
             }}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-rose-500/15 border border-rose-300/70 text-rose-700 text-[11px] font-black hover:bg-rose-500/25 transition cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-rose-500/25 border border-rose-400/50 text-rose-200 text-[11px] font-black hover:bg-rose-500/35 transition cursor-pointer"
             title={roomMeta?.hostId === user?.id ? 'Efirni yopish' : 'Efirdan chiqish'}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -697,25 +707,25 @@ export const VideoRoomPage: React.FC = () => {
         )}
 
         {/* Chat */}
-        <div className="flex-1 px-3 py-2 overflow-y-auto no-scrollbar max-h-[26vh] space-y-1.5 bg-transparent">
+        <div className="flex-1 px-3 py-2 overflow-y-auto no-scrollbar max-h-[28vh] space-y-1.5 bg-transparent relative z-10">
           {messages.map((m) => (
             <div key={m.id}>
               {m.type === 'SYSTEM' ? (
-                <span className="inline-block px-2.5 py-1 rounded-xl bg-white/70 backdrop-blur-md border border-white/85 text-[11px] text-slate-600">
+                <span className="inline-block px-2.5 py-1 rounded-xl bg-black/45 backdrop-blur-md border border-white/15 text-[11px] text-white/80">
                   {m.text}
                 </span>
               ) : m.type === 'GIFT' ? (
-                <span className="inline-block px-2.5 py-1 rounded-xl bg-amber-50/85 backdrop-blur-md border border-amber-200 text-[11px] text-amber-700 font-bold">
+                <span className="inline-block px-2.5 py-1 rounded-xl bg-amber-400/20 backdrop-blur-md border border-amber-300/40 text-[11px] text-amber-200 font-bold">
                   🎁 {m.text}
                 </span>
               ) : (
-                <div className={`inline-block px-3 py-1.5 rounded-2xl text-xs ${m.bubble || 'bg-white/75 backdrop-blur-md border border-white/90 text-slate-900'}`}>
+                <div className={`inline-block px-3 py-1.5 rounded-2xl text-xs ${m.bubble || 'bg-black/45 backdrop-blur-md border border-white/15 text-white'}`}>
                   {m.vipLevel && m.vipLevel > 0 ? (
                     <span className="inline-block mr-1 px-1.5 py-0.2 rounded-md bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-[9px] font-black shadow-xs">
                       V{m.vipLevel}
                     </span>
                   ) : null}
-                  <span className="font-extrabold text-[#ff3366] mr-1.5">{m.displayName}:</span>
+                  <span className="font-extrabold text-amber-300 mr-1.5">{m.displayName}:</span>
                   <span>{m.text}</span>
                 </div>
               )}
@@ -726,15 +736,15 @@ export const VideoRoomPage: React.FC = () => {
       </div>
 
       {/* Bottom Dock */}
-      <footer className="px-3 py-2.5 bg-white/65 backdrop-blur-2xl border-t border-white/85 flex items-center gap-1.5 z-20">
-        <form onSubmit={sendChat} className="flex-1 flex items-center gap-1.5 bg-white/75 border border-white/90 rounded-full px-3 py-1.5">
+      <footer className="px-3 py-2.5 bg-slate-950/75 backdrop-blur-2xl border-t border-white/15 flex items-center gap-1.5 z-20">
+        <form onSubmit={sendChat} className="flex-1 flex items-center gap-1.5 bg-white/12 border border-white/20 rounded-full px-3 py-1.5">
           <input
             value={chatText}
             onChange={(e) => setChatText(e.target.value)}
             placeholder="Yozing..."
-            className="flex-1 bg-transparent text-xs text-slate-900 focus:outline-none min-w-0"
+            className="flex-1 bg-transparent text-xs text-white placeholder:text-white/50 focus:outline-none min-w-0"
           />
-          <button type="submit" className="text-[#ff3366]">
+          <button type="submit" className="text-amber-300 cursor-pointer">
             <Send className="w-4 h-4" />
           </button>
         </form>

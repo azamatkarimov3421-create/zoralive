@@ -186,8 +186,8 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
 
         {/* Expandable Search Input */}
         {searchOpen && (
-          <div className="flex items-center gap-2 bg-slate-100 rounded-full px-3.5 py-2">
-            <Search className="w-3.5 h-3.5 text-slate-400" />
+          <div className="flex items-center gap-2 bg-white/75 backdrop-blur-md border border-white/90 rounded-full px-3.5 py-2 shadow-2xs">
+            <Search className="w-3.5 h-3.5 text-slate-500" />
             <input
               autoFocus
               value={searchQ}
@@ -196,7 +196,7 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
                 loadRooms(e.target.value);
               }}
               placeholder="Xona nomi, ID yoki host qidiring..."
-              className="flex-1 bg-transparent text-xs text-slate-900 focus:outline-none"
+              className="flex-1 bg-transparent text-xs font-semibold text-slate-900 focus:outline-none"
             />
           </div>
         )}

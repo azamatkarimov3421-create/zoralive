@@ -6,13 +6,11 @@ import { useAuth } from '../context/AuthContext';
 export const BottomNav: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t, user } = useAuth();
+  const { t } = useAuth();
   const [tappedKey, setTappedKey] = useState<string | null>(null);
   const timerRef = useRef<number | null>(null);
 
-  const isDarkDragonProfile =
-    location.pathname === '/profile' &&
-    Boolean(user?.activeRide && user.activeRide.includes('dragon') && user.activeRide !== 'none');
+  const isDarkDragonProfile = location.pathname === '/profile';
 
   const triggerWaterTap = (key: string) => {
     if (timerRef.current) window.clearTimeout(timerRef.current);

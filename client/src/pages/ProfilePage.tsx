@@ -839,7 +839,7 @@ export const ProfilePage: React.FC = () => {
                       onClick={() => setTab(item.id as any)}
                       className={`py-2 rounded-xl text-[11px] font-black flex flex-col items-center gap-0.5 transition cursor-pointer ${
                         tab === item.id
-                          ? 'bg-white text-slate-950 shadow-md'
+                          ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 shadow-md'
                           : 'text-white/75 hover:text-white'
                       }`}
                     >
