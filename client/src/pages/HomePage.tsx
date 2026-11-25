@@ -165,13 +165,15 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
               </button>
             )}
 
-            <button
-              onClick={() => navigate('/admin')}
-              className="p-1.5 rounded-full bg-slate-900 text-amber-300 hover:bg-slate-800"
-              title="Owner & 7 Boshqaruv Paneli"
-            >
-              <Shield className="w-3.5 h-3.5" />
-            </button>
+            {user?.role === 'OWNER' && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="p-1.5 rounded-full bg-slate-900 text-amber-300 hover:bg-slate-800"
+                title="Owner & 7 Boshqaruv Paneli"
+              >
+                <Shield className="w-3.5 h-3.5" />
+              </button>
+            )}
 
             <button
               onClick={() => navigate('/profile?tab=wallet')}
