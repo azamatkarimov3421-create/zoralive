@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Users, Swords, Gift, Send, Video, VideoOff, Heart, Trophy, Lock, Unlock, Gamepad2, X } from 'lucide-react';
+import { ArrowLeft, Users, Swords, Gift, Send, Video, VideoOff, Heart, Trophy, Lock, Unlock } from 'lucide-react';
 import { api } from '../lib/api';
 import { getSocket, getMyPeerId } from '../lib/socket';
 import { getRoomSettings, saveRoomSettings, RoomAccessSettings } from '../lib/roomSettings';
@@ -19,7 +19,6 @@ import { GiftOverlay } from '../components/GiftOverlay';
 import { EntryBanner, EntryRideEvent } from '../components/EntryBanner';
 import { HostExitModal, HostCandidate } from '../components/HostExitModal';
 import { RoomLockModal } from '../components/RoomLockModal';
-import { Arena2DGame } from '../components/Arena2DGame';
 import { BG_THEMES, ThemeOrbDial } from '../components/ThemeOrbDial';
 import { PkVsCrest } from '../components/LuxuryBadges';
 import { sfx } from '../lib/sound';
@@ -47,7 +46,6 @@ export const VideoRoomPage: React.FC = () => {
   const [rightRelayFrame, setRightRelayFrame] = useState<string | null>(null);
 
   const [giftDrawerOpen, setGiftDrawerOpen] = useState(false);
-  const [quizOpen, setQuizOpen] = useState(false);
   const [hostExitOpen, setHostExitOpen] = useState(false);
   const [roomTheme, setRoomTheme] = useState<string>('light');
   const [lockModalOpen, setLockModalOpen] = useState(false);
@@ -775,63 +773,10 @@ export const VideoRoomPage: React.FC = () => {
           <Heart className="w-4 h-4 fill-current" />
         </button>
 
-        <button
-          onClick={() => setQuizOpen(true)}
-          className={`p-2.5 rounded-full ${quizOpen ? 'bg-indigo-600 text-white' : 'bg-indigo-500/30 border border-indigo-400/40 text-indigo-100'}`}
-          title="Jamoaviy O‘yin"
-        >
-          <Gamepad2 className="w-4 h-4" />
-        </button>
-
         <button onClick={() => setGiftDrawerOpen(true)} className="p-2.5 rounded-full btn-brand">
           <Gift className="w-4 h-4" />
         </button>
       </footer>
-
-      {quizOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-slate-950/65 backdrop-blur-sm flex items-end justify-center p-2"
-          onClick={() => setQuizOpen(false)}
-        >
-          <div
-            className="w-full max-w-md max-h-[82vh] overflow-y-auto rounded-3xl bg-slate-100/95 backdrop-blur-2xl border border-white/80 shadow-2xl p-3 space-y-2.5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center">
-                  <Gamepad2 className="w-4 h-4" />
-                </span>
-                <div>
-                  <div className="text-xs font-black text-slate-900">Jamoaviy O‘yin (Video efir faol)</div>
-                  <div className="text-[10px] font-bold text-emerald-600">🎥 Video uzilmaydi • Tomoshabinlar bilan birga</div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setQuizOpen(false)}
-                className="p-1.5 rounded-full bg-white border border-slate-200 text-slate-600 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <Arena2DGame
-              initialRoomCode={roomId ? `VID_${roomId.slice(-6).toUpperCase()}` : undefined}
-              initialRoomTitle={roomMeta?.title || 'Video Efir 2D Arenasi'}
-              roomHostId={roomMeta?.hostId}
-              compact
-              onClose={() => setQuizOpen(false)}
-              onInviteRoom={() => {
-                if (!roomId || !user) return;
-                const inviteText = '🕹️ 2D Oltin Arena ochildi! Pastdagi 🎮 tugmani bosib birga o‘ynang!';
-                getSocket().emit('room:chat', { roomId, text: inviteText });
-                sendRoomMessageToSupabase(roomId, user, inviteText, 'CHAT').catch(() => {});
-                toast('Video efirdagilarga 2D o‘yin taklifi yuborildi!', 'success');
-              }}
-            />
-          </div>
-        </div>
-      )}
 
       <GiftDrawer
         open={giftDrawerOpen}
