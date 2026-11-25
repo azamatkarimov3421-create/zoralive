@@ -689,18 +689,65 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     throw new Error('Bu ilovada pul yechish va daromad olish mavjud emas');
   }
 
-  // 9. Agency
+  // 9. Agency (Real user-created agencies only, no hardcoded demo ZORA77)
   if (path.startsWith('/agency')) {
-    const liveProfiles = await fetchAllProfilesFromSupabase();
+    const agKey = 'zoralive_agencies_v1';
+    const storedAgencies: any[] = (() => {
+      try {
+        const raw = localStorage.getItem(agKey);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    })();
+
+    if (path === '/agency/create' && method === 'POST') {
+      const name = String(body.name || '').trim();
+      const code = String(body.code || '').trim().toUpperCase();
+      if (!name || !code) throw new Error('Agentlik nomi va kodini kiriting');
+      const created = {
+        id: `ag_${Date.now()}`,
+        name,
+        code,
+        ownerId: currentUser.id,
+        members: [currentUser.id],
+      };
+      storedAgencies.push(created);
+      localStorage.setItem(agKey, JSON.stringify(storedAgencies));
+      currentUser.agencyId = created.id;
+      setStoredUser(currentUser);
+      return { agency: created } as unknown as T;
+    }
+
+    if (path === '/agency/join' && method === 'POST') {
+      const code = String(body.code || '').trim().toUpperCase();
+      const found = storedAgencies.find((a) => a.code === code);
+      if (!found) throw new Error('Bunday agentlik kodi topilmadi');
+      if (!found.members.includes(currentUser.id)) found.members.push(currentUser.id);
+      localStorage.setItem(agKey, JSON.stringify(storedAgencies));
+      currentUser.agencyId = found.id;
+      setStoredUser(currentUser);
+      return { agency: found } as unknown as T;
+    }
+
+    if (path === '/agency/leave' && method === 'POST') {
+      for (const a of storedAgencies) {
+        a.members = (a.members || []).filter((id: string) => id !== currentUser.id);
+      }
+      localStorage.setItem(agKey, JSON.stringify(storedAgencies));
+      currentUser.agencyId = null;
+      setStoredUser(currentUser);
+      return { ok: true } as unknown as T;
+    }
+
+    const myAg = storedAgencies.find(
+      (a) => a.id === currentUser.agencyId || (a.members || []).includes(currentUser.id)
+    );
+    const liveProfiles = myAg ? await fetchAllProfilesFromSupabase() : [];
+    const roster = myAg ? liveProfiles.filter((u) => (myAg.members || []).includes(u.id)) : [];
     return {
-      agency: {
-        id: 'agency_zoralive',
-        name: 'ZoraLive Yulduzlari',
-        code: 'ZORA77',
-        commission_rate: 0.1,
-        total_earned: liveProfiles.reduce((s, u) => s + (u.diamonds || 0), 0),
-        members: liveProfiles.slice(0, 8),
-      },
+      myAgency: myAg || null,
+      roster,
     } as unknown as T;
   }
 
@@ -708,10 +755,22 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
   if (path === '/users/leaderboard') {
     const type = params.get('type') || 'wealth';
     if (type === 'agency') {
+      const storedAgencies: any[] = (() => {
+        try {
+          const raw = localStorage.getItem('zoralive_agencies_v1');
+          return raw ? JSON.parse(raw) : [];
+        } catch {
+          return [];
+        }
+      })();
       return {
-        agencies: [
-          { id: 'ag1', name: 'ZoraLive Yulduzlari', code: 'ZORA77', total_earned: 0, member_count: 1 },
-        ],
+        agencies: storedAgencies.map((a) => ({
+          id: a.id,
+          name: a.name,
+          code: a.code,
+          total_earned: 0,
+          host_count: (a.members || []).length,
+        })),
       } as unknown as T;
     }
     const liveProfiles = await fetchAllProfilesFromSupabase();
@@ -745,7 +804,9 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     Object.assign(currentUser, {
       displayName: body.displayName || currentUser.displayName,
       bio: body.bio !== undefined ? body.bio : currentUser.bio,
-      avatar: body.avatar || currentUser.avatar,
+      avatar: body.avatar !== undefined ? body.avatar : currentUser.avatar,
+      gender: body.gender !== undefined ? body.gender : currentUser.gender,
+      country: body.country !== undefined ? body.country : currentUser.country,
     });
     setStoredUser(currentUser);
     syncProfileToSupabase({
@@ -753,6 +814,8 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
       displayName: currentUser.displayName,
       bio: currentUser.bio,
       avatar: currentUser.avatar,
+      gender: currentUser.gender,
+      country: currentUser.country,
     });
     return { user: currentUser } as unknown as T;
   }

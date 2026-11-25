@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock, User as UserIcon, Sparkles, Crown, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
 import { Lang } from '../types';
 
 export const AuthPage: React.FC = () => {
@@ -21,6 +22,7 @@ export const AuthPage: React.FC = () => {
   const [quickName, setQuickName] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [gender, setGender] = useState<'male' | 'female'>('male');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -62,6 +64,7 @@ export const AuthPage: React.FC = () => {
           .replace(/[^a-z0-9_]/g, '')
           .slice(0, 16) || `user_${Date.now().toString().slice(-4)}`;
       await loginWithUsername(uname, clean);
+      await api('/users/profile', { method: 'PUT', body: JSON.stringify({ gender }) }).catch(() => {});
       navigate('/', { replace: true });
     } catch {
       // toast shown in context
@@ -86,6 +89,7 @@ export const AuthPage: React.FC = () => {
         } else {
           await loginWithUsername(cleanId, chosenName);
         }
+        await api('/users/profile', { method: 'PUT', body: JSON.stringify({ gender }) }).catch(() => {});
       } else {
         if (isEmail) {
           await loginWithEmail(cleanId, password);
@@ -251,6 +255,30 @@ export const AuthPage: React.FC = () => {
                 className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white/10 border border-white/20 text-sm text-white placeholder:text-white/45 focus:outline-none focus:border-amber-400 focus:bg-white/15 transition"
               />
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setGender('male')}
+                className={`py-2.5 rounded-2xl text-xs font-black border transition cursor-pointer ${
+                  gender === 'male'
+                    ? 'bg-sky-500 border-sky-300 text-white shadow-md'
+                    : 'bg-white/10 border-white/15 text-white/75'
+                }`}
+              >
+                ♂ Erkak
+              </button>
+              <button
+                type="button"
+                onClick={() => setGender('female')}
+                className={`py-2.5 rounded-2xl text-xs font-black border transition cursor-pointer ${
+                  gender === 'female'
+                    ? 'bg-pink-500 border-pink-300 text-white shadow-md'
+                    : 'bg-white/10 border-white/15 text-white/75'
+                }`}
+              >
+                ♀ Ayol
+              </button>
+            </div>
             <button
               type="submit"
               disabled={busy}
@@ -276,17 +304,43 @@ export const AuthPage: React.FC = () => {
               />
             </div>
 
-            {/* Display Name (Only in Register mode) */}
+            {/* Display Name & Gender (Only in Register mode) */}
             {mode === 'register' && (
-              <div className="relative">
-                <UserIcon className="w-4 h-4 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
-                <input
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Ismingiz (ko‘rinadigan ism)"
-                  className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-cyan-400 focus:bg-white/15 transition"
-                />
-              </div>
+              <>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-white/40 absolute left-4 top-1/2 -translate-y-1/2" />
+                  <input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Ismingiz (ko‘rinadigan ism)"
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-cyan-400 focus:bg-white/15 transition"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setGender('male')}
+                    className={`py-2 rounded-2xl text-xs font-black border transition cursor-pointer ${
+                      gender === 'male'
+                        ? 'bg-sky-500 border-sky-300 text-white'
+                        : 'bg-white/10 border-white/15 text-white/75'
+                    }`}
+                  >
+                    ♂ Erkak
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGender('female')}
+                    className={`py-2 rounded-2xl text-xs font-black border transition cursor-pointer ${
+                      gender === 'female'
+                        ? 'bg-pink-500 border-pink-300 text-white'
+                        : 'bg-white/10 border-white/15 text-white/75'
+                    }`}
+                  >
+                    ♀ Ayol
+                  </button>
+                </div>
+              </>
             )}
 
             {/* Password */}

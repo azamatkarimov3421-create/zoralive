@@ -153,16 +153,13 @@ export const ProfilePage: React.FC = () => {
   const [editGender, setEditGender] = useState('male');
   const [editCountry, setEditCountry] = useState('UZ');
 
-  // Visitors counter persisted smoothly
+  // Real visitors counter (starts at 0, no fake demo numbers)
   const [visitorsCount] = useState<number>(() => {
     try {
       const key = `zoralive_visitors_${user?.id || 'me'}`;
-      const prev = Number(localStorage.getItem(key) || 18);
-      const next = prev + 1;
-      localStorage.setItem(key, String(next));
-      return next;
+      return Number(localStorage.getItem(key) || 0);
     } catch {
-      return 19;
+      return 0;
     }
   });
 
@@ -218,6 +215,21 @@ export const ProfilePage: React.FC = () => {
   }, [mainSection]);
 
   if (!user) return null;
+
+  const toggleGenderQuick = async () => {
+    const nextGender = user.gender === 'female' ? 'male' : 'female';
+    try {
+      await syncProfileToSupabase({ id: user.id, gender: nextGender });
+      await api('/users/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ gender: nextGender }),
+      }).catch(() => {});
+      await refreshUser();
+      toast(nextGender === 'female' ? 'Jins: ♀ Ayol tanlandi' : 'Jins: ♂ Erkak tanlandi', 'success');
+    } catch {
+      // ignore
+    }
+  };
 
   const openEditor = () => {
     setEditName(user.displayName);
@@ -511,13 +523,16 @@ export const ProfilePage: React.FC = () => {
                 <h2 className="text-[20px] font-black italic text-white tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
                   {user.displayName}
                 </h2>
-                <span
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black shadow-sm ${
+                <button
+                  type="button"
+                  onClick={toggleGenderQuick}
+                  title="Jinsni o‘zgartirish (Erkak / Ayol)"
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black shadow-sm active:scale-90 transition cursor-pointer ${
                     user.gender === 'female' ? 'bg-pink-500 text-white' : 'bg-sky-500 text-white'
                   }`}
                 >
                   {user.gender === 'female' ? '♀' : '♂'}
-                </span>
+                </button>
                 {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
                 <button
                   onClick={openEditor}
@@ -644,13 +659,16 @@ export const ProfilePage: React.FC = () => {
                 <h1 className="text-[19px] font-black italic tracking-wide text-white drop-shadow-xs">
                   {user.displayName}
                 </h1>
-                <span
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black shadow-sm ${
+                <button
+                  type="button"
+                  onClick={toggleGenderQuick}
+                  title="Jinsni o‘zgartirish (Erkak / Ayol)"
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black shadow-sm active:scale-90 transition cursor-pointer ${
                     user.gender === 'female' ? 'bg-pink-500 text-white' : 'bg-sky-500 text-white'
                   }`}
                 >
                   {user.gender === 'female' ? '♀' : '♂'}
-                </span>
+                </button>
                 {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
               </div>
 
@@ -1161,12 +1179,12 @@ export const ProfilePage: React.FC = () => {
                   ) : (
                     <>
                       <div className="card-white rounded-2xl p-4 space-y-2.5">
-                        <div className="text-xs font-extrabold text-white">Agentlik (ZORA77 / TASH01)</div>
+                        <div className="text-xs font-extrabold text-white">Agentlikka ulanish</div>
                         <div className="flex gap-2">
                           <input
                             value={joinCode}
                             onChange={(e) => setJoinCode(e.target.value)}
-                            placeholder="Agency ID"
+                            placeholder="Agentlik kodi"
                             className="flex-1 px-3 py-2 rounded-xl text-xs uppercase"
                           />
                           <button
@@ -1189,7 +1207,7 @@ export const ProfilePage: React.FC = () => {
                       <div className="card-white rounded-2xl p-4 space-y-2">
                         <div className="text-xs font-extrabold text-white">Yangi agentlik</div>
                         <input value={newAgName} onChange={(e) => setNewAgName(e.target.value)} placeholder="Nomi" className="w-full px-3 py-2 rounded-xl text-xs" />
-                        <input value={newAgCode} onChange={(e) => setNewAgCode(e.target.value)} placeholder="Kod (SAM01)" className="w-full px-3 py-2 rounded-xl text-xs uppercase" />
+                        <input value={newAgCode} onChange={(e) => setNewAgCode(e.target.value)} placeholder="Kod (masalan: UZ01)" className="w-full px-3 py-2 rounded-xl text-xs uppercase" />
                         <button
                           onClick={async () => {
                             try {
@@ -1470,8 +1488,12 @@ export const ProfilePage: React.FC = () => {
                     key={g.id}
                     type="button"
                     onClick={() => setEditGender(g.id)}
-                    className={`flex-1 py-1.5 rounded-lg text-[11px] font-black cursor-pointer ${
-                      editGender === g.id ? 'bg-sky-500 text-white' : 'text-white/70'
+                    className={`flex-1 py-1.5 rounded-lg text-[11px] font-black cursor-pointer transition ${
+                      editGender === g.id
+                        ? g.id === 'female'
+                          ? 'bg-pink-500 text-white shadow-sm'
+                          : 'bg-sky-500 text-white shadow-sm'
+                        : 'text-white/70 hover:text-white'
                     }`}
                   >
                     {g.label}

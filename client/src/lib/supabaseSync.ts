@@ -61,7 +61,6 @@ export async function syncProfileToSupabase(profile: Partial<User> & { id: strin
     if (profile.followingCount !== undefined) payload.following_count = profile.followingCount;
     if (profile.country !== undefined) payload.country = profile.country;
     if (profile.gender !== undefined) payload.gender = profile.gender;
-    if (profile.isBanned !== undefined) payload.is_banned = profile.isBanned;
 
     await supabase.from('profiles').update(payload).eq('id', profile.id);
   } catch (e) {
