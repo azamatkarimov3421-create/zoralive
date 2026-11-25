@@ -71,6 +71,7 @@ export const GovernanceSuitePage: React.FC = () => {
   const [liveUsers, setLiveUsers] = useState<User[]>([]);
   const [liveRooms, setLiveRooms] = useState<RoomSummary[]>([]);
   const [userSearch, setUserSearch] = useState('');
+  const [customCoinMap, setCustomCoinMap] = useState<Record<string, string>>({});
   const [broadcastText, setBroadcastText] = useState('');
   const [loadingLive, setLoadingLive] = useState(false);
 
@@ -443,6 +444,50 @@ export const GovernanceSuitePage: React.FC = () => {
                           </div>
 
                           <div className="flex items-center gap-1 flex-wrap">
+                            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2 py-0.5">
+                              <input
+                                type="number"
+                                min={1}
+                                value={customCoinMap[u.id] ?? ''}
+                                onChange={(e) =>
+                                  setCustomCoinMap((prev) => ({ ...prev, [u.id]: e.target.value }))
+                                }
+                                placeholder="Summa..."
+                                className="w-20 bg-transparent text-[11px] font-bold text-slate-900 focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const amt = Math.max(0, Math.floor(Number(customCoinMap[u.id]) || 0));
+                                  if (!amt) return;
+                                  updateMemberLive(
+                                    u,
+                                    { coins: (u.coins || 0) + amt },
+                                    `+${amt.toLocaleString()} tanga berildi`
+                                  );
+                                  setCustomCoinMap((prev) => ({ ...prev, [u.id]: '' }));
+                                }}
+                                className="px-2 py-0.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black cursor-pointer"
+                              >
+                                +🪙
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const amt = Math.max(0, Math.floor(Number(customCoinMap[u.id]) || 0));
+                                  if (!amt) return;
+                                  updateMemberLive(
+                                    u,
+                                    { diamonds: (u.diamonds || 0) + amt },
+                                    `+${amt.toLocaleString()} olmos berildi`
+                                  );
+                                  setCustomCoinMap((prev) => ({ ...prev, [u.id]: '' }));
+                                }}
+                                className="px-2 py-0.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-[10px] font-black cursor-pointer"
+                              >
+                                +💎
+                              </button>
+                            </div>
                             <button
                               onClick={() =>
                                 updateMemberLive(
