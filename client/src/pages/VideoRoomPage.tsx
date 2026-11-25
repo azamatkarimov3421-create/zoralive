@@ -19,7 +19,7 @@ import { GiftOverlay } from '../components/GiftOverlay';
 import { EntryBanner, EntryRideEvent } from '../components/EntryBanner';
 import { HostExitModal, HostCandidate } from '../components/HostExitModal';
 import { RoomLockModal } from '../components/RoomLockModal';
-import { TeamQuizGame } from '../components/TeamQuizGame';
+import { Arena2DGame } from '../components/Arena2DGame';
 import { BG_THEMES, ThemeOrbDial } from '../components/ThemeOrbDial';
 import { PkVsCrest } from '../components/LuxuryBadges';
 import { sfx } from '../lib/sound';
@@ -815,18 +815,18 @@ export const VideoRoomPage: React.FC = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <TeamQuizGame
+            <Arena2DGame
               initialRoomCode={roomId ? `VID_${roomId.slice(-6).toUpperCase()}` : undefined}
-              initialRoomTitle={roomMeta?.title || 'Video Efir Viktorinasi'}
+              initialRoomTitle={roomMeta?.title || 'Video Efir 2D Arenasi'}
               roomHostId={roomMeta?.hostId}
               compact
               onClose={() => setQuizOpen(false)}
               onInviteRoom={() => {
                 if (!roomId || !user) return;
-                const inviteText = '🎮 Jamoaviy O‘yin (Tezkor Bilimdon) ochildi! Pastdagi 🎮 tugmani bosib qo‘shiling!';
+                const inviteText = '🕹️ 2D Oltin Arena ochildi! Pastdagi 🎮 tugmani bosib birga o‘ynang!';
                 getSocket().emit('room:chat', { roomId, text: inviteText });
                 sendRoomMessageToSupabase(roomId, user, inviteText, 'CHAT').catch(() => {});
-                toast('Video efirdagilarga o‘yin taklifi yuborildi!', 'success');
+                toast('Video efirdagilarga 2D o‘yin taklifi yuborildi!', 'success');
               }}
             />
           </div>

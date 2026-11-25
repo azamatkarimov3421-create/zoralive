@@ -44,7 +44,7 @@ import { GiftOverlay } from '../components/GiftOverlay';
 import { EntryBanner, EntryRideEvent } from '../components/EntryBanner';
 import { HostExitModal, HostCandidate } from '../components/HostExitModal';
 import { RoomLockModal } from '../components/RoomLockModal';
-import { TeamQuizGame } from '../components/TeamQuizGame';
+import { Arena2DGame } from '../components/Arena2DGame';
 import { ThemeOrbDial } from '../components/ThemeOrbDial';
 import { LiveWaveBars, getStageWallpaper } from '../components/LuxuryBadges';
 import { ANIMATED_FRAMES, getAnimatedFrameUrl } from '../lib/mythicCatalog';
@@ -1049,18 +1049,18 @@ export const VoiceRoomPage: React.FC = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <TeamQuizGame
+            <Arena2DGame
               initialRoomCode={roomId ? `V_${roomId.slice(-6).toUpperCase()}` : undefined}
-              initialRoomTitle={roomMeta?.title || 'Ovozli Xona Viktorinasi'}
+              initialRoomTitle={roomMeta?.title || 'Ovozli Xona 2D Arenasi'}
               roomHostId={roomMeta?.hostId}
               compact
               onClose={() => setQuizOpen(false)}
               onInviteRoom={() => {
                 if (!roomId || !user) return;
-                const inviteText = '🎮 Jamoaviy O‘yin (Tezkor Bilimdon) ochildi! Pastdagi 🎮 tugmani bosib qo‘shiling!';
+                const inviteText = '🕹️ 2D Oltin Arena ochildi! Pastdagi 🎮 tugmani bosib birga o‘ynang!';
                 getSocket().emit('room:chat', { roomId, text: inviteText });
                 sendRoomMessageToSupabase(roomId, user, inviteText, 'CHAT').catch(() => {});
-                toast('Xonadagilarga o‘yin taklifi yuborildi!', 'success');
+                toast('Xonadagilarga 2D o‘yin taklifi yuborildi!', 'success');
               }}
             />
           </div>

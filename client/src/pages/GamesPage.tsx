@@ -1,22 +1,35 @@
 import React from 'react';
-import { Coins } from 'lucide-react';
+import { Gamepad2, Coins } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { TeamQuizGame } from '../components/TeamQuizGame';
+import { Arena2DGame } from '../components/Arena2DGame';
 
 export const GamesPage: React.FC = () => {
   const { user } = useAuth();
 
   return (
-    <div className="bg-transparent min-h-full px-3.5 pt-3 pb-24 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-black text-slate-900">Jamoaviy O‘yinlar</h1>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/20 backdrop-blur-md border-2 border-amber-300/70 text-amber-900 text-xs font-black">
-          <Coins className="w-3.5 h-3.5 text-amber-600" />
-          <span>{(user?.coins || 0).toLocaleString()}</span>
-        </div>
-      </div>
+    <div className="min-h-screen app-shell pb-24">
+      <header className="sticky top-0 z-30 glass-header px-4 pt-3.5 pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md">
+              <Gamepad2 className="w-4 h-4" />
+            </span>
+            <div>
+              <h1 className="text-base font-black text-slate-900 leading-tight">2D O‘yinlar</h1>
+              <p className="text-[10.5px] font-bold text-slate-500">Jamoaviy 2D jonli arena</p>
+            </div>
+          </div>
 
-      <TeamQuizGame />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-black shadow-2xs">
+            <Coins className="w-3.5 h-3.5 text-amber-500" />
+            <span>{(user?.coins || 0).toLocaleString()}</span>
+          </div>
+        </div>
+      </header>
+
+      <main className="px-3.5 pt-3.5 max-w-lg mx-auto">
+        <Arena2DGame />
+      </main>
     </div>
   );
 };
