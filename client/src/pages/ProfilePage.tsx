@@ -273,7 +273,13 @@ export const ProfilePage: React.FC = () => {
     .reduce((acc: number, tx: any) => acc + Math.abs(Number(tx.amount) || 0), 0);
 
   return (
-    <div className="dragon-dark-surface relative min-h-screen bg-gradient-to-b from-[#0b1030] via-[#10163d] to-[#161c4a] text-white overflow-x-clip pb-28">
+    <div
+      className={
+        hasDragon
+          ? 'dragon-dark-surface relative min-h-screen bg-[#07070c] text-white overflow-x-clip pb-28'
+          : 'dragon-dark-surface relative min-h-screen bg-gradient-to-b from-[#0b1030] via-[#10163d] to-[#161c4a] text-white overflow-x-clip pb-28'
+      }
+    >
       {/* Full-Page VIP Dragon Backdrop if dragon is equipped, otherwise scenic Top Cover Banner */}
       {hasDragon ? (
         <div className="pointer-events-none select-none absolute inset-0 z-0 overflow-clip">
@@ -287,283 +293,382 @@ export const ProfilePage: React.FC = () => {
               className="absolute inset-0"
               style={{
                 background:
-                  'linear-gradient(180deg, rgba(8,11,32,0.22) 0%, rgba(10,14,40,0.42) 38%, rgba(12,17,48,0.88) 72%, rgba(15,20,56,0.97) 100%)',
+                  'linear-gradient(180deg, rgba(0,0,0,0.16) 0%, rgba(0,0,0,0.14) 30%, rgba(0,0,0,0.58) 64%, rgba(7,7,12,0.84) 100%)',
               }}
             />
             <div className="absolute inset-0" style={{ boxShadow: `inset 0 0 38px ${dragonTheme.dragonGlow}` }} />
           </div>
         </div>
       ) : (
-        <div className="relative h-44 w-full overflow-hidden">
-          <img src={coverUrl} alt="" className="w-full h-full object-cover object-center" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/15 to-[#0b1030]" />
-        </div>
+        <>
+          <div className="relative h-44 w-full overflow-hidden">
+            <img src={coverUrl} alt="" className="w-full h-full object-cover object-center" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/15 to-[#0b1030]" />
+          </div>
+          {/* Top Overlay Navigation Bar: < Back | Shaxsiy ma'lumotlar kartasi | Edit & Logout */}
+          <header className="absolute top-0 left-0 right-0 z-40 px-3.5 pt-3 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="w-8 h-8 rounded-full bg-black/40 hover:bg-black/65 border border-white/20 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition cursor-pointer"
+              title="Orqaga"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            <span className="text-[13.5px] font-extrabold text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] truncate">
+              Shaxsiy ma’lumotlar kartasi
+            </span>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={openEditor}
+                className="w-8 h-8 rounded-full bg-black/40 hover:bg-black/65 border border-white/20 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition cursor-pointer"
+                title="Profilni tahrirlash"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await logout();
+                  navigate('/login');
+                }}
+                className="w-8 h-8 rounded-full bg-black/40 hover:bg-rose-500/70 border border-white/20 backdrop-blur-md flex items-center justify-center text-white/90 active:scale-95 transition cursor-pointer"
+                title="Chiqish"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </header>
+        </>
       )}
 
-      {/* Top Overlay Navigation Bar: < Back | Shaxsiy ma'lumotlar kartasi | Edit & Logout */}
-      <header className="absolute top-0 left-0 right-0 z-40 px-3.5 pt-3 flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="w-8 h-8 rounded-full bg-black/40 hover:bg-black/65 border border-white/20 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition cursor-pointer"
-          title="Orqaga"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-
-        <span className="text-[13.5px] font-extrabold text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] truncate">
-          Shaxsiy ma’lumotlar kartasi
-        </span>
-
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={openEditor}
-            className="w-8 h-8 rounded-full bg-black/40 hover:bg-black/65 border border-white/20 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition cursor-pointer"
-            title="Profilni tahrirlash"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              await logout();
-              navigate('/login');
-            }}
-            className="w-8 h-8 rounded-full bg-black/40 hover:bg-rose-500/70 border border-white/20 backdrop-blur-md flex items-center justify-center text-white/90 active:scale-95 transition cursor-pointer"
-            title="Chiqish"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </header>
-
       {/* Main Content Container */}
-      <div className={`relative z-20 ${hasDragon ? 'pt-36' : '-mt-11'} space-y-3.5`}>
-        {/* Avatar + Luxury Identity Block (Left-aligned like reference) */}
-        <div className="px-4 space-y-2.5">
-          <div className={`flex items-end justify-between gap-3 ${hasDragon ? 'pt-6' : ''}`}>
-            <div className="relative p-1 rounded-full bg-[#0b1030]/80 ring-2 ring-white/35 shadow-2xl">
-              <Avatar
-                src={user.avatar}
-                name={user.displayName}
-                size="xl"
-                frame={user.activeFrame}
-                vipLevel={user.vipLevel}
-              />
-              {hasDragon && (
-                <CinematicVideoDragon
-                  frameTopPx={36 * getFrameScale(user.activeFrame)}
-                  glowColor={dragonTheme.dragonGlow}
-                />
-              )}
+      <div className={hasDragon ? 'relative z-20 px-3.5 pt-2.5 space-y-3.5' : 'relative z-20 -mt-11 space-y-3.5'}>
+        {hasDragon ? (
+          <>
+            {/* Classic VIP Dragon Top Utility Bar */}
+            <div className="relative z-40 flex items-center justify-between gap-2">
+              <div className="flex gap-0.5 rounded-full p-1 border-2 bg-black/45 border-white/25 backdrop-blur-2xl">
+                {(['uz', 'ru', 'en'] as Lang[]).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => setLang(l)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase transition cursor-pointer ${
+                      lang === l ? 'bg-white text-slate-950 shadow-sm' : 'text-white/80 hover:text-white'
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                {user.role === 'OWNER' && (
+                  <button
+                    onClick={() => navigate('/admin')}
+                    className="px-3.5 py-1.5 rounded-full text-[11px] font-black flex items-center gap-1.5 border-2 shadow-sm transition active:scale-95 cursor-pointer bg-black/45 hover:bg-black/75 border-amber-300/60 text-amber-300 backdrop-blur-2xl"
+                    title="Ega Paneli"
+                  >
+                    <Crown className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Ega Paneli</span>
+                  </button>
+                )}
+                <button
+                  onClick={async () => {
+                    await logout();
+                    navigate('/login');
+                  }}
+                  className="p-2 rounded-full border-2 transition active:scale-95 cursor-pointer bg-black/45 border-white/25 text-white/90 hover:text-rose-400 backdrop-blur-2xl"
+                  title="Chiqish"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1.5 pb-1">
-              {hasDragon && (
+            {/* Restored Centered VIP Dragon Hero Stage (exact ee6b4f0 position & feel) */}
+            <div className="relative flex flex-col items-center text-center pt-44 pb-2">
+              <div className="relative z-20 p-2 flex items-center justify-center">
+                <Avatar
+                  src={user.avatar}
+                  name={user.displayName}
+                  size="xl"
+                  frame={user.activeFrame}
+                  vipLevel={user.vipLevel}
+                />
+                <CinematicVideoDragon
+                  frameTopPx={40 * getFrameScale(user.activeFrame)}
+                  glowColor={dragonTheme.dragonGlow}
+                />
+              </div>
+
+              <div className="relative z-30 mt-3 flex items-center justify-center gap-2">
+                <h2 className="text-[20px] font-black text-white tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
+                  {user.displayName}
+                </h2>
+                {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
+                <button
+                  onClick={openEditor}
+                  className="p-1.5 rounded-full bg-black/50 hover:bg-black/75 border border-white/20 text-white/90 backdrop-blur-md transition active:scale-95 cursor-pointer"
+                  title="Tahrirlash"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+              </div>
+
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(String(user.uid));
+                  toast(`ID: ${user.uid}`, 'info');
+                }}
+                className="relative z-30 inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full bg-black/50 hover:bg-black/70 border border-white/15 backdrop-blur-md text-xs text-white/90 font-bold transition active:scale-95 cursor-pointer"
+              >
+                <span className="text-[11px] font-extrabold tracking-wide">ID {user.uid}</span>
+                <Copy className="w-3 h-3 text-white/70" />
+              </button>
+
+              <div className="relative z-30 flex items-center justify-center gap-2 mt-2.5 flex-wrap">
+                <div className="inline-flex items-center justify-center gap-3 px-3.5 py-1 rounded-full bg-black/45 border border-white/15 backdrop-blur-md text-xs text-white/90 font-semibold">
+                  <span>
+                    <b className="text-white font-black">{user.followersCount ?? 0}</b> obunachi
+                  </span>
+                  <span className="w-1 h-1 rounded-full bg-white/45" />
+                  <span>
+                    <b className="text-white font-black">{user.followingCount ?? 0}</b> obuna
+                  </span>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setShowThemes((v) => !v)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/55 hover:bg-black/75 border border-white/25 backdrop-blur-md text-[10.5px] font-black text-white cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 hover:bg-black/70 border border-white/25 backdrop-blur-md text-[11px] font-black text-white transition active:scale-95 cursor-pointer"
                 >
                   <span>{dragonTheme.emoji}</span>
                   <span>{dragonTheme.shortUz}</span>
-                  {showThemes ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  {showThemes ? <ChevronUp className="w-3 h-3 text-white/75" /> : <ChevronDown className="w-3 h-3 text-white/75" />}
                 </button>
-              )}
-              {user.role === 'OWNER' && (
-                <button
-                  type="button"
-                  onClick={() => navigate('/admin')}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 text-[10.5px] font-black shadow-md cursor-pointer"
-                >
-                  <Crown className="w-3 h-3" />
-                  <span>Ega Paneli</span>
-                </button>
+              </div>
+
+              {showThemes && (
+                <div className="relative z-30 w-full mt-3 p-2 rounded-2xl bg-black/45 border border-white/20 backdrop-blur-xl">
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {DRAGON_THEMES.map((t) => {
+                      const isActive = t.id === dragonTheme.id;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => {
+                            selectDragonTheme(t.id);
+                            setShowThemes(false);
+                          }}
+                          className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl border text-[10.5px] font-black backdrop-blur-md transition active:scale-95 cursor-pointer ${
+                            isActive
+                              ? t.activePillClass
+                              : 'bg-black/40 border-white/15 text-white/85 hover:bg-black/60 hover:border-white/35'
+                          }`}
+                          title={`${t.nameUz} — ${t.taglineUz}`}
+                        >
+                          <span className="text-xs leading-none">{t.emoji}</span>
+                          <span className="truncate">{t.shortUz}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </div>
-          </div>
+          </>
+        ) : (
+          /* Shaxsiy Ma'lumotlar Kartasi Identity Block (Left-aligned like reference) */
+          <div className="px-4 space-y-2.5">
+            <div className="flex items-end justify-between gap-3">
+              <div className="relative p-1 rounded-full bg-[#0b1030]/80 ring-2 ring-white/35 shadow-2xl">
+                <Avatar
+                  src={user.avatar}
+                  name={user.displayName}
+                  size="xl"
+                  frame={user.activeFrame}
+                  vipLevel={user.vipLevel}
+                />
+              </div>
 
-          {hasDragon && showThemes && (
-            <div className="p-2 rounded-2xl bg-black/55 border border-white/20 backdrop-blur-xl">
-              <div className="grid grid-cols-3 gap-1.5">
-                {DRAGON_THEMES.map((t) => {
-                  const isActive = t.id === dragonTheme.id;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => {
-                        selectDragonTheme(t.id);
-                        setShowThemes(false);
-                      }}
-                      className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl border text-[10.5px] font-black backdrop-blur-md transition active:scale-95 cursor-pointer ${
-                        isActive
-                          ? t.activePillClass
-                          : 'bg-black/40 border-white/15 text-white/85 hover:bg-black/60 hover:border-white/35'
-                      }`}
-                    >
-                      <span className="text-xs leading-none">{t.emoji}</span>
-                      <span className="truncate">{t.shortUz}</span>
-                    </button>
-                  );
-                })}
+              <div className="flex items-center gap-1.5 pb-1">
+                {user.role === 'OWNER' && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 text-[10.5px] font-black shadow-md cursor-pointer"
+                  >
+                    <Crown className="w-3 h-3" />
+                    <span>Ega Paneli</span>
+                  </button>
+                )}
               </div>
             </div>
-          )}
 
-          {/* Name + Gender Symbol + VIP Crest */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-[19px] font-black italic tracking-wide text-white drop-shadow-xs">
-                {user.displayName}
-              </h1>
-              <span
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black shadow-sm ${
-                  user.gender === 'female' ? 'bg-pink-500 text-white' : 'bg-sky-500 text-white'
-                }`}
-              >
-                {user.gender === 'female' ? '♀' : '♂'}
-              </span>
-              {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
+            {/* Name + Gender Symbol + VIP Crest */}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-[19px] font-black italic tracking-wide text-white drop-shadow-xs">
+                  {user.displayName}
+                </h1>
+                <span
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black shadow-sm ${
+                    user.gender === 'female' ? 'bg-pink-500 text-white' : 'bg-sky-500 text-white'
+                  }`}
+                >
+                  {user.gender === 'female' ? '♀' : '♂'}
+                </span>
+                {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
+              </div>
+
+              {/* Ornate ID Pill + Copy + Flag */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(String(user.uid));
+                    toast(`ID: ${user.uid} nusxalandi`, 'info');
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/80 via-emerald-600/85 to-emerald-700/90 border border-amber-300/70 text-[11px] font-black text-white shadow-sm active:scale-95 transition cursor-pointer"
+                >
+                  <span className="px-1 rounded-full bg-amber-300 text-slate-950 text-[9px] font-black">ID</span>
+                  <span>{user.uid}</span>
+                  <Copy className="w-3 h-3 text-white/85" />
+                </button>
+                <span className="text-base leading-none" title={user.country || 'UZ'}>
+                  {countryFlag}
+                </span>
+                {user.role && user.role !== 'USER' && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/staff-panel')}
+                    className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-fuchsia-600/85 to-indigo-600/85 border border-fuchsia-300/60 text-[10px] font-black text-white shadow-sm cursor-pointer"
+                  >
+                    🛡️ {user.role}
+                  </button>
+                )}
+                {agencyData?.myAgency && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-purple-600/70 border border-purple-300/50 text-[10px] font-black text-white">
+                    Agency: {agencyData.myAgency.code}
+                  </span>
+                )}
+              </div>
+
+              {/* Bio */}
+              <p className="text-xs font-semibold text-white/80 leading-snug">
+                {user.bio || 'ZoraLive a’zosi ✨'}
+              </p>
             </div>
 
-            {/* Ornate ID Pill + Copy + Flag */}
-            <div className="flex items-center gap-2 flex-wrap">
+            {/* 5-Stat Frosted Midnight Glass Card (matching reference screenshot) */}
+            <div className="rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.35)] py-3 px-1.5 grid grid-cols-5 text-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => navigate('/social')}
+                className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
+              >
+                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                <span className="text-xs font-black text-white">{user.followingCount ?? 0}</span>
+                <span className="text-[10px] font-semibold text-white/70 leading-tight">Kuzatish</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate('/social')}
+                className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
+              >
+                <Heart className="w-4 h-4 text-rose-400 fill-rose-400" />
+                <span className="text-xs font-black text-white">{user.followersCount ?? 0}</span>
+                <span className="text-[10px] font-semibold text-white/70 leading-tight">Muxlislar</span>
+              </button>
+
+              <div className="flex flex-col items-center gap-1 py-0.5">
+                <Eye className="w-4 h-4 text-violet-400" />
+                <span className="text-xs font-black text-white">{visitorsCount}</span>
+                <span className="text-[10px] font-semibold text-white/70 leading-tight">Mehmonlar</span>
+              </div>
+
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard?.writeText(String(user.uid));
-                  toast(`ID: ${user.uid} nusxalandi`, 'info');
+                  setMainSection('about');
+                  setTab('wallet');
                 }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/80 via-emerald-600/85 to-emerald-700/90 border border-amber-300/70 text-[11px] font-black text-white shadow-sm active:scale-95 transition cursor-pointer"
+                className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
               >
-                <span className="px-1 rounded-full bg-amber-300 text-slate-950 text-[9px] font-black">ID</span>
-                <span>{user.uid}</span>
-                <Copy className="w-3 h-3 text-white/85" />
+                <Gift className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-black text-white">{(user.diamonds || 0).toLocaleString()}</span>
+                <span className="text-[10px] font-semibold text-white/70 leading-tight">Qabul qilindi</span>
               </button>
-              <span className="text-base leading-none" title={user.country || 'UZ'}>
-                {countryFlag}
-              </span>
-              {user.role && user.role !== 'USER' && (
-                <button
-                  type="button"
-                  onClick={() => navigate('/staff-panel')}
-                  className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-fuchsia-600/85 to-indigo-600/85 border border-fuchsia-300/60 text-[10px] font-black text-white shadow-sm cursor-pointer"
-                >
-                  🛡️ {user.role}
-                </button>
-              )}
-              {agencyData?.myAgency && (
-                <span className="px-2.5 py-0.5 rounded-full bg-purple-600/70 border border-purple-300/50 text-[10px] font-black text-white">
-                  Agency: {agencyData.myAgency.code}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMainSection('about');
+                  setTab('wallet');
+                }}
+                className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
+              >
+                <Send className="w-4 h-4 text-sky-400" />
+                <span className="text-xs font-black text-white">{sentGiftsCoins.toLocaleString()}</span>
+                <span className="text-[10px] font-semibold text-white/70 leading-tight">Yuborish</span>
+              </button>
+            </div>
+
+            {/* 3 Compact Level Pills Row */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setMainSection('honor')}
+                className="rounded-2xl py-2 px-2 bg-gradient-to-br from-amber-500/25 to-orange-900/40 border border-amber-300/30 flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition"
+              >
+                <span className="text-[10px] font-bold text-amber-200 truncate w-full text-center">Boylik qiymati</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/30 border border-amber-300/50 text-[11px] font-black text-amber-200">
+                  <span>{user.wealthLevel || 1}</span>
+                  <span>🪙</span>
                 </span>
-              )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMainSection('honor')}
+                className="rounded-2xl py-2 px-2 bg-gradient-to-br from-fuchsia-500/25 to-purple-900/45 border border-fuchsia-300/30 flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition"
+              >
+                <span className="text-[10px] font-bold text-fuchsia-200 truncate w-full text-center">Daromad darajasi</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/35 border border-rose-300/50 text-[11px] font-black text-rose-100">
+                  <span>💎</span>
+                  <span>{user.charmLevel || 1}</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMainSection('honor')}
+                className="rounded-2xl py-2 px-2 bg-gradient-to-br from-teal-500/25 to-cyan-900/45 border border-cyan-300/30 flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition"
+              >
+                <span className="text-[10px] font-bold text-cyan-200 truncate w-full text-center">VIP & Unvon</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-500/30 border border-cyan-300/50 text-[11px] font-black text-cyan-100">
+                  <span>{user.vipLevel > 0 ? `V${user.vipLevel}` : `Lv.${currentRank.level}`}</span>
+                  <span>🛡️</span>
+                </span>
+              </button>
             </div>
-
-            {/* Bio */}
-            <p className="text-xs font-semibold text-white/80 leading-snug">
-              {user.bio || 'ZoraLive a’zosi ✨'}
-            </p>
           </div>
+        )}
 
-          {/* 5-Stat Frosted Midnight Glass Card (matching reference screenshot) */}
-          <div className="rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.35)] py-3 px-1.5 grid grid-cols-5 text-center gap-0.5">
-            <button
-              type="button"
-              onClick={() => navigate('/social')}
-              className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
-            >
-              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-              <span className="text-xs font-black text-white">{user.followingCount ?? 0}</span>
-              <span className="text-[10px] font-semibold text-white/70 leading-tight">Kuzatish</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate('/social')}
-              className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
-            >
-              <Heart className="w-4 h-4 text-rose-400 fill-rose-400" />
-              <span className="text-xs font-black text-white">{user.followersCount ?? 0}</span>
-              <span className="text-[10px] font-semibold text-white/70 leading-tight">Muxlislar</span>
-            </button>
-
-            <div className="flex flex-col items-center gap-1 py-0.5">
-              <Eye className="w-4 h-4 text-violet-400" />
-              <span className="text-xs font-black text-white">{visitorsCount}</span>
-              <span className="text-[10px] font-semibold text-white/70 leading-tight">Mehmonlar</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setMainSection('about');
-                setTab('wallet');
-              }}
-              className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
-            >
-              <Gift className="w-4 h-4 text-amber-400" />
-              <span className="text-xs font-black text-white">{(user.diamonds || 0).toLocaleString()}</span>
-              <span className="text-[10px] font-semibold text-white/70 leading-tight">Qabul qilindi</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setMainSection('about');
-                setTab('wallet');
-              }}
-              className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
-            >
-              <Send className="w-4 h-4 text-sky-400" />
-              <span className="text-xs font-black text-white">{sentGiftsCoins.toLocaleString()}</span>
-              <span className="text-[10px] font-semibold text-white/70 leading-tight">Yuborish</span>
-            </button>
-          </div>
-
-          {/* 3 Compact Level Pills Row */}
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => setMainSection('honor')}
-              className="rounded-2xl py-2 px-2 bg-gradient-to-br from-amber-500/25 to-orange-900/40 border border-amber-300/30 flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition"
-            >
-              <span className="text-[10px] font-bold text-amber-200 truncate w-full text-center">Boylik qiymati</span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/30 border border-amber-300/50 text-[11px] font-black text-amber-200">
-                <span>{user.wealthLevel || 1}</span>
-                <span>🪙</span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setMainSection('honor')}
-              className="rounded-2xl py-2 px-2 bg-gradient-to-br from-fuchsia-500/25 to-purple-900/45 border border-fuchsia-300/30 flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition"
-            >
-              <span className="text-[10px] font-bold text-fuchsia-200 truncate w-full text-center">Daromad darajasi</span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/35 border border-rose-300/50 text-[11px] font-black text-rose-100">
-                <span>💎</span>
-                <span>{user.charmLevel || 1}</span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setMainSection('honor')}
-              className="rounded-2xl py-2 px-2 bg-gradient-to-br from-teal-500/25 to-cyan-900/45 border border-cyan-300/30 flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition"
-            >
-              <span className="text-[10px] font-bold text-cyan-200 truncate w-full text-center">VIP & Unvon</span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-500/30 border border-cyan-300/50 text-[11px] font-black text-cyan-100">
-                <span>{user.vipLevel > 0 ? `V${user.vipLevel}` : `Lv.${currentRank.level}`}</span>
-                <span>🛡️</span>
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Curved Bottom Sheet Container: Men haqimda | Shon-sharaf | Lahza */}
-        <div className="rounded-t-[28px] bg-[#141a44]/88 backdrop-blur-2xl border-t border-white/15 px-3.5 pt-3.5 pb-6 space-y-3.5 min-h-[380px]">
+        {/* Curved Bottom Sheet Container (transparent smoked glass when dragon equipped, royal navy otherwise) */}
+        <div
+          className={
+            hasDragon
+              ? 'space-y-3.5'
+              : 'rounded-t-[28px] bg-[#141a44]/88 backdrop-blur-2xl border-t border-white/15 px-3.5 pt-3.5 pb-6 space-y-3.5 min-h-[380px]'
+          }
+        >
           {/* 3 Main Profile Tabs */}
           <div className="flex items-center gap-6 px-1 border-b border-white/10 pb-2">
             {(
