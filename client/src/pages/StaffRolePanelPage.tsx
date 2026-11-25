@@ -12,8 +12,12 @@ import {
   Shield,
   Users,
   XCircle,
+  Ban,
+  AlertTriangle,
+  Activity,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useWorld } from '../context/WorldContext';
 import {
   closeRoomInSupabase,
   fetchAllProfilesFromSupabase,
@@ -78,6 +82,7 @@ const ROLE_TASKS: Record<string, string[]> = {
 export const StaffRolePanelPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, refreshUser, toast } = useAuth();
+  const { state, addAuditLog } = useWorld();
   const [members, setMembers] = useState<User[]>([]);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [searchQ, setSearchQ] = useState('');
@@ -140,7 +145,36 @@ export const StaffRolePanelPage: React.FC = () => {
       setStoredUser(updated);
       await refreshUser();
     }
+    addAuditLog(user?.displayName || 'Staff', myMeta.label, `${target.displayName} → ${getRoleMeta(nextRole).label} etib tayinlandi`);
     toast(`${target.displayName} → ${getRoleMeta(nextRole).label} etib tayinlandi`, 'success');
+  };
+
+  const handleToggleBan = async (target: User) => {
+    const targetMeta = getRoleMeta(target.role);
+    if (targetMeta.rank >= myRank) {
+      toast('Yuqori yoki teng lavozimni bloklab bo‘lmaydi', 'error');
+      return;
+    }
+    const nextBanned = !target.isBanned;
+    const updated: User = { ...target, isBanned: nextBanned };
+    await syncProfileToSupabase({ id: target.id, isBanned: nextBanned });
+    setMembers((prev) => prev.map((m) => (m.id === target.id ? updated : m)));
+    addAuditLog(user?.displayName || 'Staff', myMeta.label, `${target.displayName} ${nextBanned ? 'bloklandi 🚫' : 'blokdan ochildi ✅'}`);
+    toast(`${target.displayName} ${nextBanned ? 'bloklandi' : 'blokdan ochildi'}`, nextBanned ? 'error' : 'success');
+  };
+
+  const handlePunish = async (target: User) => {
+    const targetMeta = getRoleMeta(target.role);
+    if (targetMeta.rank >= myRank) {
+      toast('Yuqori yoki teng lavozimga jazo berib bo‘lmaydi', 'error');
+      return;
+    }
+    const nextCoins = Math.max(0, (target.coins || 0) - 1000);
+    const updated: User = { ...target, coins: nextCoins };
+    await syncProfileToSupabase({ id: target.id, coins: nextCoins });
+    setMembers((prev) => prev.map((m) => (m.id === target.id ? updated : m)));
+    addAuditLog(user?.displayName || 'Staff', myMeta.label, `${target.displayName} ga jazo (-1,000 🪙 jarima) qo‘llandi`);
+    toast(`${target.displayName} ga -1,000 🪙 jarima berildi`, 'info');
   };
 
   const handleBroadcast = async (e: React.FormEvent) => {
@@ -158,12 +192,14 @@ export const StaffRolePanelPage: React.FC = () => {
       )
     );
     setBroadcastText('');
+    addAuditLog(user.displayName, myMeta.label, `Xonalarga e’lon yuborildi: "${text}"`);
     toast(`E’lon ${rooms.length} ta xonaga yuborildi`, 'success');
   };
 
   const handleCloseRoom = async (room: RoomSummary) => {
     await closeRoomInSupabase(room.id);
     setRooms((prev) => prev.filter((r) => r.id !== room.id));
+    addAuditLog(user?.displayName || 'Staff', myMeta.label, `"${room.title}" xonasi yopildi`);
     toast(`"${room.title}" xonasi yopildi`, 'info');
   };
 
@@ -359,25 +395,56 @@ export const StaffRolePanelPage: React.FC = () => {
                   <div className="flex items-center gap-2 min-w-0">
                     <Avatar src={m.avatar} name={m.displayName} size="sm" />
                     <div className="min-w-0">
-                      <div className="text-xs font-black text-slate-900 truncate">{m.displayName}</div>
+                      <div className="text-xs font-black text-slate-900 truncate flex items-center gap-1">
+                        <span>{m.displayName}</span>
+                        {m.isBanned && (
+                          <span className="px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700 text-[9px] font-black">
+                            BLOK
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] font-bold text-slate-500">
-                        ID: {m.uid} • <span className="text-slate-700">{targetMeta.label}</span>
+                        ID: {m.uid} • 🪙 {(m.coins || 0).toLocaleString()} • <span className="text-slate-700">{targetMeta.label}</span>
                       </div>
                     </div>
                   </div>
 
                   {canManage ? (
-                    <select
-                      value={m.role || 'USER'}
-                      onChange={(e) => handleAssignRole(m, e.target.value as User['role'])}
-                      className="px-2 py-1 rounded-xl bg-white border border-slate-200 text-[11px] font-black text-slate-900 shrink-0 cursor-pointer"
-                    >
-                      {assignableRoles.map((opt) => (
-                        <option key={opt.role} value={opt.role}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {myRank >= 3 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handlePunish(m)}
+                            className="p-1.5 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 cursor-pointer"
+                            title="Jazo (-1,000 tanga)"
+                          >
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleBan(m)}
+                            className={`p-1.5 rounded-lg cursor-pointer ${
+                              m.isBanned ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                            }`}
+                            title={m.isBanned ? 'Blokdan ochish' : 'Bloklash'}
+                          >
+                            <Ban className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+                      <select
+                        value={m.role || 'USER'}
+                        onChange={(e) => handleAssignRole(m, e.target.value as User['role'])}
+                        className="px-2 py-1 rounded-xl bg-white border border-slate-200 text-[11px] font-black text-slate-900 shrink-0 cursor-pointer"
+                      >
+                        {assignableRoles.map((opt) => (
+                          <option key={opt.role} value={opt.role}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   ) : (
                     <span className="px-2 py-1 rounded-xl bg-slate-100 text-[10px] font-bold text-slate-400 shrink-0">
                       Yuqori/Teng
@@ -389,6 +456,25 @@ export const StaffRolePanelPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 4. Monitoring Feed: Newcomers & Recent Activity */}
+      <div className="card-white rounded-3xl p-4 space-y-2.5">
+        <div className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+          <Activity className="w-4 h-4 text-sky-600" />
+          <span>Monitoring: Nimalar bo‘lyapti ({state.auditLogs.length})</span>
+        </div>
+        <div className="space-y-1.5 max-h-44 overflow-y-auto no-scrollbar">
+          {state.auditLogs.slice(0, 12).map((log) => (
+            <div key={log.id} className="bg-white/70 border border-slate-100 rounded-xl px-3 py-1.5 text-[11px] flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <span className="font-black text-slate-900 mr-1.5">[{log.actor}]</span>
+                <span className="font-semibold text-slate-700">{log.actionUz}</span>
+              </div>
+              <span className="text-[9.5px] font-bold text-slate-400 shrink-0">{log.time}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

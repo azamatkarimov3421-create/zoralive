@@ -430,6 +430,11 @@ export const GovernanceSuitePage: React.FC = () => {
                                     SIZ
                                   </span>
                                 )}
+                                {u.isBanned && (
+                                  <span className="px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[9px] font-black">
+                                    BLOKLANGAN
+                                  </span>
+                                )}
                               </div>
                               <div className="text-[10.5px] font-bold text-slate-500">
                                 ID {u.uid} • @{u.username} • 🪙 {u.coins.toLocaleString()} • 💎 {u.diamonds.toLocaleString()}
@@ -474,6 +479,39 @@ export const GovernanceSuitePage: React.FC = () => {
                             >
                               +1K 💎
                             </button>
+                            {currentUser?.id !== u.id && (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    updateMemberLive(
+                                      u,
+                                      { coins: Math.max(0, (u.coins || 0) - 1000) },
+                                      'Jazo: -1,000 tanga jarima'
+                                    )
+                                  }
+                                  className="px-2.5 py-1 rounded-xl bg-orange-100 hover:bg-orange-200 text-orange-800 text-[10.5px] font-black cursor-pointer"
+                                  title="Jazo berish (-1,000 tanga)"
+                                >
+                                  Jazo -1K
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    updateMemberLive(
+                                      u,
+                                      { isBanned: !u.isBanned },
+                                      !u.isBanned ? 'Foydalanuvchi bloklandi 🚫' : 'Blokdan ochildi ✅'
+                                    )
+                                  }
+                                  className={`px-2.5 py-1 rounded-xl text-[10.5px] font-black cursor-pointer ${
+                                    u.isBanned
+                                      ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800'
+                                      : 'bg-rose-100 hover:bg-rose-200 text-rose-700'
+                                  }`}
+                                >
+                                  {u.isBanned ? 'Blokdan ochish' : 'Bloklash'}
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
 
@@ -605,6 +643,47 @@ export const GovernanceSuitePage: React.FC = () => {
                       </div>
                     ))
                   )}
+                </div>
+              </div>
+            </div>
+
+            {/* EGA MONITORING: YANGI QO‘SHILGANLAR & SO‘NGGI HARAKATLAR */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-white rounded-3xl p-4 border border-slate-200 space-y-2">
+                <div className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-emerald-600" />
+                  <span>Kimlar qo‘shildi ({liveUsers.length} jami foydalanuvchi)</span>
+                </div>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {[...liveUsers]
+                    .sort((a, b) => (b.uid || 0) - (a.uid || 0))
+                    .slice(0, 10)
+                    .map((u) => (
+                      <div key={u.id} className="flex items-center justify-between gap-2 bg-slate-50 px-3 py-1.5 rounded-xl text-[11px]">
+                        <span className="font-black text-slate-900 truncate">{u.displayName} (@{u.username})</span>
+                        <span className="text-[10px] font-bold text-slate-500 shrink-0">
+                          ID {u.uid} • {u.role} {u.isBanned ? '🚫' : ''}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-3xl p-4 border border-slate-200 space-y-2">
+                <div className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-sky-600" />
+                  <span>Nimalar bo‘lyapti (Monitoring jurnali)</span>
+                </div>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {state.auditLogs.slice(0, 12).map((log) => (
+                    <div key={log.id} className="flex items-center justify-between gap-2 bg-slate-50 px-3 py-1.5 rounded-xl text-[11px]">
+                      <div className="min-w-0">
+                        <span className="font-black text-slate-900 mr-1">[{log.actor}]</span>
+                        <span className="font-semibold text-slate-700">{log.actionUz}</span>
+                      </div>
+                      <span className="text-[9.5px] font-bold text-slate-400 shrink-0">{log.time}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
