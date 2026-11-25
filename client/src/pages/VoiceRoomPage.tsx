@@ -24,6 +24,7 @@ import {
   Power,
   PackageOpen,
   Megaphone,
+  Gamepad2,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { getSocket, getMyPeerId } from '../lib/socket';
@@ -43,6 +44,7 @@ import { GiftOverlay } from '../components/GiftOverlay';
 import { EntryBanner, EntryRideEvent } from '../components/EntryBanner';
 import { HostExitModal, HostCandidate } from '../components/HostExitModal';
 import { RoomLockModal } from '../components/RoomLockModal';
+import { TeamQuizGame } from '../components/TeamQuizGame';
 import { ThemeOrbDial } from '../components/ThemeOrbDial';
 import { LiveWaveBars, getStageWallpaper } from '../components/LuxuryBadges';
 import { ANIMATED_FRAMES, getAnimatedFrameUrl } from '../lib/mythicCatalog';
@@ -95,6 +97,7 @@ export const VoiceRoomPage: React.FC = () => {
   const [themePickerOpen, setThemePickerOpen] = useState(false);
   const [reactOpen, setReactOpen] = useState(false);
   const [musicOpen, setMusicOpen] = useState(false);
+  const [quizOpen, setQuizOpen] = useState(false);
   const [viewersOpen, setViewersOpen] = useState(false);
   const [viewersTab, setViewersTab] = useState<'online' | 'gifters'>('online');
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -1002,10 +1005,67 @@ export const VoiceRoomPage: React.FC = () => {
           <Heart className="w-4 h-4 fill-current" />
         </button>
 
+        <button
+          onClick={() => {
+            setQuizOpen(true);
+            setMusicOpen(false);
+            setReactOpen(false);
+          }}
+          className={`p-2 rounded-full ${quizOpen ? 'bg-indigo-600 text-white' : isLight ? 'bg-indigo-50 text-indigo-600' : 'bg-indigo-500/25 text-indigo-200 border border-indigo-400/30'}`}
+          title="Jamoaviy O‘yin"
+        >
+          <Gamepad2 className="w-4 h-4" />
+        </button>
+
         <button onClick={() => setGiftDrawerOpen(true)} className="p-2.5 rounded-full btn-brand">
           <Gift className="w-4 h-4" />
         </button>
       </footer>
+
+      {quizOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-end justify-center p-2"
+          onClick={() => setQuizOpen(false)}
+        >
+          <div
+            className="w-full max-w-md max-h-[82vh] overflow-y-auto rounded-3xl bg-slate-100/95 backdrop-blur-2xl border border-white/80 shadow-2xl p-3 space-y-2.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center">
+                  <Gamepad2 className="w-4 h-4" />
+                </span>
+                <div>
+                  <div className="text-xs font-black text-slate-900">Jamoaviy O‘yin (Ovozli xona faol)</div>
+                  <div className="text-[10px] font-bold text-emerald-600">🎙 Suhbat uzilmaydi • Barcha xona a’zolari birga</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQuizOpen(false)}
+                className="p-1.5 rounded-full bg-white border border-slate-200 text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <TeamQuizGame
+              initialRoomCode={roomId ? `V_${roomId.slice(-6).toUpperCase()}` : undefined}
+              initialRoomTitle={roomMeta?.title || 'Ovozli Xona Viktorinasi'}
+              roomHostId={roomMeta?.hostId}
+              compact
+              onClose={() => setQuizOpen(false)}
+              onInviteRoom={() => {
+                if (!roomId || !user) return;
+                const inviteText = '🎮 Jamoaviy O‘yin (Tezkor Bilimdon) ochildi! Pastdagi 🎮 tugmani bosib qo‘shiling!';
+                getSocket().emit('room:chat', { roomId, text: inviteText });
+                sendRoomMessageToSupabase(roomId, user, inviteText, 'CHAT').catch(() => {});
+                toast('Xonadagilarga o‘yin taklifi yuborildi!', 'success');
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       <GiftDrawer
         open={giftDrawerOpen}
