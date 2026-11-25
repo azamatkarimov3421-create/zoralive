@@ -272,6 +272,108 @@ export const ProfilePage: React.FC = () => {
     .filter((tx: any) => Number(tx.amount) < 0)
     .reduce((acc: number, tx: any) => acc + Math.abs(Number(tx.amount) || 0), 0);
 
+  const statsAndLevelsBlock = (
+    <div className={hasDragon ? 'space-y-3' : 'px-4 space-y-3'}>
+      {/* 5-Stat Frosted Glass Card */}
+      <div
+        className={`rounded-3xl backdrop-blur-2xl border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.35)] py-3 px-1.5 grid grid-cols-5 text-center gap-0.5 ${
+          hasDragon ? 'bg-black/45' : 'bg-white/10'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => navigate('/social')}
+          className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
+        >
+          <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+          <span className="text-xs font-black text-white">{user.followingCount ?? 0}</span>
+          <span className="text-[10px] font-semibold text-white/70 leading-tight">Kuzatish</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate('/social')}
+          className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
+        >
+          <Heart className="w-4 h-4 text-rose-400 fill-rose-400" />
+          <span className="text-xs font-black text-white">{user.followersCount ?? 0}</span>
+          <span className="text-[10px] font-semibold text-white/70 leading-tight">Muxlislar</span>
+        </button>
+
+        <div className="flex flex-col items-center gap-1 py-0.5">
+          <Eye className="w-4 h-4 text-violet-400" />
+          <span className="text-xs font-black text-white">{visitorsCount}</span>
+          <span className="text-[10px] font-semibold text-white/70 leading-tight">Mehmonlar</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMainSection('about');
+            setTab('wallet');
+          }}
+          className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
+        >
+          <Gift className="w-4 h-4 text-amber-400" />
+          <span className="text-xs font-black text-white">{(user.diamonds || 0).toLocaleString()}</span>
+          <span className="text-[10px] font-semibold text-white/70 leading-tight">Qabul qilindi</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMainSection('about');
+            setTab('wallet');
+          }}
+          className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
+        >
+          <Send className="w-4 h-4 text-sky-400" />
+          <span className="text-xs font-black text-white">{sentGiftsCoins.toLocaleString()}</span>
+          <span className="text-[10px] font-semibold text-white/70 leading-tight">Yuborish</span>
+        </button>
+      </div>
+
+      {/* 3 Compact Level Pills Row */}
+      <div className="grid grid-cols-3 gap-2">
+        <button
+          type="button"
+          onClick={() => setMainSection('honor')}
+          className="rounded-2xl py-2 px-2 bg-gradient-to-br from-amber-500/25 to-orange-900/45 border border-amber-300/30 backdrop-blur-md flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition"
+        >
+          <span className="text-[10px] font-bold text-amber-200 truncate w-full text-center">Boylik qiymati</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/30 border border-amber-300/50 text-[11px] font-black text-amber-200">
+            <span>{user.wealthLevel || 1}</span>
+            <span>🪙</span>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMainSection('honor')}
+          className="rounded-2xl py-2 px-2 bg-gradient-to-br from-fuchsia-500/25 to-purple-900/45 border border-fuchsia-300/30 backdrop-blur-md flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition"
+        >
+          <span className="text-[10px] font-bold text-fuchsia-200 truncate w-full text-center">Daromad darajasi</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/35 border border-rose-300/50 text-[11px] font-black text-rose-100">
+            <span>💎</span>
+            <span>{user.charmLevel || 1}</span>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMainSection('honor')}
+          className="rounded-2xl py-2 px-2 bg-gradient-to-br from-teal-500/25 to-cyan-900/45 border border-cyan-300/30 backdrop-blur-md flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition"
+        >
+          <span className="text-[10px] font-bold text-cyan-200 truncate w-full text-center">VIP & Unvon</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-500/30 border border-cyan-300/50 text-[11px] font-black text-cyan-100">
+            <span>{user.vipLevel > 0 ? `V${user.vipLevel}` : `Lv.${currentRank.level}`}</span>
+            <span>🛡️</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div
       className={
@@ -405,10 +507,17 @@ export const ProfilePage: React.FC = () => {
                 />
               </div>
 
-              <div className="relative z-30 mt-3 flex items-center justify-center gap-2">
-                <h2 className="text-[20px] font-black text-white tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
+              <div className="relative z-30 mt-3 flex items-center justify-center gap-2 flex-wrap">
+                <h2 className="text-[20px] font-black italic text-white tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
                   {user.displayName}
                 </h2>
+                <span
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black shadow-sm ${
+                    user.gender === 'female' ? 'bg-pink-500 text-white' : 'bg-sky-500 text-white'
+                  }`}
+                >
+                  {user.gender === 'female' ? '♀' : '♂'}
+                </span>
                 {user.vipLevel > 0 && <VipCrest level={user.vipLevel} size="sm" />}
                 <button
                   onClick={openEditor}
@@ -419,16 +528,35 @@ export const ProfilePage: React.FC = () => {
                 </button>
               </div>
 
-              <button
-                onClick={() => {
-                  navigator.clipboard?.writeText(String(user.uid));
-                  toast(`ID: ${user.uid}`, 'info');
-                }}
-                className="relative z-30 inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full bg-black/50 hover:bg-black/70 border border-white/15 backdrop-blur-md text-xs text-white/90 font-bold transition active:scale-95 cursor-pointer"
-              >
-                <span className="text-[11px] font-extrabold tracking-wide">ID {user.uid}</span>
-                <Copy className="w-3 h-3 text-white/70" />
-              </button>
+              <div className="relative z-30 flex items-center justify-center gap-2 mt-1.5 flex-wrap">
+                <button
+                  onClick={() => {
+                    navigator.clipboard?.writeText(String(user.uid));
+                    toast(`ID: ${user.uid} nusxalandi`, 'info');
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/80 via-emerald-600/85 to-emerald-700/90 border border-amber-300/70 text-[11px] font-black text-white shadow-sm active:scale-95 transition cursor-pointer"
+                >
+                  <span className="px-1 rounded-full bg-amber-300 text-slate-950 text-[9px] font-black">ID</span>
+                  <span>{user.uid}</span>
+                  <Copy className="w-3 h-3 text-white/85" />
+                </button>
+                <span className="text-base leading-none">{countryFlag}</span>
+                {user.role && user.role !== 'USER' && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/staff-panel')}
+                    className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-fuchsia-600/85 to-indigo-600/85 border border-fuchsia-300/60 text-[10px] font-black text-white shadow-sm cursor-pointer"
+                  >
+                    🛡️ {user.role}
+                  </button>
+                )}
+              </div>
+
+              {user.bio && (
+                <p className="relative z-30 mt-1.5 text-xs font-semibold text-white/85 max-w-[280px] drop-shadow-xs">
+                  {user.bio}
+                </p>
+              )}
 
               <div className="relative z-30 flex items-center justify-center gap-2 mt-2.5 flex-wrap">
                 <div className="inline-flex items-center justify-center gap-3 px-3.5 py-1 rounded-full bg-black/45 border border-white/15 backdrop-blur-md text-xs text-white/90 font-semibold">
@@ -564,108 +692,16 @@ export const ProfilePage: React.FC = () => {
                 {user.bio || 'ZoraLive a’zosi ✨'}
               </p>
             </div>
-
-            {/* 5-Stat Frosted Midnight Glass Card (matching reference screenshot) */}
-            <div className="rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.35)] py-3 px-1.5 grid grid-cols-5 text-center gap-0.5">
-              <button
-                type="button"
-                onClick={() => navigate('/social')}
-                className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
-              >
-                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                <span className="text-xs font-black text-white">{user.followingCount ?? 0}</span>
-                <span className="text-[10px] font-semibold text-white/70 leading-tight">Kuzatish</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigate('/social')}
-                className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
-              >
-                <Heart className="w-4 h-4 text-rose-400 fill-rose-400" />
-                <span className="text-xs font-black text-white">{user.followersCount ?? 0}</span>
-                <span className="text-[10px] font-semibold text-white/70 leading-tight">Muxlislar</span>
-              </button>
-
-              <div className="flex flex-col items-center gap-1 py-0.5">
-                <Eye className="w-4 h-4 text-violet-400" />
-                <span className="text-xs font-black text-white">{visitorsCount}</span>
-                <span className="text-[10px] font-semibold text-white/70 leading-tight">Mehmonlar</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMainSection('about');
-                  setTab('wallet');
-                }}
-                className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
-              >
-                <Gift className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-black text-white">{(user.diamonds || 0).toLocaleString()}</span>
-                <span className="text-[10px] font-semibold text-white/70 leading-tight">Qabul qilindi</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMainSection('about');
-                  setTab('wallet');
-                }}
-                className="flex flex-col items-center gap-1 py-0.5 rounded-xl hover:bg-white/10 transition cursor-pointer"
-              >
-                <Send className="w-4 h-4 text-sky-400" />
-                <span className="text-xs font-black text-white">{sentGiftsCoins.toLocaleString()}</span>
-                <span className="text-[10px] font-semibold text-white/70 leading-tight">Yuborish</span>
-              </button>
-            </div>
-
-            {/* 3 Compact Level Pills Row */}
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setMainSection('honor')}
-                className="rounded-2xl py-2 px-2 bg-gradient-to-br from-amber-500/25 to-orange-900/40 border border-amber-300/30 flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition"
-              >
-                <span className="text-[10px] font-bold text-amber-200 truncate w-full text-center">Boylik qiymati</span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/30 border border-amber-300/50 text-[11px] font-black text-amber-200">
-                  <span>{user.wealthLevel || 1}</span>
-                  <span>🪙</span>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setMainSection('honor')}
-                className="rounded-2xl py-2 px-2 bg-gradient-to-br from-fuchsia-500/25 to-purple-900/45 border border-fuchsia-300/30 flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition"
-              >
-                <span className="text-[10px] font-bold text-fuchsia-200 truncate w-full text-center">Daromad darajasi</span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/35 border border-rose-300/50 text-[11px] font-black text-rose-100">
-                  <span>💎</span>
-                  <span>{user.charmLevel || 1}</span>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setMainSection('honor')}
-                className="rounded-2xl py-2 px-2 bg-gradient-to-br from-teal-500/25 to-cyan-900/45 border border-cyan-300/30 flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition"
-              >
-                <span className="text-[10px] font-bold text-cyan-200 truncate w-full text-center">VIP & Unvon</span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-500/30 border border-cyan-300/50 text-[11px] font-black text-cyan-100">
-                  <span>{user.vipLevel > 0 ? `V${user.vipLevel}` : `Lv.${currentRank.level}`}</span>
-                  <span>🛡️</span>
-                </span>
-              </button>
-            </div>
           </div>
         )}
 
-        {/* Curved Bottom Sheet Container (transparent smoked glass when dragon equipped, royal navy otherwise) */}
+        {statsAndLevelsBlock}
+
+        {/* Curved Bottom Sheet Container */}
         <div
           className={
             hasDragon
-              ? 'space-y-3.5'
+              ? 'rounded-3xl bg-black/42 backdrop-blur-xl border border-white/15 px-3.5 pt-3.5 pb-6 space-y-3.5'
               : 'rounded-t-[28px] bg-[#141a44]/88 backdrop-blur-2xl border-t border-white/15 px-3.5 pt-3.5 pb-6 space-y-3.5 min-h-[380px]'
           }
         >
