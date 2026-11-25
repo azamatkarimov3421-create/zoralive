@@ -880,8 +880,8 @@ export const GovernanceSuitePage: React.FC = () => {
                   <div className="text-lg font-black text-slate-900">{CONTINENTS_10.length}</div>
                 </div>
                 <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                  <div className="text-[10px] font-bold text-slate-400">Ovozli Xonalar</div>
-                  <div className="text-lg font-black text-emerald-600">185 faol</div>
+                  <div className="text-[10px] font-bold text-slate-400">Jonli Xonalar</div>
+                  <div className="text-lg font-black text-emerald-600">{liveRooms.length} faol</div>
                 </div>
                 <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
                   <div className="text-[10px] font-bold text-slate-400">Shikoyatlar</div>
@@ -1097,36 +1097,38 @@ export const GovernanceSuitePage: React.FC = () => {
               <div className="min-w-0">
                 <div className="text-[10px] font-black text-sky-700">SHAXSIY TAKLIF HAVOLASI</div>
                 <div className="text-xs font-bold text-slate-900 truncate">
-                  https://zoralive.vercel.app/?ref=BOSHLOVCHI_TURON_77
+                  {`https://zoralive.vercel.app/?ref=${currentUser?.uid || 'OWNER'}`}
                 </div>
               </div>
               <button
                 onClick={() => {
-                  navigator.clipboard?.writeText('https://zoralive.vercel.app/?ref=BOSHLOVCHI_TURON_77');
+                  navigator.clipboard?.writeText(`https://zoralive.vercel.app/?ref=${currentUser?.uid || 'OWNER'}`);
                   toast('Taklif havolasi nusxalandi! 📋', 'success');
                 }}
-                className="px-3 py-1.5 rounded-full bg-sky-600 text-white text-[10.5px] font-black shrink-0 flex items-center gap-1"
+                className="px-3 py-1.5 rounded-full bg-sky-600 text-white text-[10.5px] font-black shrink-0 flex items-center gap-1 cursor-pointer"
               >
                 <Link2 className="w-3.5 h-3.5" /> Nusxalash
               </button>
             </div>
 
             <div className="space-y-1.5">
-              {[
-                { name: 'Bekzod R.', kingdom: 'Turon Imperiyasi', rank: 'Rekrut', status: 'Tasdiqlangan' },
-                { name: 'Shahlo M.', kingdom: 'Sylvanna Zumrad Davlati', rank: 'Oddiy askar', status: 'Tasdiqlangan' },
-                { name: 'Timur A.', kingdom: 'Turon Imperiyasi', rank: 'Rekrut', status: 'Ro‘yxatda' },
-              ].map((rec, i) => (
-                <div key={i} className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs">
-                  <div>
-                    <div className="font-black text-slate-900">{rec.name}</div>
-                    <div className="text-[10px] text-slate-500">🏰 {rec.kingdom} • {rec.rank}</div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> {rec.status}
-                  </span>
+              {liveUsers.length === 0 ? (
+                <div className="text-center py-4 text-xs font-semibold text-slate-400">
+                  Hozircha ro‘yxatdan o‘tgan foydalanuvchilar topilmadi
                 </div>
-              ))}
+              ) : (
+                liveUsers.slice(0, 8).map((rec) => (
+                  <div key={rec.id} className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs">
+                    <div>
+                      <div className="font-black text-slate-900">{rec.displayName}</div>
+                      <div className="text-[10px] text-slate-500">ID: {rec.uid} • @{rec.username}</div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> {rec.role}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}

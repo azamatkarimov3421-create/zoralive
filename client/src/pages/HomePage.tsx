@@ -107,7 +107,6 @@ export const HomePage: React.FC<{ onGoLive?: () => void }> = ({ onGoLive }) => {
                 ['ALL', 'Ommabop'],
                 ['VOICE', 'Ovozli'],
                 ['VIDEO', 'Video'],
-                ['GAME', 'O‘yin'],
                 ['FOLLOWING', 'Obuna'],
               ] as const
             ).map(([key, label]) => {

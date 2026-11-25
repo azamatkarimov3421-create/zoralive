@@ -519,8 +519,8 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
         userId: currentUser.id,
         displayName: currentUser.displayName,
         avatar: currentUser.avatar,
-        frame: currentUser.activeFrame || 'frame-gold-1',
-        vipLevel: currentUser.vipLevel || 4,
+        frame: currentUser.activeFrame || '',
+        vipLevel: currentUser.vipLevel || 0,
         content: body.content || '',
         imageUrl: body.imageUrl || '',
         likesCount: 0,
@@ -529,6 +529,7 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
         createdAt: new Date().toISOString(),
       };
       mockMoments.unshift(newM);
+      saveLocalDb();
       return { moment: newM } as unknown as T;
     }
     return { moments: mockMoments } as unknown as T;
@@ -539,7 +540,8 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     const m = mockMoments.find((x) => x.id === momentLikeMatch[1]);
     if (m) {
       m.liked = !m.liked;
-      m.likesCount += m.liked ? 1 : -1;
+      m.likesCount = Math.max(0, m.likesCount + (m.liked ? 1 : -1));
+      saveLocalDb();
       return { liked: m.liked } as unknown as T;
     }
     return { liked: true } as unknown as T;
@@ -558,6 +560,7 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
       mockComments[mid] = [...(mockComments[mid] || []), comment];
       const m = mockMoments.find((x) => x.id === mid);
       if (m) m.commentsCount += 1;
+      saveLocalDb();
       return { comment } as unknown as T;
     }
     return { comments: mockComments[mid] || [] } as unknown as T;
@@ -587,16 +590,19 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
       };
       mockFamilies.unshift(clan);
       mockMyFamilyId = clan.id;
+      saveLocalDb();
       createFamilyInSupabase(clan.name, clan.tag, currentUser);
       return { family: clan } as unknown as T;
     }
     if (path === '/families/leave') {
       mockMyFamilyId = null;
+      saveLocalDb();
       return { ok: true } as unknown as T;
     }
     const joinMatch = path.match(/^\/families\/([^/]+)\/join$/);
     if (joinMatch) {
       mockMyFamilyId = joinMatch[1];
+      saveLocalDb();
       return { ok: true } as unknown as T;
     }
     const supaFamilies = await fetchFamiliesFromSupabase();
@@ -606,30 +612,45 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
   }
 
   // 7. Tasks
+  const BASE_TASKS = [
+    { id: 't1', code: 'daily_checkin', icon: '🎁', title: 'Kundalik kirish bonusi', reward: 500 },
+    { id: 't2', code: 'watch_5m', icon: '📺', title: '5 daqiqa jonli efir ko‘rish', reward: 350 },
+    { id: 't3', code: 'send_dragon', icon: '🐉', title: '1 ta sovg‘a yuborish', reward: 1000 },
+    { id: 't4', code: 'chat_room', icon: '🎙️', title: 'Ovozli yoki Video xonada suhbatlashish', reward: 400 },
+  ];
+
   if (path === '/tasks') {
-    const baseTasks = [
-      { id: 't1', code: 'daily_checkin', icon: '🎁', title: 'Kundalik kirish bonusi', reward: 500, claimed: mockClaimedTasks.has('t1') },
-      { id: 't2', code: 'watch_5m', icon: '📺', title: '5 daqiqa jonli efir ko‘rish', reward: 350, claimed: mockClaimedTasks.has('t2') },
-      { id: 't3', code: 'send_dragon', icon: '🐉', title: '1 ta Ajdarho sovg‘a yuborish', reward: 1000, claimed: mockClaimedTasks.has('t3') },
-      { id: 't4', code: 'play_ludo', icon: '🎲', title: 'Ludo yoki Wheel o‘ynash', reward: 400, claimed: mockClaimedTasks.has('t4') },
-    ];
-    return { tasks: baseTasks } as unknown as T;
+    return {
+      tasks: BASE_TASKS.map((t) => ({
+        ...t,
+        claimed: mockClaimedTasks.has(t.id) || mockClaimedTasks.has(t.code),
+      })),
+    } as unknown as T;
   }
 
   if (path === '/tasks/claim') {
-    const code = body.code || body.taskId || 't1';
+    const code = String(body.code || body.taskId || 't1');
+    const taskMeta = BASE_TASKS.find((t) => t.code === code || t.id === code);
+    if (mockClaimedTasks.has(code) || (taskMeta && (mockClaimedTasks.has(taskMeta.id) || mockClaimedTasks.has(taskMeta.code)))) {
+      throw new Error('Bu vazifa allaqachon olingan');
+    }
     mockClaimedTasks.add(code);
-    const reward = 500;
-    currentUser.coins += reward;
+    if (taskMeta) {
+      mockClaimedTasks.add(taskMeta.id);
+      mockClaimedTasks.add(taskMeta.code);
+    }
+    const reward = taskMeta?.reward || 500;
+    currentUser.coins = (currentUser.coins || 0) + reward;
     setStoredUser(currentUser);
     syncProfileToSupabase({ id: currentUser.id, coins: currentUser.coins });
     mockLedger.unshift({
       id: `tx_${Date.now()}`,
       currency: 'COINS',
       amount: reward,
-      description: 'Kundalik vazifa mukofoti',
+      description: `Vazifa: ${taskMeta?.title || 'Kundalik mukofot'}`,
       created_at: new Date().toISOString(),
     });
+    saveLocalDb();
     return { reward, coins: currentUser.coins } as unknown as T;
   }
 
@@ -664,6 +685,7 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
       description: `${body.provider || 'Click'} orqali to‘ldirish (+${added.toLocaleString()})`,
       created_at: new Date().toISOString(),
     });
+    saveLocalDb();
     return { added, coins: currentUser.coins } as unknown as T;
   }
 
@@ -682,6 +704,7 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
       description: `${diamonds} 💎 almashtirildi`,
       created_at: new Date().toISOString(),
     });
+    saveLocalDb();
     return { coinsGain, coins: currentUser.coins, diamonds: currentUser.diamonds } as unknown as T;
   }
 
@@ -792,12 +815,19 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
   const followMatch = path.match(/^\/users\/([^/]+)\/follow$/);
   if (followMatch) {
     const tid = followMatch[1];
+    let following: boolean;
     if (mockFollows.has(tid)) {
       mockFollows.delete(tid);
-      return { following: false } as unknown as T;
+      following = false;
+    } else {
+      mockFollows.add(tid);
+      following = true;
     }
-    mockFollows.add(tid);
-    return { following: true } as unknown as T;
+    currentUser.followingCount = mockFollows.size;
+    setStoredUser(currentUser);
+    saveLocalDb();
+    syncProfileToSupabase({ id: currentUser.id, followingCount: currentUser.followingCount });
+    return { following } as unknown as T;
   }
 
   if (path === '/users/profile') {
