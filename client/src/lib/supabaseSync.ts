@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
+import { clampSafeBalance } from './security';
 import { User, RoomSummary, GiftItem } from '../types';
 
 // ==============================================================================
@@ -50,8 +51,8 @@ export async function syncProfileToSupabase(profile: Partial<User> & { id: strin
     if (profile.bio !== undefined) payload.bio = profile.bio;
     if (profile.avatar !== undefined) payload.avatar = profile.avatar;
     if (profile.role !== undefined) payload.role = profile.role;
-    if (profile.coins !== undefined) payload.coins = profile.coins;
-    if (profile.diamonds !== undefined) payload.diamonds = profile.diamonds;
+    if (profile.coins !== undefined) payload.coins = clampSafeBalance(profile.coins);
+    if (profile.diamonds !== undefined) payload.diamonds = clampSafeBalance(profile.diamonds);
     if (profile.vipLevel !== undefined) payload.vip_level = profile.vipLevel;
     if ((profile as any).rankLevel !== undefined) payload.rank_level = (profile as any).rankLevel;
     if (profile.activeFrame !== undefined) payload.active_frame = profile.activeFrame;

@@ -16,35 +16,32 @@ import { StaffRolePanelPage } from './pages/StaffRolePanelPage';
 import { BottomNav } from './components/BottomNav';
 import { FloatingVoiceBar } from './components/FloatingVoiceBar';
 import { CreateRoomModal } from './components/CreateRoomModal';
-
-const SITE_GATE_KEY = 'zoralive_site_gate_v3';
+import { isGateSessionValid, verifyGatePin } from './lib/security';
 
 const SitePasswordGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [unlocked, setUnlocked] = useState<boolean>(() => {
-    try {
-      return sessionStorage.getItem(SITE_GATE_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
+  const [unlocked, setUnlocked] = useState<boolean>(() => isGateSessionValid('site'));
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [checking, setChecking] = useState(false);
 
   if (unlocked) return <>{children}</>;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin.trim() === '6789') {
-      try {
-        sessionStorage.setItem(SITE_GATE_KEY, '1');
-      } catch {
-        // ignore
+    if (checking) return;
+    setChecking(true);
+    setError('');
+    try {
+      const res = await verifyGatePin('site', pin);
+      if (res.ok) {
+        setUnlocked(true);
+        setPin('');
+      } else {
+        setError(res.error || 'Parol noto‘g‘ri');
+        setPin('');
       }
-      setUnlocked(true);
-      setError('');
-    } else {
-      setError('Parol noto‘g‘ri');
-      setPin('');
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -88,9 +85,10 @@ const SitePasswordGate: React.FC<{ children: React.ReactNode }> = ({ children })
 
         <button
           type="submit"
-          className="w-full py-3 rounded-full btn-brand text-sm font-black shadow-lg active:scale-95 transition cursor-pointer"
+          disabled={checking}
+          className="w-full py-3 rounded-full btn-brand text-sm font-black shadow-lg active:scale-95 transition cursor-pointer disabled:opacity-60"
         >
-          Kirish
+          {checking ? 'Tekshirilmoqda...' : 'Kirish'}
         </button>
       </form>
     </div>

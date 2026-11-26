@@ -26,6 +26,7 @@ import {
 import { useWorld } from '../context/WorldContext';
 import { useAuth } from '../context/AuthContext';
 import { setStoredUser } from '../lib/api';
+import { clearGateSession, isGateSessionValid, verifyGatePin } from '../lib/security';
 import {
   fetchAllProfilesFromSupabase,
   syncProfileToSupabase,
@@ -45,8 +46,6 @@ import {
 } from '../lib/worldEcosystemData';
 
 const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
-const EGA_PANEL_PIN = '3434';
-const EGA_UNLOCK_KEY = 'zoralive_ega_unlocked';
 
 type PanelRole = 'OWNER' | 'MANAGER' | 'SUPER_ADMIN' | 'ADMIN' | 'AGENT' | 'HOST' | 'BOSHLOVCHI';
 
@@ -62,9 +61,10 @@ export const GovernanceSuitePage: React.FC = () => {
     addAuditLog,
   } = useWorld();
 
-  const [unlocked, setUnlocked] = useState<boolean>(() => sessionStorage.getItem(EGA_UNLOCK_KEY) === EGA_PANEL_PIN);
+  const [unlocked, setUnlocked] = useState<boolean>(() => isGateSessionValid('owner'));
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+  const [pinChecking, setPinChecking] = useState(false);
 
   const [roleTab, setRoleTab] = useState<PanelRole>('OWNER');
   const [twoFaCode, setTwoFaCode] = useState('');
@@ -95,22 +95,30 @@ export const GovernanceSuitePage: React.FC = () => {
     }
   }, [unlocked]);
 
-  const handleUnlockSubmit = (e: React.FormEvent) => {
+  const handleUnlockSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput.trim() === EGA_PANEL_PIN) {
-      sessionStorage.setItem(EGA_UNLOCK_KEY, EGA_PANEL_PIN);
-      setUnlocked(true);
-      setPinError('');
-      setPinInput('');
-      toast('👑 Ega Paneliga muvaffaqiyatli kirdingiz!', 'success');
-    } else {
-      setPinError('Kod noto‘g‘ri! Ega Paneliga kirish taqiqlangan.');
-      toast('Kod noto‘g‘ri!', 'error');
+    if (pinChecking) return;
+    setPinChecking(true);
+    setPinError('');
+    try {
+      const res = await verifyGatePin('owner', pinInput);
+      if (res.ok) {
+        setUnlocked(true);
+        setPinInput('');
+        addAuditLog(currentUser?.displayName || 'LOYIHA EGASI', 'OWNER', 'Ega Paneliga xavfsiz kirish tasdiqlandi', true);
+        toast('👑 Ega Paneliga muvaffaqiyatli kirdingiz!', 'success');
+      } else {
+        setPinError(res.error || 'Kod noto‘g‘ri! Ega Paneliga kirish taqiqlangan.');
+        addAuditLog(currentUser?.displayName || 'NOMA‘LUM', 'SECURITY', 'Ega Paneliga noto‘g‘ri PIN kiritish urinishi bloklandi', true);
+        toast(res.error || 'Kod noto‘g‘ri!', 'error');
+      }
+    } finally {
+      setPinChecking(false);
     }
   };
 
   const handleLockPanel = () => {
-    sessionStorage.removeItem(EGA_UNLOCK_KEY);
+    clearGateSession('owner');
     setUnlocked(false);
     setPinInput('');
     toast('🔒 Ega Paneli qulflandi', 'info');
