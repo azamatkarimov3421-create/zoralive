@@ -2,10 +2,12 @@ import crypto from 'node:crypto';
 
 const SITE_SALT = 'zoralive_site_v3';
 const OWNER_SALT = 'zoralive_owner_v3';
+const GAMES_SALT = 'zoralive_games_v3';
 
-// Default salted SHA-256 digests (can be overridden via Vercel Env Vars SITE_GATE_PIN / OWNER_PANEL_PIN)
+// Default salted SHA-256 digests (can be overridden via Vercel Env Vars SITE_GATE_PIN / OWNER_PANEL_PIN / GAMES_GATE_PIN)
 const DEFAULT_SITE_HASH = 'fe68450bc46784b691f25b39e1591afa85b90c92a9158c1da2ff3de4a043ee03';
 const DEFAULT_OWNER_HASH = '0afae73517f9f1ceccdffa9c40d75ff470f55089c7813a4dfb1854daf8ae07b4';
+const DEFAULT_GAMES_HASH = 'ef5183d0b0c9c38a358b0f0f3de5df0c3b6646c1b84c9bd4f9bc2264ec956e7f';
 
 const SESSION_SECRET = process.env.GATE_SESSION_SECRET || 'zoralive_hmac_gate_secret_v3';
 const MAX_ATTEMPTS = 5;
@@ -46,7 +48,7 @@ export default async function handler(req, res) {
   }
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
-  const scope = body.scope === 'owner' ? 'owner' : 'site';
+  const scope = body.scope === 'owner' ? 'owner' : body.scope === 'games' ? 'games' : 'site';
   const pin = String(body.pin || '').trim();
 
   if (!pin || pin.length > 32) {
@@ -58,11 +60,16 @@ export default async function handler(req, res) {
       ? process.env.OWNER_PANEL_PIN
         ? sha256Hex(`${OWNER_SALT}:${process.env.OWNER_PANEL_PIN.trim()}`)
         : DEFAULT_OWNER_HASH
+      : scope === 'games'
+      ? process.env.GAMES_GATE_PIN
+        ? sha256Hex(`${GAMES_SALT}:${process.env.GAMES_GATE_PIN.trim()}`)
+        : DEFAULT_GAMES_HASH
       : process.env.SITE_GATE_PIN
       ? sha256Hex(`${SITE_SALT}:${process.env.SITE_GATE_PIN.trim()}`)
       : DEFAULT_SITE_HASH;
 
-  const actualHash = sha256Hex(`${scope === 'owner' ? OWNER_SALT : SITE_SALT}:${pin}`);
+  const salt = scope === 'owner' ? OWNER_SALT : scope === 'games' ? GAMES_SALT : SITE_SALT;
+  const actualHash = sha256Hex(`${salt}:${pin}`);
   const valid = safeEqualHex(actualHash, expectedHash);
 
   if (!valid) {
@@ -74,7 +81,12 @@ export default async function handler(req, res) {
     attemptsByIp.set(ip, bucket);
     return res.status(401).json({
       ok: false,
-      error: scope === 'owner' ? 'Kod noto‘g‘ri! Ega Paneliga kirish taqiqlangan.' : 'Parol noto‘g‘ri',
+      error:
+        scope === 'owner'
+          ? 'Kod noto‘g‘ri! Ega Paneliga kirish taqiqlangan.'
+          : scope === 'games'
+          ? 'Yoqish kodi noto‘g‘ri!'
+          : 'Parol noto‘g‘ri',
       remaining: Math.max(0, MAX_ATTEMPTS - bucket.count),
     });
   }
