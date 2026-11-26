@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Smartphone, Monitor, Lock, KeyRound } from 'lucide-react';
+import { Smartphone, Monitor, Power, KeyRound } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorldProvider } from './context/WorldContext';
 import { BottomNav } from './components/BottomNav';
@@ -32,6 +32,7 @@ const PageLoader: React.FC = () => (
 
 const SitePasswordGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [unlocked, setUnlocked] = useState<boolean>(() => isGateSessionValid('site'));
+  const [showCodeInput, setShowCodeInput] = useState(false);
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
@@ -49,7 +50,7 @@ const SitePasswordGate: React.FC<{ children: React.ReactNode }> = ({ children })
         setUnlocked(true);
         setPin('');
       } else {
-        setError(res.error || 'Parol noto‘g‘ri');
+        setError(res.error || 'Yoqish kodi noto‘g‘ri');
         setPin('');
       }
     } finally {
@@ -65,44 +66,59 @@ const SitePasswordGate: React.FC<{ children: React.ReactNode }> = ({ children })
         <div className="absolute bottom-[-80px] left-1/2 -translate-x-[160px] w-80 h-80 rounded-full bg-violet-400/22 blur-3xl" />
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="relative z-10 w-full max-w-xs bg-white/80 backdrop-blur-2xl border-2 border-white rounded-3xl p-6 shadow-2xl space-y-4 text-center"
-      >
-        <div className="w-14 h-14 mx-auto rounded-2xl btn-brand flex items-center justify-center shadow-lg">
-          <Lock className="w-7 h-7 text-white" />
+      <div className="relative z-10 w-full max-w-xs bg-white/80 backdrop-blur-2xl border-2 border-white rounded-3xl p-6 shadow-2xl space-y-4 text-center">
+        <div className="w-16 h-16 mx-auto rounded-2xl bg-rose-500/12 border border-rose-200/80 flex items-center justify-center shadow-inner">
+          <Power className="w-8 h-8 text-rose-600" />
         </div>
         <div className="space-y-1">
-          <h1 className="text-lg font-black text-slate-900">ZoraLive</h1>
-          <p className="text-xs font-semibold text-slate-500">Saytga kirish uchun parolni kiriting</p>
+          <h1 className="text-lg font-black text-slate-900">Baza o‘chiq</h1>
+          <p className="text-xs font-semibold text-slate-500">
+            ZoraLive bazasi hozircha o‘chirilgan. Yoqish uchun kodni kiriting.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-white/90 border border-slate-200 rounded-2xl px-3.5 py-2.5">
-          <KeyRound className="w-4 h-4 text-[#ff3366] shrink-0" />
-          <input
-            type="password"
-            inputMode="numeric"
-            autoFocus
-            value={pin}
-            onChange={(e) => {
-              setPin(e.target.value);
-              if (error) setError('');
+        {!showCodeInput ? (
+          <button
+            type="button"
+            onClick={() => {
+              setShowCodeInput(true);
+              setError('');
             }}
-            placeholder="Kirish paroli"
-            className="flex-1 bg-transparent text-sm font-black tracking-widest text-slate-900 focus:outline-none"
-          />
-        </div>
+            className="w-full py-3 rounded-full btn-brand text-sm font-black shadow-lg active:scale-95 transition cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>Yoqish kodi</span>
+          </button>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="flex items-center gap-2 bg-white/90 border border-slate-200 rounded-2xl px-3.5 py-2.5">
+              <KeyRound className="w-4 h-4 text-[#ff3366] shrink-0" />
+              <input
+                type="password"
+                inputMode="numeric"
+                autoFocus
+                value={pin}
+                onChange={(e) => {
+                  setPin(e.target.value);
+                  if (error) setError('');
+                }}
+                placeholder="Yoqish kodini kiriting"
+                className="flex-1 bg-transparent text-sm font-black tracking-widest text-slate-900 focus:outline-none"
+              />
+            </div>
 
-        {error && <div className="text-xs font-extrabold text-rose-600">{error}</div>}
+            {error && <div className="text-xs font-extrabold text-rose-600">{error}</div>}
 
-        <button
-          type="submit"
-          disabled={checking}
-          className="w-full py-3 rounded-full btn-brand text-sm font-black shadow-lg active:scale-95 transition cursor-pointer disabled:opacity-60"
-        >
-          {checking ? 'Tekshirilmoqda...' : 'Kirish'}
-        </button>
-      </form>
+            <button
+              type="submit"
+              disabled={checking}
+              className="w-full py-3 rounded-full btn-brand text-sm font-black shadow-lg active:scale-95 transition cursor-pointer disabled:opacity-60"
+            >
+              {checking ? 'Tekshirilmoqda...' : 'Bazani yoqish'}
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 };

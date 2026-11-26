@@ -1,11 +1,11 @@
 import crypto from 'node:crypto';
 
-const SITE_SALT = 'zoralive_site_v3';
+const SITE_SALT = 'zoralive_site_v4';
 const OWNER_SALT = 'zoralive_owner_v3';
 const GAMES_SALT = 'zoralive_games_v3';
 
 // Default salted SHA-256 digests (can be overridden via Vercel Env Vars SITE_GATE_PIN / OWNER_PANEL_PIN / GAMES_GATE_PIN)
-const DEFAULT_SITE_HASH = 'fe68450bc46784b691f25b39e1591afa85b90c92a9158c1da2ff3de4a043ee03';
+const DEFAULT_SITE_HASH = 'a8af693a2d0b69055964e573f470e02c0039f15e34163ef5172bd3241ee88aaf';
 const DEFAULT_OWNER_HASH = '0afae73517f9f1ceccdffa9c40d75ff470f55089c7813a4dfb1854daf8ae07b4';
 const DEFAULT_GAMES_HASH = 'ef5183d0b0c9c38a358b0f0f3de5df0c3b6646c1b84c9bd4f9bc2264ec956e7f';
 

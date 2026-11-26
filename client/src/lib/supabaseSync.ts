@@ -178,6 +178,80 @@ export function mapDbUser(data: any): User {
 // 2. JONLI EFIR XONALARI (ROOMS)
 // ==============================================================================
 
+const STALE_ROOM_MS = 90_000; // 90s without an active occupant heartbeat => zombie room auto-closed
+
+export async function touchRoomHeartbeat(roomId: string, userId: string, viewerCount = 1): Promise<void> {
+  if (!isSupabaseConfigured || !roomId || !userId) return;
+  try {
+    const payload = JSON.stringify({ roomId, lastPing: Date.now(), viewers: Math.max(1, viewerCount) });
+    const { data } = await supabase
+      .from('inventory')
+      .select('id, item_code')
+      .eq('item_type', 'ROOM_HEARTBEAT')
+      .limit(100);
+    const existing = (data || []).find((r: any) => safeParseJson<any>(r.item_code)?.roomId === roomId);
+    if (existing) {
+      await supabase.from('inventory').update({ item_code: payload }).eq('id', existing.id);
+    } else {
+      await supabase.from('inventory').insert({
+        user_id: userId,
+        item_type: 'ROOM_HEARTBEAT',
+        item_code: payload,
+        is_equipped: true,
+      });
+    }
+    await supabase
+      .from('rooms')
+      .update({ viewer_count: Math.max(1, viewerCount), is_live: true })
+      .eq('id', roomId);
+  } catch {
+    // ignore heartbeat transient errors
+  }
+}
+
+export async function clearRoomHeartbeat(roomId: string): Promise<void> {
+  if (!isSupabaseConfigured || !roomId) return;
+  try {
+    const { data } = await supabase
+      .from('inventory')
+      .select('id, item_code')
+      .eq('item_type', 'ROOM_HEARTBEAT')
+      .limit(100);
+    const matches = (data || []).filter((r: any) => safeParseJson<any>(r.item_code)?.roomId === roomId);
+    for (const row of matches) {
+      await supabase.from('inventory').delete().eq('id', row.id);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function closeRoomKeepalive(roomId: string): void {
+  if (!isSupabaseConfigured || !roomId || typeof fetch === 'undefined') return;
+  try {
+    const url =
+      import.meta.env.VITE_SUPABASE_URL ||
+      localStorage.getItem('zoralive_supabase_url') ||
+      'https://sacnahwrigdrdriwauaw.supabase.co';
+    const key =
+      import.meta.env.VITE_SUPABASE_ANON_KEY ||
+      localStorage.getItem('zoralive_supabase_anon_key') ||
+      'sb_publishable_suOWx1eM-Uy9MrKyn5BcXA_RcdeHCEj';
+    fetch(`${url}/rest/v1/rooms?id=eq.${encodeURIComponent(roomId)}`, {
+      method: 'PATCH',
+      keepalive: true,
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ is_live: false, viewer_count: 0 }),
+    }).catch(() => {});
+  } catch {
+    // ignore
+  }
+}
+
 export async function fetchRoomsFromSupabase(): Promise<RoomSummary[] | null> {
   if (!isSupabaseConfigured) return null;
   try {
@@ -195,7 +269,57 @@ export async function fetchRoomsFromSupabase(): Promise<RoomSummary[] | null> {
     if (error) return null;
     if (!data || data.length === 0) return [];
 
-    return data.map((r: any, idx: number) => {
+    // Fetch active room heartbeats to prune abandoned / zombie rooms automatically
+    const heartbeatMap = new Map<string, { lastPing: number; viewers: number }>();
+    try {
+      const { data: hbRows } = await supabase
+        .from('inventory')
+        .select('item_code')
+        .eq('item_type', 'ROOM_HEARTBEAT')
+        .limit(100);
+      for (const row of hbRows || []) {
+        const parsed = safeParseJson<any>(row.item_code);
+        if (parsed?.roomId) {
+          const prev = heartbeatMap.get(parsed.roomId);
+          const ping = Number(parsed.lastPing) || 0;
+          if (!prev || ping > prev.lastPing) {
+            heartbeatMap.set(parsed.roomId, { lastPing: ping, viewers: Number(parsed.viewers) || 1 });
+          }
+        }
+      }
+    } catch {
+      // ignore heartbeat read failure
+    }
+
+    const now = Date.now();
+    const aliveRows: any[] = [];
+    const staleIds: string[] = [];
+
+    for (const r of data) {
+      const createdMs = r.created_at ? Date.parse(r.created_at) : 0;
+      const hb = heartbeatMap.get(r.id);
+      const lastActiveMs = Math.max(createdMs || 0, hb?.lastPing || 0);
+      if (now - lastActiveMs > STALE_ROOM_MS) {
+        staleIds.push(r.id);
+      } else {
+        aliveRows.push({ ...r, _liveViewers: hb?.viewers || r.viewer_count });
+      }
+    }
+
+    // Auto-close abandoned zombie rooms in Supabase in the background
+    if (staleIds.length > 0) {
+      Promise.all(
+        staleIds.map((sid) =>
+          supabase
+            .from('rooms')
+            .update({ is_live: false, viewer_count: 0 })
+            .eq('id', sid)
+            .then(() => clearRoomHeartbeat(sid))
+        )
+      ).catch(() => {});
+    }
+
+    return aliveRows.map((r: any, idx: number) => {
       const cat = String(r.category || '').toUpperCase();
       const rType: 'VOICE' | 'VIDEO' | 'GAME' =
         cat === 'VIDEO' ? 'VIDEO' : cat === 'GAME' ? 'GAME' : 'VOICE';
@@ -217,7 +341,7 @@ export async function fetchRoomsFromSupabase(): Promise<RoomSummary[] | null> {
         isLive: Boolean(r.is_live),
         isFeatured: true,
         totalGifts: Number(r.total_diamonds) || 0,
-        viewerCount: Math.max(1, Number(r.viewer_count) || 1),
+        viewerCount: Math.max(1, Number(r._liveViewers || r.viewer_count) || 1),
         hasPk: false,
         occupiedSeats: 1,
       };
@@ -329,8 +453,8 @@ export async function fetchRoomByIdFromSupabase(roomId: string): Promise<RoomSum
 export async function closeRoomInSupabase(roomId: string): Promise<void> {
   if (!isSupabaseConfigured) return;
   try {
-    await supabase.from('rooms').update({ is_live: false }).eq('id', roomId);
-    await supabase.from('rooms').delete().eq('id', roomId);
+    await supabase.from('rooms').update({ is_live: false, viewer_count: 0 }).eq('id', roomId);
+    await clearRoomHeartbeat(roomId);
   } catch (e) {
     console.warn('Failed to close room in Supabase:', e);
   }

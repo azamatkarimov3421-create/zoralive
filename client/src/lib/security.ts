@@ -1,26 +1,26 @@
 export type GateScope = 'site' | 'owner' | 'games';
 
 const SESSION_KEYS: Record<GateScope, string> = {
-  site: 'zoralive_site_session_v4',
+  site: 'zoralive_site_session_v5',
   owner: 'zoralive_owner_session_v4',
   games: 'zoralive_games_session_v4',
 };
 
 const LOCK_KEYS: Record<GateScope, string> = {
-  site: 'zoralive_site_lock_v4',
+  site: 'zoralive_site_lock_v5',
   owner: 'zoralive_owner_lock_v4',
   games: 'zoralive_games_lock_v4',
 };
 
 const SALTS: Record<GateScope, string> = {
-  site: 'zoralive_site_v3',
+  site: 'zoralive_site_v4',
   owner: 'zoralive_owner_v3',
   games: 'zoralive_games_v3',
 };
 
 // Salted SHA-256 digests used ONLY as local dev fallback when /api/verify-gate is unavailable
 const FALLBACK_HASHES: Record<GateScope, string> = {
-  site: 'fe68450bc46784b691f25b39e1591afa85b90c92a9158c1da2ff3de4a043ee03',
+  site: 'a8af693a2d0b69055964e573f470e02c0039f15e34163ef5172bd3241ee88aaf',
   owner: '0afae73517f9f1ceccdffa9c40d75ff470f55089c7813a4dfb1854daf8ae07b4',
   games: 'ef5183d0b0c9c38a358b0f0f3de5df0c3b6646c1b84c9bd4f9bc2264ec956e7f',
 };

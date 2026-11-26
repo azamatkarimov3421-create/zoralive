@@ -3,7 +3,15 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { getStoredUser, getToken, setStoredUser } from './api';
 import { MOCK_GIFTS } from './mockData';
 import { supabase, isSupabaseConfigured } from './supabase';
-import { fetchRoomByIdFromSupabase, sendGiftInSupabase, syncProfileToSupabase, saveDirectMessageToSupabase } from './supabaseSync';
+import {
+  fetchRoomByIdFromSupabase,
+  sendGiftInSupabase,
+  syncProfileToSupabase,
+  saveDirectMessageToSupabase,
+  touchRoomHeartbeat,
+  closeRoomInSupabase,
+  closeRoomKeepalive,
+} from './supabaseSync';
 import { PkState, SeatState } from '../types';
 
 let socketInstance: Socket | null = null;
@@ -33,9 +41,44 @@ class SupabaseRealtimeSocket {
   private activePk: PkState | null = null;
   private activeBox: any = null;
   private mySeatIndex: number | null = null;
+  private lastPresenceCount = 1;
+  private heartbeatTimer: number | null = null;
+  private unloadBound = false;
 
   constructor() {
     this.ensureGlobalChannel();
+    this.bindUnloadGuard();
+  }
+
+  private bindUnloadGuard() {
+    if (this.unloadBound || typeof window === 'undefined') return;
+    this.unloadBound = true;
+    const handleUnload = () => {
+      if (this.currentRoomId && this.lastPresenceCount <= 1) {
+        closeRoomKeepalive(this.currentRoomId);
+      }
+    };
+    window.addEventListener('pagehide', handleUnload);
+    window.addEventListener('beforeunload', handleUnload);
+  }
+
+  private startRoomHeartbeat(roomId: string, userId: string) {
+    this.stopRoomHeartbeat();
+    touchRoomHeartbeat(roomId, userId, Math.max(1, this.lastPresenceCount)).catch(() => {});
+    if (typeof window !== 'undefined') {
+      this.heartbeatTimer = window.setInterval(() => {
+        if (this.currentRoomId === roomId) {
+          touchRoomHeartbeat(roomId, userId, Math.max(1, this.lastPresenceCount)).catch(() => {});
+        }
+      }, 25_000);
+    }
+  }
+
+  private stopRoomHeartbeat() {
+    if (this.heartbeatTimer !== null && typeof window !== 'undefined') {
+      window.clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
   }
 
   private ensureGlobalChannel() {
@@ -74,6 +117,9 @@ class SupabaseRealtimeSocket {
   }
 
   private leaveCurrentRoomChannel() {
+    const leavingRoomId = this.currentRoomId;
+    const wasLastOccupant = this.lastPresenceCount <= 1;
+    this.stopRoomHeartbeat();
     if (this.roomChannel) {
       try {
         this.roomChannel.untrack();
@@ -85,6 +131,10 @@ class SupabaseRealtimeSocket {
     }
     this.currentRoomId = null;
     this.mySeatIndex = null;
+    this.lastPresenceCount = 1;
+    if (leavingRoomId && wasLastOccupant) {
+      closeRoomInSupabase(leavingRoomId).catch(() => {});
+    }
   }
 
   private broadcastRoom(event: string, payload: any) {
@@ -156,6 +206,8 @@ class SupabaseRealtimeSocket {
           this.leaveCurrentRoomChannel();
         }
         this.currentRoomId = roomId;
+        this.lastPresenceCount = 1;
+        this.startRoomHeartbeat(roomId, u.id);
 
         const supaRoom = await fetchRoomByIdFromSupabase(roomId);
         const room = supaRoom || {
@@ -264,10 +316,11 @@ class SupabaseRealtimeSocket {
             });
             const viewers = Array.from(viewersMap.values());
             const count = Math.max(1, viewers.length);
+            this.lastPresenceCount = count;
             this.trigger('room:viewers', { viewerCount: count, viewers });
 
-            // Keep live viewer_count updated in Supabase if host
-            if (room.hostId === u.id) {
+            // Keep live viewer_count updated in Supabase
+            if (room.hostId === u.id || count === 1) {
               supabase.from('rooms').update({ viewer_count: count }).eq('id', roomId).then(() => {});
             }
           })
