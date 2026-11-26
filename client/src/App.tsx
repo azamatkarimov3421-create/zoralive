@@ -17,7 +17,7 @@ import { BottomNav } from './components/BottomNav';
 import { FloatingVoiceBar } from './components/FloatingVoiceBar';
 import { CreateRoomModal } from './components/CreateRoomModal';
 
-const SITE_GATE_KEY = 'zoralive_site_gate_v2';
+const SITE_GATE_KEY = 'zoralive_site_gate_v3';
 
 const SitePasswordGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [unlocked, setUnlocked] = useState<boolean>(() => {
@@ -34,7 +34,7 @@ const SitePasswordGate: React.FC<{ children: React.ReactNode }> = ({ children })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin.trim() === '2277') {
+    if (pin.trim() === '6789') {
       try {
         sessionStorage.setItem(SITE_GATE_KEY, '1');
       } catch {
