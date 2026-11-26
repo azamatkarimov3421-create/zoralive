@@ -1,3 +1,8 @@
+import {
+  saveRoomSettingsToSupabase,
+  fetchAllRoomSettingsFromSupabase,
+} from './supabaseSync';
+
 export interface RoomAccessSettings {
   maxCapacity: number;
   isLocked: boolean;
@@ -22,12 +27,37 @@ export function getRoomSettings(roomId: string): RoomAccessSettings | null {
   }
 }
 
-export function saveRoomSettings(roomId: string, settings: RoomAccessSettings): void {
+export function saveRoomSettings(roomId: string, settings: RoomAccessSettings, userId?: string): void {
   if (!roomId) return;
   try {
     localStorage.setItem(`${KEY_PREFIX}${roomId}`, JSON.stringify(settings));
   } catch {
     // ignore storage quota errors
+  }
+
+  try {
+    const uid =
+      userId ||
+      (() => {
+        const rawUser = localStorage.getItem('zoralive_user');
+        return rawUser ? JSON.parse(rawUser)?.id : '';
+      })();
+    if (uid) {
+      saveRoomSettingsToSupabase(uid, roomId, settings).catch(() => {});
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export async function hydrateRoomSettingsFromSupabase(): Promise<void> {
+  try {
+    const map = await fetchAllRoomSettingsFromSupabase();
+    for (const [roomId, settings] of Object.entries(map)) {
+      localStorage.setItem(`${KEY_PREFIX}${roomId}`, JSON.stringify(settings));
+    }
+  } catch {
+    // ignore
   }
 }
 

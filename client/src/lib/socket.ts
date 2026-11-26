@@ -3,7 +3,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { getStoredUser, getToken, setStoredUser } from './api';
 import { MOCK_GIFTS } from './mockData';
 import { supabase, isSupabaseConfigured } from './supabase';
-import { fetchRoomByIdFromSupabase, sendGiftInSupabase, syncProfileToSupabase } from './supabaseSync';
+import { fetchRoomByIdFromSupabase, sendGiftInSupabase, syncProfileToSupabase, saveDirectMessageToSupabase } from './supabaseSync';
 import { LudoGameState, PkState, SeatState } from '../types';
 
 let socketInstance: Socket | null = null;
@@ -646,6 +646,7 @@ class SupabaseRealtimeSocket {
           created_at: new Date().toISOString(),
         };
         this.persistDmLocally(dmPayload);
+        saveDirectMessageToSupabase(dmPayload).catch(() => {});
         this.trigger('dm:received', dmPayload);
         this.ensureGlobalChannel();
         this.globalChannel?.send({ type: 'broadcast', event: 'dm:msg', payload: dmPayload }).catch(() => {});

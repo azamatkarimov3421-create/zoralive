@@ -10,7 +10,20 @@ import {
   fetchGiftsFromSupabase,
   fetchFamiliesFromSupabase,
   createFamilyInSupabase,
+  saveMomentToSupabase,
+  updateMomentInSupabase,
+  fetchMomentsFromSupabase,
+  saveMomentCommentToSupabase,
+  fetchMomentCommentsFromSupabase,
+  toggleFollowInSupabase,
+  fetchFollowsFromSupabase,
+  saveClaimedTaskToSupabase,
+  fetchClaimedTasksFromSupabase,
+  saveWalletLedgerToSupabase,
+  fetchWalletLedgerFromSupabase,
+  fetchDirectMessagesFromSupabase,
 } from './supabaseSync';
+import { hydrateRoomSettingsFromSupabase } from './roomSettings';
 import { RoomSummary, User } from '../types';
 
 const TOKEN_KEY = 'zoralive_token';
@@ -139,7 +152,8 @@ export function saveLocalDb() {
 
 if (typeof window !== 'undefined') {
   loadLocalDb();
-  // Live Supabase initialization: fetch live rooms and families
+  // Live Supabase initialization: fetch live rooms, room settings, and families
+  hydrateRoomSettingsFromSupabase().catch(() => {});
   fetchRoomsFromSupabase().then((rooms) => {
     if (rooms && rooms.length) mockRooms = rooms;
   });
@@ -464,13 +478,16 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
       addOwnedCode(code);
     }
 
-    mockLedger.unshift({
+    const buyTx = {
       id: `tx_${Date.now()}`,
       currency: 'COINS',
       amount: -price,
       description: `Do‘kon: ${found?.name_uz || code}`,
       created_at: new Date().toISOString(),
-    });
+    };
+    mockLedger.unshift(buyTx);
+    saveLocalDb();
+    saveWalletLedgerToSupabase(currentUser.id, buyTx).catch(() => {});
     setStoredUser(currentUser);
     syncProfileToSupabase(currentUser);
     return { ok: true, user: currentUser } as unknown as T;
@@ -511,7 +528,7 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     return { sectorIndex, sector, bet, winAmount, coins: currentUser.coins } as unknown as T;
   }
 
-  // 5. Moments
+  // 5. Moments (Synced with Supabase)
   if (path === '/moments') {
     if (method === 'POST') {
       const newM = {
@@ -526,22 +543,50 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
         likesCount: 0,
         commentsCount: 0,
         liked: false,
+        likedBy: [] as string[],
         createdAt: new Date().toISOString(),
       };
       mockMoments.unshift(newM);
       saveLocalDb();
+      saveMomentToSupabase(newM).catch(() => {});
       return { moment: newM } as unknown as T;
     }
-    return { moments: mockMoments } as unknown as T;
+    const cloudMoments = await fetchMomentsFromSupabase();
+    if (cloudMoments.length > 0) {
+      const mergedMap = new Map<string, any>();
+      for (const cm of cloudMoments) mergedMap.set(cm.id, cm);
+      for (const lm of mockMoments) {
+        if (!mergedMap.has(lm.id)) mergedMap.set(lm.id, lm);
+      }
+      mockMoments = Array.from(mergedMap.values()).sort(
+        (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      );
+      saveLocalDb();
+    }
+    const hydrated = mockMoments.map((m) => ({
+      ...m,
+      liked: Array.isArray(m.likedBy) ? m.likedBy.includes(currentUser.id) : Boolean(m.liked),
+    }));
+    return { moments: hydrated } as unknown as T;
   }
 
   const momentLikeMatch = path.match(/^\/moments\/([^/]+)\/like$/);
   if (momentLikeMatch) {
     const m = mockMoments.find((x) => x.id === momentLikeMatch[1]);
     if (m) {
-      m.liked = !m.liked;
-      m.likesCount = Math.max(0, m.likesCount + (m.liked ? 1 : -1));
+      const likedBy: string[] = Array.isArray(m.likedBy) ? [...m.likedBy] : [];
+      const hasLiked = likedBy.includes(currentUser.id);
+      if (hasLiked) {
+        m.likedBy = likedBy.filter((id) => id !== currentUser.id);
+        m.liked = false;
+        m.likesCount = Math.max(0, (m.likesCount || 0) - 1);
+      } else {
+        m.likedBy = [...likedBy, currentUser.id];
+        m.liked = true;
+        m.likesCount = (m.likesCount || 0) + 1;
+      }
       saveLocalDb();
+      updateMomentInSupabase(m).catch(() => {});
       return { liked: m.liked } as unknown as T;
     }
     return { liked: true } as unknown as T;
@@ -559,9 +604,23 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
       };
       mockComments[mid] = [...(mockComments[mid] || []), comment];
       const m = mockMoments.find((x) => x.id === mid);
-      if (m) m.commentsCount += 1;
+      if (m) {
+        m.commentsCount = (m.commentsCount || 0) + 1;
+        updateMomentInSupabase(m).catch(() => {});
+      }
       saveLocalDb();
+      saveMomentCommentToSupabase(mid, currentUser.id, comment).catch(() => {});
       return { comment } as unknown as T;
+    }
+    const cloudComments = await fetchMomentCommentsFromSupabase(mid);
+    if (cloudComments.length > 0) {
+      const cMap = new Map<string, any>();
+      for (const cc of cloudComments) cMap.set(cc.id, cc);
+      for (const lc of mockComments[mid] || []) {
+        if (!cMap.has(lc.id)) cMap.set(lc.id, lc);
+      }
+      mockComments[mid] = Array.from(cMap.values());
+      saveLocalDb();
     }
     return { comments: mockComments[mid] || [] } as unknown as T;
   }
@@ -620,6 +679,11 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
   ];
 
   if (path === '/tasks') {
+    const cloudTasks = await fetchClaimedTasksFromSupabase(currentUser.id);
+    if (cloudTasks.length > 0) {
+      cloudTasks.forEach((tc) => mockClaimedTasks.add(tc));
+      saveLocalDb();
+    }
     return {
       tasks: BASE_TASKS.map((t) => ({
         ...t,
@@ -643,18 +707,21 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     currentUser.coins = (currentUser.coins || 0) + reward;
     setStoredUser(currentUser);
     syncProfileToSupabase({ id: currentUser.id, coins: currentUser.coins });
-    mockLedger.unshift({
+    const taskTx = {
       id: `tx_${Date.now()}`,
       currency: 'COINS',
       amount: reward,
       description: `Vazifa: ${taskMeta?.title || 'Kundalik mukofot'}`,
       created_at: new Date().toISOString(),
-    });
+    };
+    mockLedger.unshift(taskTx);
     saveLocalDb();
+    saveClaimedTaskToSupabase(currentUser.id, taskMeta?.code || code).catch(() => {});
+    saveWalletLedgerToSupabase(currentUser.id, taskTx).catch(() => {});
     return { reward, coins: currentUser.coins } as unknown as T;
   }
 
-  // 8. Wallet (All packs free for open testing)
+  // 8. Wallet (All packs free for open testing + Supabase synced ledger)
   const TOPUP_PACKAGES = [
     { id: 'pkg-1', coins: 5000, bonus: 0, priceUsd: 0, priceUzs: 0, badge: 'Tekin' },
     { id: 'pkg-2', coins: 15000, bonus: 1500, priceUsd: 0, priceUzs: 0, badge: 'Tekin' },
@@ -664,6 +731,18 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
   ];
 
   if (path === '/wallet') {
+    const cloudLedger = await fetchWalletLedgerFromSupabase(currentUser.id);
+    if (cloudLedger.length > 0) {
+      const txMap = new Map<string, any>();
+      for (const tx of cloudLedger) txMap.set(tx.id, tx);
+      for (const ltx of mockLedger) {
+        if (!txMap.has(ltx.id)) txMap.set(ltx.id, ltx);
+      }
+      mockLedger = Array.from(txMap.values()).sort(
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      );
+      saveLocalDb();
+    }
     return {
       coins: currentUser.coins,
       diamonds: currentUser.diamonds,
@@ -678,14 +757,16 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     currentUser.coins += added;
     setStoredUser(currentUser);
     syncProfileToSupabase({ id: currentUser.id, coins: currentUser.coins });
-    mockLedger.unshift({
+    const topupTx = {
       id: `tx_${Date.now()}`,
       currency: 'COINS',
       amount: added,
       description: `${body.provider || 'Click'} orqali to‘ldirish (+${added.toLocaleString()})`,
       created_at: new Date().toISOString(),
-    });
+    };
+    mockLedger.unshift(topupTx);
     saveLocalDb();
+    saveWalletLedgerToSupabase(currentUser.id, topupTx).catch(() => {});
     return { added, coins: currentUser.coins } as unknown as T;
   }
 
@@ -697,14 +778,16 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     currentUser.coins += coinsGain;
     setStoredUser(currentUser);
     syncProfileToSupabase(currentUser);
-    mockLedger.unshift({
+    const exTx = {
       id: `tx_${Date.now()}`,
       currency: 'COINS',
       amount: coinsGain,
       description: `${diamonds} 💎 almashtirildi`,
       created_at: new Date().toISOString(),
-    });
+    };
+    mockLedger.unshift(exTx);
     saveLocalDb();
+    saveWalletLedgerToSupabase(currentUser.id, exTx).catch(() => {});
     return { coinsGain, coins: currentUser.coins, diamonds: currentUser.diamonds } as unknown as T;
   }
 
@@ -805,7 +888,14 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
 
   if (path === '/users/directory') {
     const q = (params.get('q') || '').toLowerCase();
-    const liveProfiles = await fetchAllProfilesFromSupabase();
+    const [liveProfiles, cloudFollows] = await Promise.all([
+      fetchAllProfilesFromSupabase(),
+      fetchFollowsFromSupabase(currentUser.id),
+    ]);
+    if (cloudFollows.length > 0) {
+      mockFollows = new Set(cloudFollows);
+      saveLocalDb();
+    }
     const list = liveProfiles
       .filter((u) => !q || u.displayName.toLowerCase().includes(q) || u.username.toLowerCase().includes(q))
       .map((u) => ({ ...u, isFollowing: mockFollows.has(u.id) }));
@@ -826,6 +916,7 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     currentUser.followingCount = mockFollows.size;
     setStoredUser(currentUser);
     saveLocalDb();
+    toggleFollowInSupabase(currentUser.id, tid, following).catch(() => {});
     syncProfileToSupabase({ id: currentUser.id, followingCount: currentUser.followingCount });
     return { following } as unknown as T;
   }
@@ -850,9 +941,12 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     return { user: currentUser } as unknown as T;
   }
 
-  // 11. Messages
+  // 11. Messages (Synced with Supabase)
   if (path === '/messages/conversations') {
-    const liveProfiles = await fetchAllProfilesFromSupabase();
+    const [liveProfiles, cloudDms] = await Promise.all([
+      fetchAllProfilesFromSupabase(),
+      fetchDirectMessagesFromSupabase(currentUser.id),
+    ]);
     const peers = liveProfiles.filter((u) => u.id !== currentUser.id);
     const dmStore: Record<string, any[]> = (() => {
       try {
@@ -861,6 +955,22 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
         return {};
       }
     })();
+    if (cloudDms.length > 0) {
+      for (const msg of cloudDms) {
+        const key = [msg.sender_id, msg.receiver_id].sort().join('__');
+        const list = dmStore[key] || [];
+        if (!list.some((x) => x.id === msg.id)) {
+          dmStore[key] = [...list, msg].sort(
+            (a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+          );
+        }
+      }
+      try {
+        localStorage.setItem('zoralive_dms_v1', JSON.stringify(dmStore));
+      } catch {
+        // ignore
+      }
+    }
     return {
       conversations: peers.slice(0, 12).map((peer) => {
         const key = [currentUser.id, peer.id].sort().join('__');
@@ -880,11 +990,28 @@ async function executeMockRequest<T>(rawPath: string, options: RequestInit): Pro
     const peerId = dmMatch[1];
     const key = [currentUser.id, peerId].sort().join('__');
     let thread: any[] = [];
-    try {
-      const dmStore = JSON.parse(localStorage.getItem('zoralive_dms_v1') || '{}');
-      thread = dmStore[key] || [];
-    } catch {
-      thread = [];
+    const dmStore: Record<string, any[]> = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('zoralive_dms_v1') || '{}');
+      } catch {
+        return {};
+      }
+    })();
+    thread = dmStore[key] || [];
+    const cloudThread = await fetchDirectMessagesFromSupabase(currentUser.id, peerId);
+    if (cloudThread.length > 0) {
+      const mMap = new Map<string, any>();
+      for (const m of thread) mMap.set(m.id, m);
+      for (const m of cloudThread) mMap.set(m.id, m);
+      thread = Array.from(mMap.values()).sort(
+        (a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+      );
+      dmStore[key] = thread.slice(-80);
+      try {
+        localStorage.setItem('zoralive_dms_v1', JSON.stringify(dmStore));
+      } catch {
+        // ignore
+      }
     }
     return { messages: thread } as unknown as T;
   }

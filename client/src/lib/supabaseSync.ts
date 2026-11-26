@@ -560,3 +560,328 @@ export async function createFamilyInSupabase(name: string, tag: string, owner: U
     return null;
   }
 }
+
+// ==============================================================================
+// 6. CROSS-DEVICE CLOUD SYNC (DM, MOMENTS, FOLLOWS, TASKS, WALLET, ROOM SETTINGS)
+// Uses existing live public.inventory table (user_id, item_type, item_code)
+// ==============================================================================
+
+function safeParseJson<T = any>(raw: string): T | null {
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+// 6A. Direct Messages (DM)
+export async function saveDirectMessageToSupabase(dm: {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  created_at: string;
+}) {
+  if (!isSupabaseConfigured || !dm.sender_id) return;
+  try {
+    await supabase.from('inventory').insert({
+      user_id: dm.sender_id,
+      item_type: 'DM_MSG',
+      item_code: JSON.stringify(dm),
+      is_equipped: false,
+    });
+  } catch (e) {
+    console.warn('Failed to save DM to Supabase:', e);
+  }
+}
+
+export async function fetchDirectMessagesFromSupabase(userId: string, peerId?: string): Promise<any[]> {
+  if (!isSupabaseConfigured || !userId) return [];
+  try {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('item_code, acquired_at')
+      .eq('item_type', 'DM_MSG')
+      .order('acquired_at', { ascending: true })
+      .limit(300);
+
+    if (error || !data) return [];
+    const list: any[] = [];
+    for (const row of data) {
+      const parsed = safeParseJson<any>(row.item_code);
+      if (!parsed || !parsed.sender_id || !parsed.receiver_id) continue;
+      if (peerId) {
+        const match =
+          (parsed.sender_id === userId && parsed.receiver_id === peerId) ||
+          (parsed.sender_id === peerId && parsed.receiver_id === userId);
+        if (match) list.push(parsed);
+      } else if (parsed.sender_id === userId || parsed.receiver_id === userId) {
+        list.push(parsed);
+      }
+    }
+    return list;
+  } catch (e) {
+    console.warn('Failed to fetch DMs from Supabase:', e);
+    return [];
+  }
+}
+
+// 6B. Moments (Posts & Comments)
+export async function saveMomentToSupabase(moment: any) {
+  if (!isSupabaseConfigured || !moment?.userId) return;
+  try {
+    await supabase.from('inventory').insert({
+      user_id: moment.userId,
+      item_type: 'MOMENT_POST',
+      item_code: JSON.stringify(moment),
+      is_equipped: false,
+    });
+  } catch (e) {
+    console.warn('Failed to save moment to Supabase:', e);
+  }
+}
+
+export async function updateMomentInSupabase(moment: any) {
+  if (!isSupabaseConfigured || !moment?.id) return;
+  try {
+    const { data } = await supabase
+      .from('inventory')
+      .select('id, item_code')
+      .eq('item_type', 'MOMENT_POST')
+      .limit(200);
+    const match = (data || []).find((r: any) => safeParseJson<any>(r.item_code)?.id === moment.id);
+    if (match) {
+      await supabase
+        .from('inventory')
+        .update({ item_code: JSON.stringify(moment) })
+        .eq('id', match.id);
+    }
+  } catch (e) {
+    console.warn('Failed to update moment in Supabase:', e);
+  }
+}
+
+export async function fetchMomentsFromSupabase(): Promise<any[]> {
+  if (!isSupabaseConfigured) return [];
+  try {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('item_code, acquired_at')
+      .eq('item_type', 'MOMENT_POST')
+      .order('acquired_at', { ascending: false })
+      .limit(100);
+    if (error || !data) return [];
+    return data.map((r: any) => safeParseJson<any>(r.item_code)).filter(Boolean);
+  } catch (e) {
+    console.warn('Failed to fetch moments from Supabase:', e);
+    return [];
+  }
+}
+
+export async function saveMomentCommentToSupabase(momentId: string, userId: string, comment: any) {
+  if (!isSupabaseConfigured || !userId) return;
+  try {
+    await supabase.from('inventory').insert({
+      user_id: userId,
+      item_type: 'MOMENT_COMMENT',
+      item_code: JSON.stringify({ ...comment, momentId }),
+      is_equipped: false,
+    });
+  } catch (e) {
+    console.warn('Failed to save moment comment to Supabase:', e);
+  }
+}
+
+export async function fetchMomentCommentsFromSupabase(momentId: string): Promise<any[]> {
+  if (!isSupabaseConfigured) return [];
+  try {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('item_code, acquired_at')
+      .eq('item_type', 'MOMENT_COMMENT')
+      .order('acquired_at', { ascending: true })
+      .limit(200);
+    if (error || !data) return [];
+    return data
+      .map((r: any) => safeParseJson<any>(r.item_code))
+      .filter((c: any) => c && c.momentId === momentId);
+  } catch (e) {
+    console.warn('Failed to fetch moment comments from Supabase:', e);
+    return [];
+  }
+}
+
+// 6C. Follows / Subscriptions
+export async function toggleFollowInSupabase(userId: string, targetId: string, following: boolean) {
+  if (!isSupabaseConfigured || !userId || !targetId) return;
+  try {
+    if (following) {
+      const { data } = await supabase
+        .from('inventory')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('item_type', 'FOLLOW')
+        .eq('item_code', targetId)
+        .limit(1);
+      if (!data || data.length === 0) {
+        await supabase.from('inventory').insert({
+          user_id: userId,
+          item_type: 'FOLLOW',
+          item_code: targetId,
+          is_equipped: true,
+        });
+      }
+    } else {
+      await supabase
+        .from('inventory')
+        .delete()
+        .eq('user_id', userId)
+        .eq('item_type', 'FOLLOW')
+        .eq('item_code', targetId);
+    }
+  } catch (e) {
+    console.warn('Failed to sync follow in Supabase:', e);
+  }
+}
+
+export async function fetchFollowsFromSupabase(userId: string): Promise<string[]> {
+  if (!isSupabaseConfigured || !userId) return [];
+  try {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('item_code')
+      .eq('user_id', userId)
+      .eq('item_type', 'FOLLOW');
+    if (error || !data) return [];
+    return data.map((r: any) => String(r.item_code)).filter(Boolean);
+  } catch (e) {
+    console.warn('Failed to fetch follows from Supabase:', e);
+    return [];
+  }
+}
+
+// 6D. Daily Tasks Claimed
+export async function saveClaimedTaskToSupabase(userId: string, taskCode: string) {
+  if (!isSupabaseConfigured || !userId) return;
+  try {
+    await supabase.from('inventory').insert({
+      user_id: userId,
+      item_type: 'TASK_CLAIM',
+      item_code: taskCode,
+      is_equipped: true,
+    });
+  } catch (e) {
+    console.warn('Failed to save claimed task to Supabase:', e);
+  }
+}
+
+export async function fetchClaimedTasksFromSupabase(userId: string): Promise<string[]> {
+  if (!isSupabaseConfigured || !userId) return [];
+  try {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('item_code')
+      .eq('user_id', userId)
+      .eq('item_type', 'TASK_CLAIM');
+    if (error || !data) return [];
+    return data.map((r: any) => String(r.item_code)).filter(Boolean);
+  } catch (e) {
+    console.warn('Failed to fetch claimed tasks from Supabase:', e);
+    return [];
+  }
+}
+
+// 6E. Wallet Ledger / History
+export async function saveWalletLedgerToSupabase(
+  userId: string,
+  tx: { id: string; currency: string; amount: number; description: string; created_at: string }
+) {
+  if (!isSupabaseConfigured || !userId) return;
+  try {
+    await supabase.from('inventory').insert({
+      user_id: userId,
+      item_type: 'WALLET_LEDGER',
+      item_code: JSON.stringify(tx),
+      is_equipped: false,
+    });
+  } catch (e) {
+    console.warn('Failed to save wallet ledger to Supabase:', e);
+  }
+}
+
+export async function fetchWalletLedgerFromSupabase(userId: string): Promise<any[]> {
+  if (!isSupabaseConfigured || !userId) return [];
+  try {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('item_code, acquired_at')
+      .eq('user_id', userId)
+      .eq('item_type', 'WALLET_LEDGER')
+      .order('acquired_at', { ascending: false })
+      .limit(80);
+    if (error || !data) return [];
+    return data.map((r: any) => safeParseJson<any>(r.item_code)).filter(Boolean);
+  } catch (e) {
+    console.warn('Failed to fetch wallet ledger from Supabase:', e);
+    return [];
+  }
+}
+
+// 6F. Room Access Settings (Lock, Password, Capacity)
+export async function saveRoomSettingsToSupabase(
+  userId: string,
+  roomId: string,
+  settings: { maxCapacity: number; isLocked: boolean; password: string }
+) {
+  if (!isSupabaseConfigured || !userId || !roomId) return;
+  try {
+    const payload = JSON.stringify({ roomId, ...settings });
+    const { data } = await supabase
+      .from('inventory')
+      .select('id, item_code')
+      .eq('item_type', 'ROOM_SETTINGS')
+      .limit(100);
+    const existing = (data || []).find((r: any) => safeParseJson<any>(r.item_code)?.roomId === roomId);
+    if (existing) {
+      await supabase.from('inventory').update({ item_code: payload }).eq('id', existing.id);
+    } else {
+      await supabase.from('inventory').insert({
+        user_id: userId,
+        item_type: 'ROOM_SETTINGS',
+        item_code: payload,
+        is_equipped: true,
+      });
+    }
+  } catch (e) {
+    console.warn('Failed to save room settings to Supabase:', e);
+  }
+}
+
+export async function fetchAllRoomSettingsFromSupabase(): Promise<
+  Record<string, { maxCapacity: number; isLocked: boolean; password: string }>
+> {
+  if (!isSupabaseConfigured) return {};
+  try {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('item_code')
+      .eq('item_type', 'ROOM_SETTINGS')
+      .limit(100);
+    if (error || !data) return {};
+    const out: Record<string, { maxCapacity: number; isLocked: boolean; password: string }> = {};
+    for (const row of data) {
+      const parsed = safeParseJson<any>(row.item_code);
+      if (parsed?.roomId) {
+        out[parsed.roomId] = {
+          maxCapacity: Math.max(2, Number(parsed.maxCapacity) || 8),
+          isLocked: Boolean(parsed.isLocked),
+          password: String(parsed.password || ''),
+        };
+      }
+    }
+    return out;
+  } catch (e) {
+    console.warn('Failed to fetch room settings from Supabase:', e);
+    return {};
+  }
+}
