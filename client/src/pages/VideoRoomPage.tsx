@@ -3,6 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Users, Swords, Gift, Send, Video, VideoOff, Heart, Trophy, Lock, Unlock } from 'lucide-react';
 import { api } from '../lib/api';
 import { getSocket, getMyPeerId } from '../lib/socket';
+import {
+  createResilientPeerConnection,
+  IceCandidateQueue,
+  attachPeerAutoRecovery,
+} from '../lib/rtcConfig';
 import { getRoomSettings, saveRoomSettings, RoomAccessSettings } from '../lib/roomSettings';
 import {
   sendRoomMessageToSupabase,
@@ -64,6 +69,7 @@ export const VideoRoomPage: React.FC = () => {
 
   const localStreamRef = useRef<MediaStream | null>(null);
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const iceQueueRef = useRef<IceCandidateQueue>(new IceCandidateQueue());
   const peerSidesRef = useRef<Map<string, 'left' | 'right'>>(new Map());
   const pkRef = useRef<PkState | null>(null);
   const roomMetaRef = useRef<any>(null);
@@ -279,7 +285,7 @@ export const VideoRoomPage: React.FC = () => {
 
     const createVideoPeer = (targetPeerId: string, initiator: boolean, side: 'left' | 'right' = 'left') => {
       peersRef.current.get(targetPeerId)?.close();
-      const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+      const pc = createResilientPeerConnection();
       peerSidesRef.current.set(targetPeerId, side);
 
       if (localStreamRef.current) {
@@ -295,6 +301,10 @@ export const VideoRoomPage: React.FC = () => {
         if (assignedSide === 'right') setRemoteRightStream(remoteStream);
         else setRemoteLeftStream(remoteStream);
       };
+      attachPeerAutoRecovery({
+        pc,
+        onRestartOffer: (offer) => socket.emit('rtc:offer', { to: targetPeerId, sdp: offer, side }),
+      });
       peersRef.current.set(targetPeerId, pc);
       if (initiator) {
         pc.createOffer()
@@ -335,7 +345,8 @@ export const VideoRoomPage: React.FC = () => {
     const onOffer = async ({ from, sdp, side }: { from: string; sdp: RTCSessionDescriptionInit; side?: 'left' | 'right' }) => {
       if (!from || from === getMyPeerId()) return;
       const pc = createVideoPeer(from, false, side || peerSidesRef.current.get(from) || 'left');
-      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp)).catch(() => {});
+      await iceQueueRef.current.flush(from, pc);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       socket.emit('rtc:answer', { to: from, sdp: answer });
@@ -343,12 +354,15 @@ export const VideoRoomPage: React.FC = () => {
 
     const onAnswer = async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
       const pc = peersRef.current.get(from);
-      if (pc) await pc.setRemoteDescription(new RTCSessionDescription(sdp)).catch(() => {});
+      if (pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(sdp)).catch(() => {});
+        await iceQueueRef.current.flush(from, pc);
+      }
     };
 
     const onIce = async ({ from, candidate }: { from: string; candidate: RTCIceCandidateInit }) => {
       const pc = peersRef.current.get(from);
-      if (pc && candidate) await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
+      if (candidate) await iceQueueRef.current.addOrQueue(from, pc, candidate);
     };
 
     const onRelayFrame = ({ from, frame, side }: { from: string; frame: string; side?: 'left' | 'right' }) => {

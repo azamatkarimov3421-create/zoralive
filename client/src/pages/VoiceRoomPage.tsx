@@ -27,6 +27,11 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { getSocket, getMyPeerId } from '../lib/socket';
+import {
+  createResilientPeerConnection,
+  IceCandidateQueue,
+  attachPeerAutoRecovery,
+} from '../lib/rtcConfig';
 import { getRoomSettings, saveRoomSettings, RoomAccessSettings } from '../lib/roomSettings';
 import {
   sendRoomMessageToSupabase,
@@ -113,6 +118,7 @@ export const VoiceRoomPage: React.FC = () => {
   const [micMuted, setMicMuted] = useState(false);
   const localStreamRef = useRef<MediaStream | null>(null);
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const iceQueueRef = useRef<IceCandidateQueue>(new IceCandidateQueue());
   const audioContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const speakingTimerRef = useRef<number | null>(null);
@@ -196,7 +202,8 @@ export const VoiceRoomPage: React.FC = () => {
 
   const createPeer = (targetSocketId: string, initiator: boolean) => {
     const socket = getSocket();
-    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    peersRef.current.get(targetSocketId)?.close();
+    const pc = createResilientPeerConnection();
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => pc.addTrack(track, localStreamRef.current!));
     }
@@ -204,12 +211,19 @@ export const VoiceRoomPage: React.FC = () => {
       if (e.candidate) socket.emit('rtc:ice', { to: targetSocketId, candidate: e.candidate });
     };
     pc.ontrack = (e) => {
+      audioContainerRef.current?.querySelector(`audio[data-peer="${targetSocketId}"]`)?.remove();
       const audio = document.createElement('audio');
       audio.srcObject = e.streams[0];
       audio.autoplay = true;
+      (audio as any).playsInline = true;
       audio.dataset.peer = targetSocketId;
       audioContainerRef.current?.appendChild(audio);
+      audio.play().catch(() => {});
     };
+    attachPeerAutoRecovery({
+      pc,
+      onRestartOffer: (offer) => socket.emit('rtc:offer', { to: targetSocketId, sdp: offer }),
+    });
     peersRef.current.set(targetSocketId, pc);
     if (initiator) {
       pc.createOffer()
@@ -419,22 +433,27 @@ export const VoiceRoomPage: React.FC = () => {
     const onErr = ({ message }: { message: string }) => toast(message, 'error');
     const onOffer = async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
       const pc = peersRef.current.get(from) || createPeer(from, false);
-      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp)).catch(() => {});
+      await iceQueueRef.current.flush(from, pc);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       socket.emit('rtc:answer', { to: from, sdp: answer });
     };
     const onAnswer = async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
       const pc = peersRef.current.get(from);
-      if (pc) await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      if (pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(sdp)).catch(() => {});
+        await iceQueueRef.current.flush(from, pc);
+      }
     };
     const onIce = async ({ from, candidate }: { from: string; candidate: RTCIceCandidateInit }) => {
       const pc = peersRef.current.get(from);
-      if (pc && candidate) await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
+      if (candidate) await iceQueueRef.current.addOrQueue(from, pc, candidate);
     };
     const onPeerLeft = ({ socketId }: { socketId: string }) => {
       peersRef.current.get(socketId)?.close();
       peersRef.current.delete(socketId);
+      iceQueueRef.current.clear(socketId);
       audioContainerRef.current?.querySelector(`[data-peer="${socketId}"]`)?.remove();
     };
 
