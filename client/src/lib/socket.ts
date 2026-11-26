@@ -4,7 +4,7 @@ import { getStoredUser, getToken, setStoredUser } from './api';
 import { MOCK_GIFTS } from './mockData';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { fetchRoomByIdFromSupabase, sendGiftInSupabase, syncProfileToSupabase, saveDirectMessageToSupabase } from './supabaseSync';
-import { LudoGameState, PkState, SeatState } from '../types';
+import { PkState, SeatState } from '../types';
 
 let socketInstance: Socket | null = null;
 const WS_URL = (import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
@@ -32,9 +32,6 @@ class SupabaseRealtimeSocket {
   private roomTotalGifts = 0;
   private activePk: PkState | null = null;
   private activeBox: any = null;
-  private ludoGame: LudoGameState | null = null;
-  private drawSecretWord = '';
-  private drawState: any = null;
   private mySeatIndex: number | null = null;
 
   constructor() {
@@ -352,23 +349,6 @@ class SupabaseRealtimeSocket {
             .on('broadcast', { event: 'video:relay_frame' }, ({ payload }) => {
               this.trigger('video:relay_frame', payload);
             })
-            .on('broadcast', { event: 'draw:state' }, ({ payload }) => {
-              this.drawState = payload?.state ?? null;
-              if (payload?.secretWord !== undefined) this.drawSecretWord = payload.secretWord;
-              if (this.drawState) this.trigger('draw:state', this.drawState);
-            })
-            .on('broadcast', { event: 'draw:stroke' }, ({ payload }) => {
-              if (payload?.stroke) this.trigger('draw:stroke', payload.stroke);
-            })
-            .on('broadcast', { event: 'draw:clear' }, () => {
-              this.trigger('draw:clear');
-            })
-            .on('broadcast', { event: 'draw:solved' }, ({ payload }) => {
-              if (payload) {
-                this.drawState = payload.state ?? this.drawState;
-                this.trigger('draw:solved', payload.result);
-              }
-            })
             .subscribe(async (status) => {
               if (status === 'SUBSCRIBED') {
                 this.syncPresenceMeta();
@@ -650,153 +630,10 @@ class SupabaseRealtimeSocket {
         this.trigger('dm:received', dmPayload);
         this.ensureGlobalChannel();
         this.globalChannel?.send({ type: 'broadcast', event: 'dm:msg', payload: dmPayload }).catch(() => {});
-      } else if (event === 'ludo:create') {
-        const fee = Number(data.entryFee || 100);
-        const count = Number(data.playerCount || 4);
-        const colors: Array<'red' | 'green' | 'yellow' | 'blue'> = ['red', 'green', 'yellow', 'blue'];
-        const bots = [
-          { id: 'bot_1', displayName: 'O‘yinchi 2', avatar: '' },
-          { id: 'bot_2', displayName: 'O‘yinchi 3', avatar: '' },
-          { id: 'bot_3', displayName: 'O‘yinchi 4', avatar: '' },
-        ];
-        this.ludoGame = {
-          gameId: `ludo_${Date.now()}`,
-          roomId: data.roomId,
-          status: 'PLAYING',
-          entryFee: fee,
-          pot: fee * count,
-          players: Array.from({ length: count }, (_, i) =>
-            i === 0
-              ? { id: u.id, name: u.displayName, avatar: u.avatar, color: colors[0], isBot: false, tokens: [-1, -1, -1, -1] }
-              : {
-                  id: bots[(i - 1) % bots.length].id,
-                  name: bots[(i - 1) % bots.length].displayName,
-                  avatar: bots[(i - 1) % bots.length].avatar,
-                  color: colors[i],
-                  isBot: true,
-                  tokens: [-1, -1, -1, -1],
-                }
-          ),
-          turnIndex: 0,
-          dice: null,
-          phase: 'ROLL',
-          validMoves: [],
-          winnerId: null,
-          winnerName: null,
-          lastEvent: 'O‘yin boshlandi! Zarikni tashlang 🎲',
-          updatedAt: Date.now(),
-        };
-        this.trigger('ludo:state', { ...this.ludoGame });
-      } else if (event === 'ludo:roll' && this.ludoGame) {
-        const g = this.ludoGame;
-        const dice = Math.floor(Math.random() * 6) + 1;
-        const p = g.players[g.turnIndex];
-        const valid = p.tokens
-          .map((pos, idx) => (pos === -1 ? (dice === 6 ? idx : -1) : pos + dice <= 56 ? idx : -1))
-          .filter((i) => i >= 0);
-        g.dice = dice;
-        if (valid.length === 0) {
-          g.lastEvent = `${p.name} ${dice} tashladi — yurish yo‘q`;
-          g.turnIndex = (g.turnIndex + 1) % g.players.length;
-          g.phase = 'ROLL';
-          g.validMoves = [];
-          this.trigger('ludo:state', { ...g });
-          this.runBotTurn();
-        } else {
-          g.phase = 'MOVE';
-          g.validMoves = valid;
-          g.lastEvent = `${p.name} ${dice} tashladi! Toshni tanlang`;
-          this.trigger('ludo:state', { ...g });
-        }
-      } else if (event === 'ludo:move' && this.ludoGame) {
-        const g = this.ludoGame;
-        const p = g.players[g.turnIndex];
-        const idx = Number(data.tokenIndex);
-        const dice = g.dice || 1;
-        if (p.tokens[idx] === -1 && dice === 6) p.tokens[idx] = 0;
-        else if (p.tokens[idx] >= 0) p.tokens[idx] = Math.min(56, p.tokens[idx] + dice);
-        g.phase = 'ROLL';
-        g.validMoves = [];
-        g.lastEvent = `${p.name} toshini yurdi`;
-        if (p.tokens.every((t) => t === 56)) {
-          g.status = 'FINISHED';
-          g.winnerId = p.id;
-          g.winnerName = p.name;
-          g.lastEvent = `🏆 ${p.name} g‘olib bo‘ldi! (+${g.pot} 🪙)`;
-          if (p.id === u.id && g.pot > 0) {
-            const nextCoins = (u.coins || 0) + g.pot;
-            setStoredUser({ ...u, coins: nextCoins });
-            syncProfileToSupabase({ id: u.id, coins: nextCoins });
-            this.trigger('wallet:updated', { coins: nextCoins });
-          }
-        } else if (dice !== 6) {
-          g.turnIndex = (g.turnIndex + 1) % g.players.length;
-        }
-        this.trigger('ludo:state', { ...g });
-        this.runBotTurn();
-      } else if (event === 'draw:start') {
-        const words = ['Olma', 'Quyosh', 'Mashina', 'Uy', 'Mushuk', 'Samolyot', 'Yulduz', 'Daraxt', 'Toj', 'Ajdarho'];
-        const w = words[Math.floor(Math.random() * words.length)];
-        this.drawSecretWord = w;
-        this.drawState = {
-          active: true,
-          drawerId: u.id,
-          drawerName: u.displayName,
-          hint: `${w[0]} ${'_ '.repeat(Math.max(1, w.length - 1)).trim()} (${w.length})`,
-          solvedBy: null,
-        };
-        this.trigger('draw:state', this.drawState);
-        this.trigger('draw:word', { word: w });
-        this.broadcastRoom('draw:state', { state: this.drawState, secretWord: w });
-      } else if (event === 'draw:stroke') {
-        this.broadcastRoom('draw:stroke', { stroke: data.stroke });
-      } else if (event === 'draw:clear') {
-        this.broadcastRoom('draw:clear', {});
-      } else if (event === 'draw:guess') {
-        const guess = String(data.guess || '').trim().toLowerCase();
-        if (this.drawState?.active && this.drawSecretWord && guess === this.drawSecretWord.toLowerCase()) {
-          const reward = 50;
-          const nextCoins = (u.coins || 0) + reward;
-          setStoredUser({ ...u, coins: nextCoins });
-          syncProfileToSupabase({ id: u.id, coins: nextCoins });
-          this.trigger('wallet:updated', { coins: nextCoins });
-          this.drawState = { ...this.drawState, active: false, solvedBy: u.displayName };
-          const result = { winnerName: u.displayName, word: this.drawSecretWord, reward };
-          this.trigger('draw:solved', result);
-          this.broadcastRoom('draw:solved', { state: this.drawState, result });
-        }
       }
     }, 20);
 
     return this;
-  }
-
-  private runBotTurn() {
-    if (!this.ludoGame || this.ludoGame.status !== 'PLAYING') return;
-    const g = this.ludoGame;
-    const p = g.players[g.turnIndex];
-    if (!p?.isBot) return;
-    setTimeout(() => {
-      if (!this.ludoGame || this.ludoGame.status !== 'PLAYING') return;
-      const dice = Math.floor(Math.random() * 6) + 1;
-      const valid = p.tokens
-        .map((pos, idx) => (pos === -1 ? (dice === 6 ? idx : -1) : pos + dice <= 56 ? idx : -1))
-        .filter((i) => i >= 0);
-      g.dice = dice;
-      if (valid.length > 0) {
-        const pick = valid[0];
-        if (p.tokens[pick] === -1 && dice === 6) p.tokens[pick] = 0;
-        else p.tokens[pick] = Math.min(56, p.tokens[pick] + dice);
-        g.lastEvent = `${p.name} ${dice} tashlab yurdi`;
-      } else {
-        g.lastEvent = `${p.name} ${dice} tashladi`;
-      }
-      if (dice !== 6) g.turnIndex = (g.turnIndex + 1) % g.players.length;
-      g.phase = 'ROLL';
-      g.validMoves = [];
-      this.trigger('ludo:state', { ...g });
-      this.runBotTurn();
-    }, 650);
   }
 
   private trigger(event: string, ...args: any[]) {

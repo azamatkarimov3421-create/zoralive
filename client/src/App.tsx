@@ -1,22 +1,34 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Smartphone, Monitor, Lock, KeyRound } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorldProvider } from './context/WorldContext';
-import { AuthPage } from './pages/AuthPage';
-import { HomePage } from './pages/HomePage';
-import { VoiceRoomPage } from './pages/VoiceRoomPage';
-import { VideoRoomPage } from './pages/VideoRoomPage';
-import { GamesPage } from './pages/GamesPage';
-import { ShopPage } from './pages/ShopPage';
-import { SocialPage } from './pages/SocialPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { GovernanceSuitePage } from './pages/GovernanceSuitePage';
-import { StaffRolePanelPage } from './pages/StaffRolePanelPage';
 import { BottomNav } from './components/BottomNav';
 import { FloatingVoiceBar } from './components/FloatingVoiceBar';
 import { CreateRoomModal } from './components/CreateRoomModal';
 import { isGateSessionValid, verifyGatePin } from './lib/security';
+
+const AuthPage = lazy(() => import('./pages/AuthPage').then((m) => ({ default: m.AuthPage })));
+const HomePage = lazy(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
+const VoiceRoomPage = lazy(() => import('./pages/VoiceRoomPage').then((m) => ({ default: m.VoiceRoomPage })));
+const VideoRoomPage = lazy(() => import('./pages/VideoRoomPage').then((m) => ({ default: m.VideoRoomPage })));
+const GamesPage = lazy(() => import('./pages/GamesPage').then((m) => ({ default: m.GamesPage })));
+const ShopPage = lazy(() => import('./pages/ShopPage').then((m) => ({ default: m.ShopPage })));
+const SocialPage = lazy(() => import('./pages/SocialPage').then((m) => ({ default: m.SocialPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const GovernanceSuitePage = lazy(() =>
+  import('./pages/GovernanceSuitePage').then((m) => ({ default: m.GovernanceSuitePage }))
+);
+const StaffRolePanelPage = lazy(() =>
+  import('./pages/StaffRolePanelPage').then((m) => ({ default: m.StaffRolePanelPage }))
+);
+
+const PageLoader: React.FC = () => (
+  <div className="min-h-[60vh] flex flex-col items-center justify-center gap-2.5">
+    <img src="/icon.svg" alt="ZoraLive" className="w-10 h-10 rounded-2xl animate-pulse" />
+    <span className="text-[11px] font-bold text-slate-500">Yuklanmoqda...</span>
+  </div>
+);
 
 const SitePasswordGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [unlocked, setUnlocked] = useState<boolean>(() => isGateSessionValid('site'));
@@ -116,10 +128,12 @@ const AppShell: React.FC = () => {
 
   if (isAdminRoute) {
     return (
-      <Routes>
-        <Route path="/admin" element={<GovernanceSuitePage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/admin" element={<GovernanceSuitePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     );
   }
 
@@ -158,19 +172,21 @@ const AppShell: React.FC = () => {
         {!isAuthRoute && <FloatingVoiceBar />}
 
         <main className="flex-1">
-          <Routes>
-            <Route path="/" element={<HomePage onGoLive={() => setCreateOpen(true)} />} />
-            <Route path="/login" element={<AuthPage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/voice/:id" element={<VoiceRoomPage />} />
-            <Route path="/video/:id" element={<VideoRoomPage />} />
-            <Route path="/games" element={<GamesPage />} />
-            <Route path="/shop" element={<ShopPage />} />
-            <Route path="/social" element={<SocialPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/staff-panel" element={<StaffRolePanelPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<HomePage onGoLive={() => setCreateOpen(true)} />} />
+              <Route path="/login" element={<AuthPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/voice/:id" element={<VoiceRoomPage />} />
+              <Route path="/video/:id" element={<VideoRoomPage />} />
+              <Route path="/games" element={<GamesPage />} />
+              <Route path="/shop" element={<ShopPage />} />
+              <Route path="/social" element={<SocialPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/staff-panel" element={<StaffRolePanelPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </main>
 
         {!isRoomRoute && !isAuthRoute && Boolean(user) && <BottomNav onGoLive={() => setCreateOpen(true)} />}
